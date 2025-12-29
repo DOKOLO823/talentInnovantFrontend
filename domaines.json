@@ -1,0 +1,82 @@
+[
+    {
+        "id": 1,
+        "nom": "Éducation",
+        "description": "Projets liés à l’apprentissage numérique, e-learning, orientation scolaire et formation en ligne."
+    },
+    {
+        "id": 2,
+        "nom": "Santé",
+        "description": "Solutions de e-santé, télémédecine, suivi médical et gestion hospitalière."
+    },
+    {
+        "id": 3,
+        "nom": "Agriculture",
+        "description": "AgriTech, irrigation intelligente, suivi des cultures et valorisation agricole."
+    },
+    {
+        "id": 4,
+        "nom": "Environnement",
+        "description": "Protection de l’environnement, recyclage, énergies vertes et gestion des déchets."
+    },
+    {
+        "id": 5,
+        "nom": "Énergie",
+        "description": "Production et distribution d’énergie, énergies renouvelables, électrification rurale."
+    },
+    {
+        "id": 6,
+        "nom": "Inclusion financière",
+        "description": "FinTech, mobile money, solutions d’épargne, microcrédit et services financiers digitaux."
+    },
+    {
+        "id": 7,
+        "nom": "Entrepreneuriat & Emploi",
+        "description": "Accompagnement des startups, plateformes d’emploi et innovation entrepreneuriale."
+    },
+    {
+        "id": 8,
+        "nom": "Gouvernance & Sécurité",
+        "description": "E-gouvernance, participation citoyenne, sécurité des données et transparence."
+    },
+    {
+        "id": 9,
+        "nom": "Transport & Mobilité",
+        "description": "Covoiturage, logistique, mobilité urbaine, transport intelligent."
+    },
+    {
+        "id": 10,
+        "nom": "Culture & Tourisme",
+        "description": "Valorisation du patrimoine, tourisme numérique et initiatives culturelles."
+    },
+    {
+        "id": 11,
+        "nom": "Commerce & E-commerce",
+        "description": "Marketplaces, logistique, achats et ventes en ligne."
+    },
+    {
+        "id": 12,
+        "nom": "Technologie & IA",
+        "description": "Développement logiciel, intelligence artificielle, cybersécurité et innovation numérique."
+    },
+    {
+        "id": 13,
+        "nom": "Eau & Hygiène",
+        "description": "Accès à l’eau potable, assainissement et hygiène communautaire."
+    },
+    {
+        "id": 14,
+        "nom": "Social & Humanitaire",
+        "description": "Inclusion sociale, égalité de genre, lutte contre la pauvreté et handicap."
+    },
+    {
+        "id": 15,
+        "nom": "Communication & Médias",
+        "description": "Médias numériques, création de contenu, sensibilisation et diffusion d’informations."
+    },
+    {
+        "id": 16,
+        "nom": "Innovation & Multisectoriel",
+        "description": "Projets transversaux combinant plusieurs domaines d’innovation technologique ou sociale."
+    }
+]
