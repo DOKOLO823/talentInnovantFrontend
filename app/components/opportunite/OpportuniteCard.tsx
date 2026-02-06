@@ -1,103 +1,216 @@
 "use client";
 
-import { useState } from "react";
-import { Heart, Calendar, ArrowRight, MoreVertical } from "lucide-react";
+import { useState, useEffect } from "react";
+import { 
+  Heart, ArrowRight, MoreVertical, Loader2, 
+  X, FileText, Clock, Edit2, Trash2, ExternalLink 
+} from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
+import { apiFetch } from "@/app/lib/api";
+import apifile from "@/app/lib/apifile";
+import { useAuth } from "@/app/context/AuthContext";
+import toast from "react-hot-toast";
+import { AnimatePresence, motion } from "framer-motion";
+import CreateOpportunityModal from "../entreprise/CreateOpportunityModal";
+import { useRouter } from "next/navigation";
 
-export function OpportuniteCard({ opp }: any) {
-  const [liked, setLiked] = useState(false);
-  const [likes, setLikes] = useState(opp.like || 0);
+// --- MODAL APERÇU (IMAGE/PDF) ---
+const PreviewModal = ({ isOpen, onClose, url, type, title }: any) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-md">
+      <div className="relative w-full h-full max-w-4xl bg-white rounded-3xl overflow-hidden flex flex-col shadow-2xl">
+        <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+          <span className="text-xs font-bold text-gray-600 truncate px-2">{title}</span>
+          <button onClick={onClose} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors rounded-full"><X size={20}/></button>
+        </div>
+        <div className="flex-1 overflow-auto bg-gray-100 flex justify-center">
+          {type === "image" ? (
+            <img src={url} alt={title} className="object-contain max-h-full" />
+          ) : (
+            <iframe src={`${url}#view=FitH`} className="w-full h-full border-none" />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- MODAL ALERTE LIEN EXTERNE ---
+const ExternalLinkModal = ({ isOpen, onClose, url }: any) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="bg-white rounded-[2rem] p-8 max-w-sm w-full text-center shadow-2xl">
+        <div className="w-16 h-16 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-6"><ExternalLink size={32} /></div>
+        <h3 className="text-lg font-bold text-gray-900 mb-2">Lien externe</h3>
+        <p className="text-sm text-gray-500 mb-8 leading-relaxed">Vous allez être redirigé vers une plateforme externe pour postuler.</p>
+        <div className="flex flex-col gap-3">
+          <a href={url} target="_blank" onClick={onClose} className="w-full py-3.5 bg-gray-900 text-white font-bold rounded-xl text-sm transition-all hover:bg-orange-700">Continuer</a>
+          <button onClick={onClose} className="py-2 text-xs font-bold text-gray-400">Annuler</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export function OpportuniteCard({ opp }: { opp: any }) {
+  const { user } = useAuth();
   const [openMenu, setOpenMenu] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [showExternalAlert, setShowExternalAlert] = useState(false);
+  const [isDeleted, setIsDeleted] = useState(false);
+  const [likes, setLikes] = useState(opp.like || 0);
+  const [isLiked, setIsLiked] = useState(false);
+  const [loadingLike, setLoadingLike] = useState(false); // État pour le petit loader du like
+  const router = useRouter();
 
-  const toggleLike = () => {
-    setLikes((l: number) => (liked ? l - 1 : l + 1));
-    setLiked(!liked);
+  useEffect(() => {
+    if (user?.id && opp.ids_likeurs) {
+      setIsLiked(opp.ids_likeurs.map(Number).includes(Number(user.id)));
+    }
+  }, [user, opp.ids_likeurs]);
+
+  if (isDeleted) return null;
+
+  const formatDateHumain = (dateStr: string) => {
+    if (!dateStr) return "N/A";
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
   };
 
+  const fullUrl = opp.lien?.startsWith('http') || opp.format == "lien" ? opp.lien : `${apifile}/${opp.lien}`;
+  const isFile = opp.format === "pdf" || opp.format === "image" || opp.format === "document";
+
+  const handleAction = () => {
+    if (isFile) setShowPreview(true);
+    else setShowExternalAlert(true);
+  };
+
+  const handleLike = async (e: React.MouseEvent) => {
+    e.preventDefault(); 
+    if (!user?.id) return toast.error("Connectez-vous");
+    if (loadingLike) return;
+
+    setLoadingLike(true);
+    try {
+      const res = await apiFetch(`/opportunite/like/${opp.id}`, { method: "GET" });
+      if (res?.statut === 200) { 
+        setLikes(res.likes_total); 
+        setIsLiked(!isLiked); 
+      }
+    } catch (error) {
+      toast.error("Erreur");
+    } finally {
+      setLoadingLike(false);
+    }
+  };
+
+
   return (
-    <div className="relative bg-white border rounded-xl shadow-sm p-4 max-w-[400px] flex flex-col">
+    <>
+      <div className="group bg-white border border-gray-400 rounded-[2rem] p-4 w-full flex flex-col h-full transition-all hover:shadow-lg">
+        
+        {/* MEDIA SECTION */}
+        <div onClick={handleAction} className="relative h-36 w-full shrink-0 rounded-[1.5rem] overflow-hidden mb-4 bg-gray-50 border border-gray-100 cursor-pointer">
+          {opp.format === "image" ? (
+            <Image src={fullUrl} fill className="object-cover transition-transform group-hover:scale-105" alt={opp.titre} unoptimized />
+          ) : (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
+              <FileText size={36} strokeWidth={1.5} />
+              <span className="text-[9px] font-bold uppercase mt-2 tracking-widest opacity-60">{opp.format || 'DOC'}</span>
+            </div>
+          )}
+          <div className="absolute top-2 left-2">
+            <span className="px-3 py-1 bg-gray-900 text-white rounded-full text-[9px] font-bold uppercase shadow-lg">
+              {opp.type}
+            </span>
+          </div>
+        </div>
 
-      {/* BOUTON 3 POINTS */}
-      <div className="absolute top-3 right-3">
-        <button
-          onClick={() => setOpenMenu(!openMenu)}
-          className="p-1 rounded-full hover:bg-gray-200 transition"
-        >
-          <MoreVertical className="w-5 h-5 text-gray-700" />
-        </button>
+        {/* CONTENT */}
+        <div className="flex flex-col flex-1">
+          <div className="flex justify-between items-start gap-2 mb-1">
+            <h3 className="font-bold text-gray-900 text-[15px] leading-snug line-clamp-2">{opp.titre}</h3>
+            {Number(user?.id) === Number(opp.user?.id) && (
+              <div className="relative">
+                <button onClick={() => setOpenMenu(!openMenu)} className="p-1 hover:bg-gray-100 rounded text-gray-400"><MoreVertical size={18} /></button>
+                {openMenu && (
+                  <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-100 shadow-xl rounded-xl overflow-hidden z-[100]">
+                    <button onClick={() => { setShowEditModal(true); setOpenMenu(false); }} className="flex items-center gap-2 w-full px-4 py-3 text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors"><Edit2 size={14}/> Modifier</button>
+                    <button onClick={() => { setShowDeleteModal(true); setOpenMenu(false); }} className="flex items-center gap-2 w-full px-4 py-3 text-xs font-bold text-red-600 hover:bg-red-50 transition-colors"><Trash2 size={14}/> Supprimer</button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
-        {openMenu && (
-          <div className="absolute right-0 mt-2 w-40 bg-white border shadow-lg rounded-lg overflow-hidden z-20">
-            <Link
-              href={`/opportunite/edit/${opp.id}`}
-              className="block px-4 py-2 text-sm hover:bg-gray-100"
+          <p className="text-[10px] font-bold text-orange-700 mb-3 uppercase tracking-wider">
+            {opp.domaine?.nom || opp.domaine}
+          </p>
+
+          <p className="text-xs leading-relaxed text-gray-500 line-clamp-3 mb-5 font-medium">
+            {opp.description}
+          </p>
+
+          <div className="flex items-center gap-2 text-[10px] font-bold mb-5 text-gray-400">
+             <Clock size={14} className="text-orange-700" /> 
+             <span>Date limite : <span className="text-gray-900">{formatDateHumain(opp.delaicandidature)}</span></span>
+          </div>
+
+          <div className="flex items-center gap-2 mb-4">
+            <button 
+              onClick={handleLike} 
+              disabled={loadingLike}
+              className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl border transition-all ${isLiked ? "bg-orange-50 border-orange-100 text-orange-700" : "bg-white border-gray-100 text-gray-400 hover:bg-gray-50"}`}
             >
-              Modifier
-            </Link>
-            <button className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
-              Supprimer
+              {loadingLike ? (
+                <Loader2 size={18} className="animate-spin text-orange-700" />
+              ) : (
+                <Heart size={18} className={isLiked ? "fill-orange-700 text-orange-700" : ""} />
+              )}
+              <span className="font-bold text-xs">{likes}</span>
+            </button>
+            <button onClick={handleAction} className="flex-1 bg-orange-700 hover:bg-orange-800 text-white py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm tracking-widest">
+              DÉTAILS <ArrowRight size={14} />
             </button>
           </div>
-        )}
-      </div>
 
-      {/* ENTÊTE ENTREPRISE */}
-      <Link href={`/profil-entreprise/${opp.entreprise?.id || 1}`} className="flex items-center gap-3 mb-3 pr-8">
-        <Image
-          src={opp.entreprise?.logo}
-          width={40}
-          height={40}
-          alt={opp.entreprise?.nom || "entreprise"}
-          className="rounded-full object-cover border h-10 w-10"
-        />
-        <div>
-          <p className="font-semibold">{opp.entreprise?.nom}</p>
-          <p className="text-xs text-gray-500">{opp.domaine}</p>
+          {/* CORPORATE FOOTER MODIFIÉ */}
+          <div onClick={() => router.push(`/profil-entreprise/${opp?.user?.id}`)} className="flex items-center gap-2 pt-3 border-t border-gray-50 cursor-pointer">
+            <div className="relative w-8 h-8 rounded-lg overflow-hidden bg-gray-50 border border-gray-100 shrink-0">
+              <Image src={opp.user?.pp ? `${apifile}/${opp.user.pp}` : "../assets/images/ppe.png"} fill className="object-cover" alt="logo" unoptimized />
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-[9px] font-bold text-gray-400 leading-none mb-1">Publié par</span>
+              <span className="text-[11px] font-bold text-gray-700 truncate leading-none">{opp.user?.entreprise?.nom || "Entreprise"}</span>
+            </div>
+          </div>
         </div>
-      </Link>
-
-      {/* TITRE + TYPE */}
-      <h3 className="text-lg font-semibold">{opp.titre}</h3>
-      <p className="text-gray-600 text-sm">{opp.type}</p>
-
-      {/* DESCRIPTION */}
-      <p className="mt-3 text-gray-700 text-sm line-clamp-3">
-        {opp.description}
-      </p>
-
-      {/* DATE LIMITE */}
-      <div className="mt-3 flex items-center gap-2 text-sm text-gray-700">
-        <Calendar size={16} className="text-orange-700" />
-       <div className="flex flex-row justify-center items-center gap-x-2">
-         <span>Date limite : {opp.date_limite} </span> <span className="text-red-700">(expire)</span>
-       </div>
       </div>
 
-      {/* LIKE */}
-      <button
-        onClick={toggleLike}
-        className="mt-3 flex items-center gap-2 text-sm font-medium w-fit"
-      >
-        <Heart
-          size={20}
-          className={`transition ${
-            liked ? "fill-orange-700 text-orange-700" : "text-gray-600"
-          }`}
-        />
-        <span className={liked ? "text-orange-700" : "text-gray-700"}>
-          {likes} likes
-        </span>
-      </button>
+      <AnimatePresence>
+        {showEditModal && <CreateOpportunityModal onClose={() => setShowEditModal(false)} initialData={opp} onSuccess={() => window.location.reload()} />}
+      </AnimatePresence>
 
-      {/* LIEN */}
-      <a
-        href={opp.lien}
-        target="_blank"
-        className="mt-4 text-orange-700 hover:underline flex items-center gap-1 font-medium"
-      >
-        Voir plus <ArrowRight size={16} />
-      </a>
-    </div>
+      <PreviewModal isOpen={showPreview} onClose={() => setShowPreview(false)} url={fullUrl} type={opp.format === "image" ? "image" : "pdf"} title={opp.titre} />
+      <ExternalLinkModal isOpen={showExternalAlert} onClose={() => setShowExternalAlert(false)} url={fullUrl} />
+      
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-8 text-center max-w-xs w-full shadow-2xl">
+            <div className="w-12 h-12 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4"><Trash2 size={24}/></div>
+            <h3 className="text-sm font-bold text-gray-900 mb-2">Confirmer la suppression</h3>
+            <p className="text-xs text-gray-400 mb-6 font-medium">Cette offre sera définitivement retirée.</p>
+            <div className="flex gap-2">
+              <button onClick={() => setShowDeleteModal(false)} className="flex-1 py-2 text-xs font-bold text-gray-400">Annuler</button>
+              <button onClick={() => apiFetch(`/opportunite/delete/${opp.id}`, { method: "GET" }).then(() => { setIsDeleted(true); setShowDeleteModal(false); })} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-xs font-bold">Supprimer</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

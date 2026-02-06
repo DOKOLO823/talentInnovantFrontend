@@ -1,154 +1,158 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import ChallengeCard from "@/app/components/ChallengeCard";
-import { OpportuniteCard } from "@/app/components/opportunite/OpportuniteCard";
 import BackButton from "@/app/components/BackButton";
-import Navbar from "@/app/components/Navbar";
-import BottomBar from "@/app/components/BottomBar";
+import { apiFetch } from "@/app/lib/api";
+import toast, { Toaster } from "react-hot-toast";
 
-// ===========================================
-// CARD D’OPPORTUNITÉ
-// ===========================================
+import TabAbout from "./TabAbout";
+import TabChallenges from "./TabChallenges";
+import TabOpportunites from "./TabOpportunites";
+import apifile from "@/app/lib/apifile";
 
-// ===========================================
-// PAGE PROFIL ENTREPRISE
-// ===========================================
-export default function EntrepriseProfileClient({
-  entreprise,
-  challenges,
-  opportunites,
-}: any) {
+export default function EntrepriseProfileClient({ id }: { id: string }) {
   const [activeTab, setActiveTab] = useState("about");
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isToggling, setIsToggling] = useState(false);
+
+  useEffect(() => {
+    // Récupération de l'utilisateur connecté
+    const storedAuth = localStorage.getItem("auth");
+    if (storedAuth) setCurrentUser(JSON.parse(storedAuth).user);
+
+    // Récupération du profil entreprise
+    apiFetch(`/entreprise/profil/${id}`).then(res => {
+      if (res.statut === 200) setData(res.data);
+      setLoading(false);
+    });
+  }, [id]);
+
+  // Vérification de propriété (user_id du profil vs id du user connecté)
+  const isOwner = currentUser?.id == data?.entreprise?.user_id;
+
+  const handleToggleAbonnement = async () => {
+    if (isToggling || !currentUser) return;
+    
+    try {
+      setIsToggling(true);
+      const res = await apiFetch("/entreprise/abonnement/toggle", {
+        method: "POST",
+        body: JSON.stringify({ entreprise_id: data.entreprise.id }),
+      });
+
+      if (res.statut === 200) {
+        if (res?.message === 'Abonnement réussi.') {
+          toast.success('Vous serez informé des opportunités proposées par cette entreprise', { duration: 5000 });
+        } else {
+          toast.success(res?.message || 'Désabonnement réussi.');
+        }
+        
+        // Mise à jour locale de l'état is_abonne
+        setData((prev: any) => ({
+          ...prev,
+          entreprise: { ...prev.entreprise, is_abonne: res.abonne }
+        }));
+      }
+    } catch (err) {
+      console.error("Erreur toggle:", err);
+    } finally {
+      setIsToggling(false);
+    }
+  };
+
+  if (loading) return (
+    <div className="w-full h-screen flex items-center justify-center">
+
+       <div className="flex justify-center p-5">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-700"></div>
+      </div>
+      <div className="animate-pulse text-orange-700 font-bold md:text-xl">Chargement du profil...</div>
+
+    </div>
+  );
+
+  if (!data) return <div className="p-10 text-center mt-24">Entreprise introuvable</div>;
+
+  const { entreprise, total } = data;
 
   return (
     <div className="w-full">
-      <Navbar/>
+      <Toaster />
       <BackButton m={16} />
-      {/* ================= COVER ================= */}
+      
       <div className="w-full h-56 md:h-72 relative mt-2">
         <Image
-          src={entreprise.cover}
+          src={ entreprise?.user?.pc ? apifile+'/'+entreprise?.user?.pc : "/assets/images/pc2.jpeg"}
           fill
           className="object-cover"
           alt="cover"
         />
       </div>
 
-      {/* ================= PHOTO + INFOS ================= */}
       <div className="px-4 md:px-8 -mt-20 relative">
         <div className="flex flex-col items-center md:items-start gap-4">
-
-          {/* LOGO ENTREPRISE */}
-          <div className="w-36 h-36 md:w-40 md:h-40 rounded-full border-4 border-white overflow-hidden shadow-xl">
-            <img src={entreprise.avatar} className="object-cover w-full h-full" />
+          <div className="w-36 h-36 md:w-40 md:h-40 rounded-full border-4 border-white overflow-hidden shadow-xl bg-white">
+            <img src={entreprise?.user?.pp ? apifile+'/'+entreprise?.user?.pp : '/assets/images/ppe.png'} className="object-cover w-full h-full" alt="logo" />
           </div>
 
-          {/* INFOS */}
           <div className="text-center md:text-left">
-            <h1 className="text-3xl font-bold">{entreprise.name}</h1>
-            <p className="text-gray-600 text-lg">{entreprise.service}</p>
+            <h1 className="text-3xl font-bold">{entreprise?.nom}</h1>
+            <p className="text-gray-900 text-lg">{entreprise?.service}</p>
+            <p className="text-gray-600 my-4 text-start">{entreprise?.user?.bio}</p>
           </div>
 
-          {/* BOUTON EDIT */}
-          <Link
-            href={`/profil-entreprise/edit/1`}
-            className="bg-orange-700 text-white px-5 py-2 rounded-lg shadow hover:bg-orange-800"
-          >
-            Modifier le profil
-          </Link>
+          <div className="flex gap-3">
+            {/* Bouton Modifier : Uniquement pour le propriétaire */}
+            {isOwner ? (
+              <Link
+                href={`/profil-entreprise/edit/${id}`}
+                className="bg-orange-700 text-white px-6 py-2 rounded-lg shadow hover:bg-orange-800 transition-all font-medium"
+              >
+                Modifier le profil de l'entreprise
+              </Link>
+            ) : (
+              /* Bouton S'abonner : Uniquement pour les visiteurs */
+              (currentUser && !isOwner) && (
+                <button
+                  onClick={handleToggleAbonnement}
+                  disabled={isToggling}
+                  className={`px-6 py-2 rounded-lg shadow font-medium transition-all ${
+                    entreprise.is_abonne 
+                    ? "bg-gray-200 text-gray-700 hover:bg-gray-300" 
+                    : "bg-orange-700 text-white hover:bg-orange-800"
+                  }`}
+                >
+                  {isToggling ? "En cours..." : (entreprise.is_abonne ? "Se désabonner" : "S'abonner")}
+                </button>
+              )
+            )}
+          </div>
         </div>
       </div>
 
-      {/* ================= TABS ================= */}
-      <div className="px-4 md:px-8 mt-6 border-b flex gap-6 bg-white sticky top-0 z-50 pt-4">
-        <button
-          onClick={() => setActiveTab("about")}
-          className={`pb-3 border-b-2 ${
-            activeTab === "about"
-              ? "border-orange-700 text-orange-700 font-semibold"
-              : "border-transparent text-gray-600"
-          }`}
-        >
-          À propos
-        </button>
-
-        <button
-          onClick={() => setActiveTab("challenges")}
-          className={`pb-3 border-b-2 ${
-            activeTab === "challenges"
-              ? "border-orange-700 text-orange-700 font-semibold"
-              : "border-transparent text-gray-600"
-          }`}
-        >
-          Challenges
-        </button>
-
-        <button
-          onClick={() => setActiveTab("opportunites")}
-          className={`pb-3 border-b-2 ${
-            activeTab === "opportunites"
-              ? "border-orange-700 text-orange-700 font-semibold"
-              : "border-transparent text-gray-600"
-          }`}
-        >
-          Offres d’opportunités
-        </button>
+      <div className="px-4 md:px-8 mt-6 border-b flex gap-6 bg-white sticky top-0 z-50 pt-4 overflow-x-auto whitespace-nowrap scrollbar-hide">
+        {["about", "challenges", "opportunites"].map((t) => (
+          <button
+            key={t}
+            onClick={() => setActiveTab(t)}
+            className={`pb-3 border-b-2 shrink-0 ${
+              activeTab === t ? "border-orange-700 text-orange-700 font-semibold" : "border-transparent text-gray-600"
+            }`}
+          >
+            {t === "about" ? "À propos" : t === "challenges" ? "Challenges" : "Offres d’opportunités"}
+          </button>
+        ))}
       </div>
 
-      {/* ================= CONTENT ================= */}
       <div className="px-4 md:px-8 mt-6 pb-14">
-
-        {/* ABOUT TAB */}
-        {activeTab === "about" && (
-          <div className="space-y-4 mb-12">
-            <h3 className="text-xl font-bold">Description</h3>
-            <p className="text-gray-700">{entreprise.description}</p>
-
-            <h3 className="text-xl font-bold mt-4">Services</h3>
-            <p className="text-gray-700">{entreprise.service}</p>
-
-            <h3 className="text-xl font-bold mt-4">Horaires</h3>
-            <p className="text-gray-700">{entreprise.horaires}</p>
-
-            <h3 className="text-xl font-bold mt-4">Site Web</h3>
-            <a
-              href={entreprise.siteWeb}
-              target="_blank"
-              className="text-orange-700 hover:underline"
-            >
-              {entreprise.siteWeb}
-            </a>
-
-            <h3 className="text-xl font-bold mt-4">Points</h3>
-            <p className="text-orange-700 font-semibold text-lg">
-              {entreprise.points} pts
-            </p>
-          </div>
-        )}
-
-        {/* CHALLENGES TAB */}
-        {activeTab === "challenges" && (
-          <div className="flex flex-wrap gap-6 mb-12">
-            {challenges.map((ch: any) => (
-              <ChallengeCard key={ch.id} challenge={ch} />
-            ))}
-          </div>
-        )}
-
-        {/* OPPORTUNITÉS TAB */}
-        {activeTab === "opportunites" && (
-          <div className="flex flex-wrap gap-6 mb-12">
-            {opportunites.map((opp: any) => (
-              <OpportuniteCard key={opp.id} opp={opp} />
-            ))}
-          </div>
-        )}
+        {activeTab === "about" && <TabAbout entreprise={entreprise} total={total} />}
+        {activeTab === "challenges" && <TabChallenges id={id} isOwner={isOwner} />}
+        {activeTab === "opportunites" && <TabOpportunites id={id} />}
       </div>
-
-      <BottomBar/>
     </div>
   );
 }

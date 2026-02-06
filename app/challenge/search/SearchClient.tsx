@@ -116,8 +116,7 @@ export default function SearchClient() {
           </div>
         )}
       </section>
-      <BottomBar/>
-
+     
       <BackToTop/>
     </div>
   );

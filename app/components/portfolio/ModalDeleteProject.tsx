@@ -6,12 +6,14 @@ interface Props {
   project: any;
   onClose: () => void;
   onConfirm: () => void;
+  loading:Boolean;
 }
 
 export default function ModalDeleteProject({
   project,
   onClose,
   onConfirm,
+  loading
 }: Props) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto pt-32">
@@ -29,7 +31,7 @@ export default function ModalDeleteProject({
             className="px-4 py-2 bg-red-600 text-white rounded"
             onClick={onConfirm}
           >
-            Supprimer
+           {loading ? 'En cours...' : ' Supprimer'}
           </button>
         </div>
       </div>

@@ -2,6 +2,8 @@ import Link from 'next/link';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const WHATSAPP_GROUP_LINK =
+  "https://chat.whatsapp.com/KZDescNoqkgKqREqCKg34Q?mode=ems_copy_t";
 
   return (
     <footer className="bg-gray-900 text-white">
@@ -10,7 +12,7 @@ export default function Footer() {
           
           {/* Logo/Titre */}
           <div className="col-span-2 md:col-span-2 space-y-4">
-            <h3 className="text-3xl font-bold text-orange-500">
+            <h3 className="text-3xl font-bold text-orange-700">
               TALENT INNOVANT
             </h3>
             <p className="text-gray-400 text-sm">
@@ -33,9 +35,9 @@ export default function Footer() {
           <div>
             <h4 className="text-lg font-semibold mb-3">Support</h4>
             <ul className="space-y-2 text-sm text-gray-400">
-              <li><Link href="/faq" className="hover:text-orange-500 transition">FAQ</Link></li>
-              <li><Link href="/contact" className="hover:text-orange-500 transition">Contact</Link></li>
-              <li><Link href="/terms" className="hover:text-orange-500 transition">Termes & Conditions</Link></li>
+              {/* <li><Link href="/faq" className="hover:text-orange-500 transition">FAQ</Link></li> */}
+              <li><Link href="#contact" className="hover:text-orange-500 transition">Contact</Link></li>
+              {/* <li><Link href="/terms" className="hover:text-orange-500 transition">Termes & Conditions</Link></li> */}
             </ul>
           </div>
 
@@ -43,8 +45,8 @@ export default function Footer() {
           <div>
             <h4 className="text-lg font-semibold mb-3">Communauté</h4>
             <ul className="space-y-2 text-sm text-gray-400">
-              <li><a href="#" target="_blank" rel="noopener noreferrer" className="hover:text-orange-500 transition">WhatsApp</a></li>
-              <li><a href="#" target="_blank" rel="noopener noreferrer" className="hover:text-orange-500 transition">LinkedIn</a></li>
+              <li><a href={WHATSAPP_GROUP_LINK} target="_blank" rel="noopener noreferrer" className="hover:text-orange-500 transition">WhatsApp</a></li>
+              {/* <li><a href="#" target="_blank" rel="noopener noreferrer" className="hover:text-orange-500 transition">LinkedIn</a></li> */}
             </ul>
           </div>
         </div>

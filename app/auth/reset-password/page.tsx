@@ -1,56 +1,120 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Eye, EyeOff, Lock, Loader2, CheckCircle2 } from "lucide-react";
+import { apiFetch } from "@/app/lib/api";
+import toast, { Toaster } from "react-hot-toast";
 
-export default function ResetPassword() {
+export default function ResetPasswordPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  const email = searchParams.get("email");
+  const token = searchParams.get("token");
+
+  const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!email || !token) {
+      toast.error("Lien de réinitialisation invalide ou expiré.");
+    }
+  }, [email, token]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (password.length < 6) {
+      return toast.error("Le mot de passe doit faire au moins 6 caractères");
+    }
+
+    if (password !== confirmPassword) {
+      return toast.error("Les mots de passe ne correspondent pas");
+    }
+
+    try {
+      setLoading(true);
+      const res = await apiFetch("/change-password", {
+        method: "POST",
+        body: JSON.stringify({ email, token, password }),
+      });
+
+      if (res?.statut === 200) {
+        toast.success("Mot de passe modifié avec succès !");
+        setTimeout(() => router.replace("/auth/login"), 2000);
+      } else {
+        toast.error(res?.message || "Lien invalide ou expiré");
+      }
+    } catch (error) {
+      toast.error("Erreur de connexion au serveur");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full bg-white shadow-lg rounded-2xl p-8">
-
-        <h2 className="text-2xl font-semibold text-center text-gray-800">
-          Nouveau mot de passe
-        </h2>
-
-        <p className="text-gray-600 text-center mt-3">
-          Entrez votre nouveau mot de passe pour finaliser la réinitialisation.
-        </p>
-
-        <div className="mt-6 space-y-4">
-          <div>
-            <label className="block text-sm">Nouveau mot de passe</label>
-            <input
-              type="password"
-              className="w-full mt-1 p-3 border rounded-lg"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm">Confirmer le mot de passe</label>
-            <input
-              type="password"
-              className="w-full mt-1 p-3 border rounded-lg"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-            />
-          </div>
+    <div className="h-screen w-full bg-gray-50 flex items-center justify-center px-3">
+      {/* <Toaster /> */}
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-md p-6 py-8">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-extrabold text-gray-900">
+            Nouveau <span className="text-orange-700">Mot de passe</span>
+          </h1>
+          <p className="text-gray-500 mt-2 text-sm">
+            Créez un mot de passe robuste pour protéger votre compte
+          </p>
         </div>
 
-        <button
-          className="w-full bg-orange-500 text-white py-3 rounded-lg mt-6"
-        >
-          Réinitialiser
-        </button>
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Nouveau Password */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nouveau mot de passe
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+          </div>
 
-        <p className="text-center text-sm mt-4">
-          <a href="/auth/login" className="text-orange-500 underline">
-            Retour à la connexion
-          </a>
-        </p>
+          {/* Confirmation */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Confirmer le mot de passe
+            </label>
+            <input
+              type="password"
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading || !token}
+            className="w-full py-3 flex items-center justify-center gap-2 bg-orange-700 text-white font-semibold rounded-xl hover:bg-orange-600 transition shadow-lg disabled:opacity-60"
+          >
+            {loading ? <Loader2 className="animate-spin" size={20} /> : <CheckCircle2 size={18} />}
+            Réinitialiser le mot de passe
+          </button>
+        </form>
       </div>
     </div>
   );

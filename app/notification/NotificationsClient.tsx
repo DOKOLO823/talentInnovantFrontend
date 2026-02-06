@@ -1,154 +1,175 @@
-// app/notifications/NotificationsClient.tsx
-
 "use client";
 
-import { useState, useMemo } from "react"; // useMemo ajouté pour le tri
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { Trash2, Info, X, CheckCircle } from "lucide-react";
-import Navbar from "../components/Navbar";
-import BottomBar from "../components/BottomBar";
+import { X, CheckCircle, Loader2, Bell } from "lucide-react";
 import BackButton from "../components/BackButton";
+import { apiFetch } from "@/app/lib/api";
+import toast, { Toaster } from "react-hot-toast";
 
-// Types pour la clarté - 'read' est supprimé
 interface Notification {
   id: number;
-  message: string;
+  details: string;
   date: string;
-  href: string;
+  lien: string;
 }
 
-interface NotificationsClientProps {
-  initialNotifications: Notification[];
-}
+const getGroupTitle = (dateString: string): string => {
+  const date = new Date(dateString.includes('Z') || dateString.includes('+') ? dateString : `${dateString.replace(' ', 'T')}Z`);
+  const now = new Date();
+  
+  const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
 
-/**
- * Fonction utilitaire native pour formater la date en "il y a X temps"
- */
-const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-    const minutes = Math.floor(diffInSeconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
-    const weeks = Math.floor(days / 7);
-
-    if (diffInSeconds < 60) return "à l'instant";
-    if (minutes < 60) return `il y a ${minutes} minute${minutes > 1 ? 's' : ''}`;
-    if (hours < 24) return `il y a ${hours} heure${hours > 1 ? 's' : ''}`;
-    if (days < 7) return `il y a ${days} jour${days > 1 ? 's' : ''}`;
-    if (weeks < 4) return `il y a ${weeks} semaine${weeks > 1 ? 's' : ''}`;
-    
-    return date.toLocaleDateString('fr-FR', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    });
+  if (diffInDays === 0 && date.getDate() === now.getDate()) return "Aujourd'hui";
+  if (diffInDays <= 1 && date.getDate() !== now.getDate()) return "Hier";
+  if (diffInDays < 7) return "Cette semaine";
+  
+  return date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
 };
 
-/**
- * Composant de Carte de Notification (Design uniforme et sans gestion de lecture)
- */
-function NotificationCard({ notification, onDelete }: { notification: Notification, onDelete: (id: number) => void }) {
-  
+const formatTime = (dateString: string): string => {
+    const date = new Date(dateString.includes('Z') || dateString.includes('+') ? dateString : `${dateString.replace(' ', 'T')}Z`);
+    return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+};
+
+function NotificationCard({ notification, onDelete }: { notification: Notification, onDelete: (id: number) => Promise<void> }) {
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleAction = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isDeleting) return;
+    
+    setIsDeleting(true);
+    await onDelete(notification.id);
+    setIsDeleting(false);
+  };
+
   return (
-    <Link 
-      href={notification.href}
-      className={`
-        relative flex items-center py-4 md:py-5 border-b last:border-b-0 transition-all duration-300
-        bg-white hover:bg-gray-50 
-        cursor-pointer mb-3
-      `}
-    >
-      {/* Trait vertical Orange-700 (pour le style) */}
-      <div className="absolute left-0 top-0 bottom-0 w-1 bg-orange-700 rounded-l-lg"></div>
-
-      {/* Contenu de la notification (Style uniforme) */}
-      <div className="flex-grow ml-3 md:ml-4">
-        <p className="text-base font-semibold text-gray-900">
-          {notification.message}
-        </p>
-        <p className="text-xs mt-1 text-gray-500">
-          {formatDate(notification.date)}
-        </p>
-      </div>
-
-      {/* Bouton de Suppression - Clic nécessite e.stopPropagation() pour éviter la navigation du Link */}
-      <button 
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(notification.id); }} 
-        className="ml-4 p-2 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0 opacity-70 hover:opacity-100"
-        aria-label={`Supprimer la notification ${notification.id}`}
-        title="Supprimer"
+    <div className="group relative transition-all duration-300 bg-white hover:bg-gray-50 border-b border-gray-300 last:border-b-0 overflow-hidden">
+      {/* Trait orange à gauche comme dans la version initiale */}
+      <div className="absolute left-0 top-0 bottom-0 w-1 bg-orange-700"></div>
+      
+      <Link 
+        href={notification.lien || "#"}
+        className="flex items-start pb-4 pt-1 md:py-5 ml-3 md:ml-4 px-1"
       >
-        <X size={18} />
-      </button>
-    </Link>
+        <div className="flex flex-col items-start w-full pr-1">
+        
+          <div className="flex flex-row justify-between w-full mb-1">
+            <span></span>
+            <button 
+              onClick={handleAction} 
+              disabled={isDeleting}
+              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors disabled:cursor-not-allowed"
+            >
+              {isDeleting ? <Loader2 size={18} className="animate-spin text-orange-700" /> : <X size={18} />}
+            </button>
+          </div>
+
+          <div>
+            <p className="text-base font-semibold text-gray-900 text-[15px] leading-snug">
+              {notification.details}
+            </p>
+            <p className="text-xs mt-1 text-gray-500 font-medium">
+              {formatTime(notification.date)}
+            </p>
+          </div>
+        </div>
+      </Link>
+    </div>
   );
 }
 
+export default function NotificationsClient() {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
 
-/**
- * Composant Client Principal de la Page Notifications
- */
-export default function NotificationsClient({ initialNotifications }: NotificationsClientProps) {
-  const [notifications, setNotifications] = useState(initialNotifications);
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const res = await apiFetch("/notifications", { method: "GET" });
+        if (res?.statut === 200) {
+          setNotifications(res.notifications);
+        }
+        await apiFetch("/notifications/nonlues/reset", { method: "GET" });
+      } catch (error) {
+        console.error("Erreur notifications:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
 
-  // Tri des notifications une seule fois par date la plus récente en haut
-  const sortedNotifications = useMemo(() => {
-    return [...notifications].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const groupedNotifications = useMemo(() => {
+    const sorted = [...notifications].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const groups: { [key: string]: Notification[] } = {};
+    
+    sorted.forEach(n => {
+      const title = getGroupTitle(n.date);
+      if (!groups[title]) groups[title] = [];
+      groups[title].push(n);
+    });
+    
+    return groups;
   }, [notifications]);
 
-  // LOGIQUE DE SUPPRESSION
-  const handleDelete = (idToDelete: number) => {
-    setNotifications(prev => prev.filter(n => n.id !== idToDelete));
-  };
-  
-  // LOGIQUE DE SUPPRESSION TOUT
-  const handleDeleteAll = () => {
-    setNotifications([]);
+  const handleDelete = async (idToDelete: number) => {
+    try {
+      const res = await apiFetch(`/notification/delete/${idToDelete}`, { method: "GET" });
+      if (res?.statut === 200) {
+        setNotifications(prev => prev.filter(n => n.id !== idToDelete));
+        toast.success(res?.message || "Notification supprimée");
+      } else {
+        toast.error(res?.message || "Impossible de supprimer");
+      }
+    } catch (error) {
+      toast.error("Erreur réseau");
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 pt-22 pb-24">
-        <Navbar/>
+   <div className="min-h-screen bg-gray-100 pt-24 pb-24">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-         <BackButton m={4} />
+        <Toaster position="top-center" />
+        <BackButton m={4} />
         
-        {/* En-tête de la page */}
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-            Notifications 
-            {/* L'affichage d'un badge de comptage n'a plus de sens sans l'état 'read', on le retire. */}
-          </h1>
-          
-          {/* Boutons d'action : Il ne reste que Supprimer Tout */}
-         
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">Notifications</h1>
         </div>
 
-        {/* Conteneur des notifications */}
-        <div className="rounded-xl overflow-hidden divide-y divide-gray-200 border border-gray-100">
-          
-          {sortedNotifications.length > 0 ? (
-            sortedNotifications.map(n => (
-              <NotificationCard 
-                key={n.id} 
-                notification={n} 
-                onDelete={handleDelete} 
-                // onMarkRead n'est plus nécessaire ici
-              />
-            ))
-          ) : (
-            <div className="p-10 text-center text-gray-500">
-              <CheckCircle size={40} className="mx-auto mb-3 text-green-500" />
-              <p className="text-xl font-medium">Votre boîte est vide !</p>
-              <p className="text-sm">Aucune notification à afficher pour l'instant.</p>
+        {loading ? (
+          <div className="flex py-32 justify-center bg-white rounded-xl shadow-sm border">
+            <Loader2 className="animate-spin text-orange-700" size={32} />
+          </div>
+        ) : notifications.length > 0 ? (
+          <div className="space-y-10">
+            {Object.entries(groupedNotifications).map(([title, items]) => (
+              <div key={title} className="relative">
+                {/* TITRE DE GROUPE STICKY (Effet WhatsApp) */}
+                <h2 className="sticky top-0 z-20 py-2 bg-gray-100 text-[15px] font-bold text-gray-500 first-letter:uppercase tracking-[0.2em] ml-1">
+                  {title}
+                </h2>
+                
+                <div className="mt-2 rounded-xl overflow-hidden shadow-sm border border-gray-100 divide-y divide-gray-100 bg-white">
+                  {items.map(n => (
+                    <NotificationCard key={n.id} notification={n} onDelete={handleDelete} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="p-16 text-center bg-white rounded-xl border border-gray-200">
+            <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle size={32} className="text-green-500" />
             </div>
-          )}
-        </div>
-        
+            <p className="text-xl font-medium text-gray-900">Votre boîte est vide !</p>
+            <p className="text-sm text-gray-500 mt-1">Aucune notification à afficher pour l'instant.</p>
+          </div>
+        )}
       </div>
-      <BottomBar/>
     </div>
   );
 }

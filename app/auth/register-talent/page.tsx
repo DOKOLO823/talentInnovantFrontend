@@ -5,6 +5,7 @@ import { apiFetch } from "@/app/lib/api";
 import domaines from "@/domaines.json";
 import { useRouter } from "next/navigation";
 import BackButton from "@/app/components/BackButton";
+import { ArrowLeft } from "lucide-react";
 
 export default function Register() {
   const router = useRouter();
@@ -151,10 +152,9 @@ export default function Register() {
 
   return (
    <div className="w-full h-full">
-   <span className="relative top-8">  <BackButton/> </span>
-     <div className="min-h-screen flex bg-white items-center justify-center bg-gray-50 px-4 py-6">
-      
-      <div className="w-full max-w-lg shadow-lg rounded-2xl p-8">
+     <div className="min-h-screen flex flex-col bg-white items-center justify-center bg-gray-50 py-6">
+      <span className="float-left w-full pl-4">  <BackButton m={0}/> </span>
+      <div className="w-full max-w-lg shadow-lg rounded-2xl p-6">
         
         {/* STEP INDICATOR */}
         <div className="flex justify-center mb-6">
@@ -167,6 +167,7 @@ export default function Register() {
         <h2 className="text-2xl font-semibold text-center text-gray-900 mb-2">
           Créez votre compte Talent
         </h2>
+        <div className="w-full text-center text-xs relative -top-2">C'est simple et rapide !</div>
 
         {/* Message d'erreur général */}
         {errorMessage && (
@@ -194,7 +195,7 @@ export default function Register() {
                     value={form.nom}
                     onChange={(e) => handleChange("nom", e.target.value)}
                   />
-                  {errors.nom && <p className="text-red-500 text-sm">{errors.nom}</p>}
+                  {errors.nom && <span className="text-red-500 text-sm">{errors.nom}</span>}
                 </div>
 
                 <div>
@@ -205,7 +206,7 @@ export default function Register() {
                     value={form.email}
                     onChange={(e) => handleChange("email", e.target.value)}
                   />
-                  {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
+                  {errors.email && <span className="text-red-500 text-sm">{errors.email}</span>}
                 </div>
 
                 <div>
@@ -217,7 +218,7 @@ export default function Register() {
                     onChange={(e) => handleChange("password", e.target.value)}
                   />
                   {errors.password && (
-                    <p className="text-red-500 text-sm">{errors.password}</p>
+                    <span className="text-red-500 text-sm">{errors.password}</span>
                   )}
                 </div>
 
@@ -230,12 +231,12 @@ export default function Register() {
                     onChange={(e) => handleChange("confirm", e.target.value)}
                   />
                   {errors.confirm && (
-                    <p className="text-red-500 text-sm">{errors.confirm}</p>
+                    <span className="text-red-500 text-sm">{errors.confirm}</span>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm">Téléphone</label>
+                  <label className="block text-sm">Téléphone (Whatsapp de préférence)</label>
                   <input
                     type="text"
                     className="w-full mt-1 p-3 border rounded-lg"
@@ -243,7 +244,7 @@ export default function Register() {
                     onChange={(e) => handleChange("telephone", e.target.value)}
                   />
                   {errors.telephone && (
-                    <p className="text-red-500 text-sm">{errors.telephone}</p>
+                    <span className="text-red-500 text-sm">{errors.telephone}</span>
                   )}
                 </div>
 
@@ -271,7 +272,7 @@ export default function Register() {
                 {/* DOMAINE PRINCIPAL */}
                 <div>
                   <label className="block text-sm font-medium">
-                    Domaine principal
+                    Votre domaine principal
                   </label>
                   <select
                     className="w-full mt-1 p-3 border rounded-lg"
@@ -288,9 +289,9 @@ export default function Register() {
                     ))}
                   </select>
                   {errors.domaine_principal && (
-                    <p className="text-red-500 text-sm">
+                    <span className="text-red-500 text-sm">
                       {errors.domaine_principal}
-                    </p>
+                    </span>
                   )}
                 </div>
 
@@ -317,9 +318,9 @@ export default function Register() {
                   </div>
 
                   {errors.domaines_secondaires && (
-                    <p className="text-red-500 text-sm mt-1">
+                    <span className="text-red-500 text-sm mt-1">
                       {errors.domaines_secondaires}
-                    </p>
+                    </span>
                   )}
 
                   {/* Selected */}
@@ -346,14 +347,14 @@ export default function Register() {
                   <button
                     onClick={goBack}
                     disabled={loading}
-                    className="py-1 px-2 md:px-5 md:py-3 border rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+                    className="py-1 w-1/4 px-2 md:px-5 md:py-3 border rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
                   >
                     Retour
                   </button>
                   <button
                     onClick={handleSubmit}
                     disabled={loading}
-                    className="text-md md:text-xl py-1 px-2 md:px-5 md:py-3 bg-orange-700 text-white rounded-lg hover:bg-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="text-md w-2/3 md:text-xl py-2 px-2 md:px-5 md:py-3 bg-orange-700 text-white rounded-lg hover:bg-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? "Création..." : "Créer mon compte"}
                   </button>
@@ -369,6 +370,17 @@ export default function Register() {
             Se connecter
           </a>
         </p>
+
+        <p className="p-2 w-full flex flex-row justify-center mt-3">
+          <a
+            href="/"
+            className="text-orange-700 text-xs flex flex-row items-center gap-x-2 hover:underline font-semibold"
+          >
+            <ArrowLeft size={15}/> Retour à l'accueil
+          </a>
+        </p>
+
+
       </div>
     </div>
    </div>

@@ -7,13 +7,14 @@ interface Props {
   project: any;
   onClose: () => void;
   onSubmit: (data: any) => void;
+  loading:Boolean;
 }
 
-export default function ModalEditProject({ project, onClose, onSubmit }: Props) {
+export default function ModalEditProject({ project, onClose, onSubmit, loading }: Props) {
   const [form, setForm] = useState({
     titre: project.titre || "",
     description: project.description || "",
-    technologie: (project.technologie || []).join(", "),
+    technologie: (project.technologie || ""),
     year: project.year || "",
     link: project.link || "",
   });
@@ -40,24 +41,23 @@ export default function ModalEditProject({ project, onClose, onSubmit }: Props) 
   };
 
   const handleSubmit = () => {
-    // On envoie les données: pour l'instant on passe les previews en tant que "medias"
+    // MODIFICATION ICI : On envoie "mediasFiles" (les fichiers) et non "previews"
     onSubmit({
       ...form,
-      medias: previews,
-      technologie: form.technologie.split(",").map((t:any) => t.trim()),
+      medias: mediasFiles, // On envoie les vrais objets File
+      technologie: form.technologie,
     });
 
-    // revoke created object URLs to avoid memory leaks
-    mediasFiles.forEach((f) => {
-      const url = URL.createObjectURL(f);
-      URL.revokeObjectURL(url);
+    // Nettoyage des URLs pour la mémoire
+    previews.forEach((url) => {
+        if (url.startsWith('blob:')) URL.revokeObjectURL(url);
     });
   };
 
   return (
     // overlay : on autorise le scroll (overflow-auto) pour les écrans petits
     <div
-      className="fixed inset-0 z-50 bg-black/50 flex items-start justify-center overflow-y-auto"
+      className="fixed inset-0 z-[100] bg-black/50 flex items-start justify-center overflow-y-auto"
       aria-modal="true"
       role="dialog"
     >
@@ -160,7 +160,7 @@ export default function ModalEditProject({ project, onClose, onSubmit }: Props) 
                   onClick={handleSubmit}
                   className="w-full bg-orange-700 text-white py-2 rounded-lg hover:bg-orange-800 transition"
                 >
-                  Enregistrer les modifications
+                  {loading ? 'Modification...' : 'Enregistrer les modifications'}
                 </button>
               </div>
             </div>

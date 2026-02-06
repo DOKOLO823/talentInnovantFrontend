@@ -50,10 +50,10 @@ export default function FiltreChallenge() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-6 md:mb-10">
             <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900">
-              Trouvez votre prochain défi
+              Trouvez votre prochain challenge
             </h2>
             <p className="text-gray-500 text-sm md:text-base mt-2"> 
-              Explorez les opportunités par domaine ou par ville 
+              Explorez les challenge du moment par domaine ou par ville 
             </p>
           </div>
 
@@ -118,7 +118,7 @@ export default function FiltreChallenge() {
               className="flex items-center justify-center px-8 py-3 md:py-4 bg-orange-700 text-white font-bold rounded-xl hover:bg-orange-800 active:scale-95 transition-all shadow-lg shadow-orange-700/20"
               
             >
-              <Search className="h-5 w-5 md:mr-2" />
+              <Search className="h-5 w-5 mr-2 md:mr-2" />
               <span className="md:inline">Rechercher</span>
             </Link>
           </div>

@@ -1,82 +1,107 @@
 [
     {
         "id": 1,
-        "nom": "Éducation",
-        "description": "Projets liés à l’apprentissage numérique, e-learning, orientation scolaire et formation en ligne."
+        "nom": "Informatique et Télécommunications",
+        "description": "Développement logiciel, réseaux, cybersécurité, télécoms, cloud computing et maintenance informatique"
     },
     {
         "id": 2,
-        "nom": "Santé",
-        "description": "Solutions de e-santé, télémédecine, suivi médical et gestion hospitalière."
+        "nom": "Technologies Émergentes (IA, IoT et Robotique)",
+        "description": "Intelligence artificielle, internet des objets (IoT), robotique industrielle, drones et automatisation"
     },
     {
         "id": 3,
-        "nom": "Agriculture",
-        "description": "AgriTech, irrigation intelligente, suivi des cultures et valorisation agricole."
+        "nom": "Design, Arts et Humanités Numériques",
+        "description": "Design graphique, UI/UX, multimédia, culture numérique, édition digitale et arts visuels"
     },
     {
         "id": 4,
-        "nom": "Environnement",
-        "description": "Protection de l’environnement, recyclage, énergies vertes et gestion des déchets."
+        "nom": "Génie Civil, BTP et Architecture",
+        "description": "Construction d'infrastructures, architecture, urbanisme et gestion de chantiers."
     },
     {
         "id": 5,
-        "nom": "Énergie",
-        "description": "Production et distribution d’énergie, énergies renouvelables, électrification rurale."
+        "nom": "Énergie, Électricité et Énergies Renouvelables",
+        "description": "Production et distribution d’énergie, solaire, éolien, hydroélectricité et efficacité énergétique"
     },
     {
         "id": 6,
-        "nom": "Inclusion financière",
-        "description": "FinTech, mobile money, solutions d’épargne, microcrédit et services financiers digitaux."
+        "nom": "Industrie, Mécanique et Électronique",
+        "description": "Maintenance industrielle, électronique embarquée, métallurgie, industrie manufacturière"
     },
     {
         "id": 7,
-        "nom": "Entrepreneuriat & Emploi",
-        "description": "Accompagnement des startups, plateformes d’emploi et innovation entrepreneuriale."
+        "nom": "Hydraulique et Maîtrise des Eaux",
+        "description": "Gestion des ressources en eau, assainissement, forage, irrigation et génie rural"
     },
     {
         "id": 8,
-        "nom": "Gouvernance & Sécurité",
-        "description": "E-gouvernance, participation citoyenne, sécurité des données et transparence."
+        "nom": "Agriculture, Élevage et Pêche",
+        "description": "Agro-industrie, transformation, culture vivrière, aquaculture et élevage moderne"
     },
     {
         "id": 9,
-        "nom": "Transport & Mobilité",
-        "description": "Covoiturage, logistique, mobilité urbaine, transport intelligent."
+        "nom": "Génie Textile et Cuir",
+        "description": "Conception de mode, industrie textile, transformation du cuir et artisanat industriel"
     },
     {
         "id": 10,
-        "nom": "Culture & Tourisme",
-        "description": "Valorisation du patrimoine, tourisme numérique et initiatives culturelles."
+        "nom": "Commerce, Transport et Logistique",
+        "description": "Import-export, supply chain, transit, transport multimodal et e-commerce"
     },
     {
         "id": 11,
-        "nom": "Commerce & E-commerce",
-        "description": "Marketplaces, logistique, achats et ventes en ligne."
+        "nom": "Finance, Banque et Assurance",
+        "description": "Fintech, microfinance, comptabilité, audit et marchés financiers"
     },
     {
         "id": 12,
-        "nom": "Technologie & IA",
-        "description": "Développement logiciel, intelligence artificielle, cybersécurité et innovation numérique."
+        "nom": "Santé, Biotechnologies et Bien-être",
+        "description": "Médecine, pharmacie, santé publique, nutrition et cosmétique"
     },
     {
         "id": 13,
-        "nom": "Eau & Hygiène",
-        "description": "Accès à l’eau potable, assainissement et hygiène communautaire."
+        "nom": "Éducation, Formation et Recherche",
+        "description": "Enseignement supérieur, EdTech, recherche scientifique et formation professionnelle"
     },
     {
         "id": 14,
-        "nom": "Social & Humanitaire",
-        "description": "Inclusion sociale, égalité de genre, lutte contre la pauvreté et handicap."
+        "nom": "Tourisme, Hôtellerie et Événementiel",
+        "description": "Restauration, gestion hôtelière, promotion culturelle et organisation d'événements"
     },
     {
         "id": 15,
-        "nom": "Communication & Médias",
-        "description": "Médias numériques, création de contenu, sensibilisation et diffusion d’informations."
+        "nom": "Environnement et Développement Durable",
+        "description": "Économie circulaire, gestion des déchets, RSE et protection de la biodiversité"
     },
     {
         "id": 16,
-        "nom": "Innovation & Multisectoriel",
-        "description": "Projets transversaux combinant plusieurs domaines d’innovation technologique ou sociale."
+        "nom": "Sciences de la Terre et du Climat",
+        "description": "Météorologie, climatologie, hydrologie, pédologie (étude des sols) et prévention des risques naturels"
+    },
+    {
+        "id": 17,
+        "nom": "Mines et Ressources Naturelles",
+        "description": "Extraction minière, géologie et gestion des ressources du sous-sol"
+    },
+    {
+        "id": 18,
+        "nom": "Communication, Marketing et Médias",
+        "description": "Publicité, marketing digital, community management, journalisme, relations publiques et événementiel."
+    },
+    {
+        "id": 19,
+        "nom": "Industrie du Bois et Foresterie",
+        "description": "Exploitation forestière durable, transformation du bois, ébénisterie et sylviculture."
+    },
+    {
+        "id": 20,
+        "nom": "Droit, Gouvernance et Administration",
+        "description": "Conseil juridique, droit des affaires, gestion publique et ressources humaines."
+    },
+    {
+        "id": 21,
+        "nom": "Autres",
+        "description": "Artisanat, innovation sociale et secteurs émergents non classés"
     }
 ]

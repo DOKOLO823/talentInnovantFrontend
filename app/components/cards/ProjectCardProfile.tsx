@@ -1,15 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   MoreVertical, Edit, Trash2, Flag, Share2, MessageCircle,
   Maximize2, Trophy, Flame, ChevronDown, ChevronUp,
-  X, MessageSquare, Facebook, AlertTriangle, PencilLine
+  X, MessageSquare, Facebook, AlertTriangle, PencilLine,
+  Download,
+  FileText,
+  File
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import apifile from "@/app/lib/apifile";
 
 /* ================= COMPOSANTS AUXILIAIRES ================= */
 
@@ -48,194 +52,245 @@ function ConfirmationModal({ isOpen, onClose, onConfirm }: any) {
   );
 }
 
-function ShareModal({ isOpen, onClose, projectTitle }: any) {
-  if (!isOpen) return null;
-  const shareUrl = typeof window !== "undefined" ? window.location.href : "";
-  const handleCopy = () => { navigator.clipboard.writeText(shareUrl); alert("Lien copié !"); onClose(); };
-  return (
-    <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
-      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-2xl p-6 w-full max-w-md">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-bold">Partager</h3>
-          <button onClick={onClose} className="p-2 bg-gray-100 rounded-full"><X size={20} /></button>
-        </div>
-        <div className="flex gap-4 mb-6 text-center">
-          <a href={`https://wa.me/?text=${encodeURIComponent(projectTitle + " " + shareUrl)}`} target="_blank" className="flex-1 flex flex-col items-center gap-2">
-            <div className="p-4 bg-green-500 text-white rounded-2xl w-full flex justify-center"><MessageSquare /></div>
-            <span className="text-xs">WhatsApp</span>
-          </a>
-          <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`} target="_blank" className="flex-1 flex flex-col items-center gap-2">
-            <div className="p-4 bg-blue-600 text-white rounded-2xl w-full flex justify-center"><Facebook /></div>
-            <span className="text-xs">Facebook</span>
-          </a>
-        </div>
-        <div className="flex border rounded-xl overflow-hidden mt-4">
-          <input readOnly value={shareUrl} className="flex-1 p-3 text-xs truncate outline-none" />
-          <button onClick={handleCopy} className="bg-orange-700 text-white px-4 text-xs font-bold">COPIER</button>
-        </div>
-      </motion.div>
-    </div>
-  );
-}
-
-function EditScoreModal({ isOpen, onClose, project, onSave }: any) {
-  const [newScore, setNewScore] = useState(project.notefinale || "");
-  const [error, setError] = useState("");
-
-  if (!isOpen) return null;
-
-  const handleValidate = () => {
-    if (newScore === "" || newScore === null) {
-      setError("La note est obligatoire");
-      return;
-    }
-    const val = parseFloat(newScore);
-    if (isNaN(val)) {
-      setError("Veuillez entrer un nombre valide");
-      return;
-    }
-    setError("");
-    onSave(project.id, val);
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/60 z-[120] flex items-center justify-center p-4 backdrop-blur-sm">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="font-bold text-lg">Modifier la note</h3>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full"><X size={20}/></button>
-        </div>
-        <div className="flex items-center gap-4 mb-6 p-3 bg-gray-50 rounded-2xl">
-          <Image src={project.author.avatar} width={50} height={50} alt="avatar" className="rounded-full object-cover h-12 w-12" />
-          <div>
-            <p className="font-bold text-sm">{project.author.name}</p>
-            <p className="text-xs text-gray-500">{project.author.role}</p>
-          </div>
-        </div>
-        <div className="mb-6">
-          <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Nouvelle Note</label>
-          <input 
-            type="number" step="any" value={newScore}
-            onChange={(e) => { setNewScore(e.target.value); setError(""); }}
-            className={`w-full p-4 rounded-xl border-2 outline-none text-xl font-bold text-center ${error ? 'border-red-500 bg-red-50' : 'border-gray-100 focus:border-orange-500'}`}
-          />
-          {error && <p className="text-red-500 text-[10px] font-bold mt-1 uppercase">{error}</p>}
-        </div>
-        <button onClick={handleValidate} className="w-full py-4 bg-orange-700 text-white rounded-2xl font-bold active:scale-95 transition-transform">
-          Confirmer la modification
-        </button>
-      </motion.div>
-    </div>
-  );
-}
-
 /* ================= COMPOSANT PRINCIPAL ================= */
 
 export default function ProjectCardProfile({ project, challenge }: any) {
-  const [openMenu, setOpenMenu] = useState(false);
+  // const [openMenu, setOpenMenu] = useState(false);
   const [showAllFields, setShowAllFields] = useState(false);
-  const [openShare, setOpenShare] = useState(false);
+  // const [openShare, setOpenShare] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
-  const [showEditScore, setShowEditScore] = useState(false);
+  const [isFullscreenPreview, setIsFullscreenPreview] = useState<{url: string, label: string} | null>(null);
 
   const router = useRouter();
   const params = useParams();
   const idchallenge = project.challenge?.id;
-
-  const handleSaveScore = (projectId: any, score: number) => {
-    console.log(`Note modifiée à ${score} pour le projet ID ${projectId}`);
-    setShowEditScore(false);
-  };
+  // console.log(project)
 
   const handleNavigateToReel = () => {
-    const query = new URLSearchParams({
+
+    if((project?.challenge?.typeevaluation!='vote' && project.notefinale) || (project?.challenge?.typeevaluation=='hybride')){
+
+       const query = new URLSearchParams({
       project: project.id.toString(),
-      talentId: project.author.id,
-      titre: project?.challenge?.name || "Challenge",
-      typeevaluation: project?.challenge?.typeevaluation || "vote",
-      resultatdisponible: project?.challenge?.resultatdisponible?.toString() || "non"
     }).toString();
-    router.push(`/challenge/${idchallenge}/reel-profil?${query}`);
+    router.push(`/challenge/${idchallenge}/reel?${query}`);
+
+    }
+   
   };
 
   const visibleResponses = showAllFields ? project.responses : (project.responses?.slice(0, 2) || []);
 
-  const renderResponse = (r: any) => {
-    const label = r.challenge_field.label;
-    const type = r.challenge_field.type;
-    const value = r.value;
-    const fileUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/${value}`;
+  function ResponseReadMore({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  const limit = 200;
+  if (!text || text.length <= limit) return <p className="text-gray-800 leading-relaxed text-[15px]">{text}</p>;
+  return (
+    <p className="text-gray-800 leading-relaxed text-[15px]">
+      {open ? text : text.slice(0, limit) + "..."}
+      <button onClick={() => setOpen(!open)} className="ml-2 text-orange-700 font-black text-[10px] uppercase tracking-wider">
+        {open ? "Réduire" : "Lire la suite"}
+      </button>
+    </p>
+  );
+}
 
-    if (type === "text") return <div className="mb-4"><p className="font-bold text-sm text-gray-950 mb-1">{label}</p><ReadMore text={value} /></div>;
-    
+
+ // 1. On crée un mini-composant interne pour gérer la logique vidéo propre
+const VideoPlayer = ({ src, label }: { src: string; label: string }) => {
+    const videoRef = React.useRef<HTMLVideoElement>(null);
+
+    React.useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (!entry.isIntersecting && videoRef.current) {
+                        videoRef.current.pause();
+                    }
+                });
+            },
+            { threshold: 0.2 }
+        );
+
+        if (videoRef.current) observer.observe(videoRef.current);
+        return () => observer.disconnect();
+    }, []);
+
+    const handlePlay = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+        document.querySelectorAll('video').forEach((vid) => {
+            if (vid !== e.currentTarget) vid.pause();
+        });
+    };
+
     return (
-      <div className="mb-4">
-        <p className="font-bold text-sm text-gray-950 mb-1">{label}</p>
-        {value.match(/\.(jpg|jpeg|png)$/i) ? (
-          <img src={fileUrl} className="rounded-xl w-full max-h-60 object-cover border" />
-        ) : value.match(/\.(mp4|mov)$/i) ? (
-          <video controls className="rounded-xl w-full max-h-60 bg-black"><source src={fileUrl} /></video>
-        ) : value.endsWith(".pdf") ? (
-          <a href={fileUrl} target="_blank" className="text-orange-700 underline text-sm">📄 Ouvrir le PDF</a>
-        ) : (
-          <a href={fileUrl} target="_blank" className="text-orange-700 underline text-sm">📝 Télécharger le fichier</a>
-        )}
-      </div>
+        <video 
+            ref={videoRef}
+            controls 
+            onPlay={handlePlay}
+            controlsList="nodownload"
+            onContextMenu={(e) => e.preventDefault()}
+            className="rounded-2xl w-full h-[170px] aspect-video bg-black shadow-sm"
+        >
+            <source src={src} />
+        </video>
     );
-  };
+};
+
+const renderResponse = (resp: any) => {
+    const fieldData = resp.challenge_field || resp.field || {};
+    const { label, type } = fieldData;
+    
+    const value = resp.value;
+    if (!value) return null;
+
+    const fullUrl = value?.startsWith('http') ? value : `${apifile}/${value}`;
+    const isImage = value.match(/\.(jpg|jpeg|png|webp|gif)$/i);
+    const isVideo = value.match(/\.(mp4|mov|webm)$/i);
+    const isPDF = value.match(/\.pdf$/i);
+    const isDoc = value.match(/\.(docx|doc|pptx|ppt|xlsx|xls)$/i);
+    const isPreviewable = isPDF || isDoc;
+
+    if (type === "text" || type === "textarea" || type === "option") {
+        return (
+            <div className="mb-4 py-4 bg-white border border-slate-100 rounded-2xl">
+                <p className="text-[10px] font-black uppercase text-orange-600 mb-1 tracking-widest">
+                    {label || "Information"}
+                </p>
+                <ResponseReadMore text={value} />
+            </div>
+        );
+    }
+
+    return (
+        <div className="mb-6">
+            <p className="text-[10px] font-black text-orange-600 uppercase mb-2 ml-1">
+                {label || "Fichier joint"}
+            </p>
+            
+            {isVideo ? (
+                /* Utilisation du mini-composant ici */
+                <VideoPlayer src={fullUrl} label={label || "Vidéo"} />
+            ) : isImage ? (
+                <img src={fullUrl} className="rounded-2xl w-full object-cover border bg-white shadow-sm" alt={label} />
+            ) : isPreviewable ? (
+                <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between px-1">
+                        <div className="flex items-center gap-2">
+                            <div className="p-1.5 bg-orange-100 text-orange-600 rounded-lg">
+                                {isPDF ? <FileText size={14} /> : <File size={14} />}
+                            </div>
+                            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tight">Document</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-1">
+                            <button 
+                                onClick={() => setIsFullscreenPreview({ url: fullUrl, label: label || "Document" })}
+                                className="p-2 hover:bg-orange-100 text-orange-600 rounded-xl transition-all flex items-center gap-2 text-[10px] font-black uppercase"
+                            >
+                                <Maximize2 size={16} /> Agrandir
+                            </button>
+                            <a href={fullUrl} download className="p-2 hover:bg-slate-100 text-slate-400 rounded-xl">
+                                <Download size={16} />
+                            </a>
+                        </div>
+                    </div>
+
+                    <div className="relative w-full h-[300px] bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                        <iframe 
+                            src={isPDF ? `${fullUrl}#toolbar=0` : `https://docs.google.com/gview?url=${encodeURIComponent(fullUrl)}&embedded=true`} 
+                            className="w-full h-full border-none"
+                            title={label}
+                            loading="lazy"
+                        />
+                    </div>
+                </div>
+            ) : (
+                <a href={fullUrl} target="_blank" rel="noreferrer" className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-200">
+                    <span className="font-bold text-xs text-slate-700 truncate mr-2">{label || "Voir le fichier"}</span>
+                    <span className="text-[10px] text-orange-600 font-black uppercase whitespace-nowrap bg-orange-50 px-3 py-2 rounded-xl">Ouvrir</span>
+                </a>
+            )}
+        </div>
+    );
+};
+
 
   return (
-    <div className="relative bg-white rounded-2xl shadow border w-full max-w-xl mx-auto flex flex-col mb-6 p-1">
+    <div className={`relative bg-white rounded-2xl shadow border w-full max-w-xl mx-auto ${((project?.challenge?.typeevaluation == 'vote' && new Date(project?.challenge?.datefin) < new Date() ) || (project?.challenge?.typeevaluation != 'vote' && project?.challenge?.resultatdisponible == 1)) && (project?.challenge?.portee=='public') ? 'flex' : 'hidden'} flex-col mb-6 p-1`}>
       
       {/* HEADER USER & DROPDOWN */}
       <div className="flex justify-between p-4 pb-2">
-        <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push(`/profil-talent/${project.author.id}`)}>
-          <Image src={project.author.avatar} width={44} height={44} alt="avatar" className="rounded-full object-cover aspect-square" />
+        <div className="flex items-center gap-3 cursor-pointer">
+          <Image src={project.author.avatar ? project?.author?.avatar : "../assets/images/pp2.png"} width={44} height={44} alt="avatar" className="rounded-full object-cover aspect-square" />
           <div>
-            <p className="font-semibold hover:text-orange-600 transition-colors">{project.author.name}</p>
-            <p className="text-sm text-gray-600">{project.author.role}</p>
+            <p className="font-semibold hover:text-orange-600 transition-colors line-clamp-2">{project.author.name}</p>
+            <p className="text-sm text-gray-600 line-clamp-2">{project.author.role}</p>
           </div>
         </div>
-        <div className="relative">
-          <MoreVertical className="cursor-pointer text-gray-400 hover:text-gray-600" onClick={() => setOpenMenu(!openMenu)} />
-          {openMenu && (
-            <div className="absolute right-0 bg-white border shadow-xl rounded-xl w-44 z-20 py-1">
-              <button className="flex items-center gap-2 p-3 w-full hover:bg-gray-50 text-sm transition"><Edit size={16} /> Modifier</button>
-              <button onClick={() => { setShowConfirmDelete(true); setOpenMenu(false); }} className="flex items-center gap-2 p-3 w-full hover:bg-red-50 text-red-600 text-sm transition"><Trash2 size={16} /> Supprimer</button>
-              <button onClick={() => setOpenMenu(false)} className="flex items-center gap-2 p-3 w-full hover:bg-gray-50 text-sm transition"><Flag size={16} /> Signaler</button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* RANG / SCORE */}
-      <div className="px-4 flex items-center gap-6 text-gray-500 font-bold tracking-tight mb-2">
-        {project.rank && (
-          <span className="flex items-center gap-1 text-xs"><Trophy size={14} className="text-yellow-500" /> Rang final : <b className="text-gray-900">{project.rank}e</b></span>
-        )}
-        <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1 text-xs"><Flame size={14} className="text-orange-600" /> Note finale : <b className="text-gray-900">{project.notefinale ?? 'N/A'}</b></span>
-          <button onClick={() => setShowEditScore(true)} className="p-1.5 bg-gray-100 text-orange-700 hover:bg-orange-100 rounded-lg transition-all">
-            <PencilLine size={14} />
-          </button>
-        </div>
+      
       </div>
 
       {/* INFOS DU CHALLENGE LIÉ */}
       {project.challenge && (
         <div className="px-4">
           <Link href={`/challenge/${project.challenge.id}`} className="flex items-center gap-3 mb-3 p-2 bg-gray-50 rounded-xl hover:bg-gray-100 transition border border-gray-100">
-            <Image src={project.challenge.image} width={40} height={40} alt="challenge" className="rounded-lg object-cover" />
+            <Image src={project?.challenge?.image} width={40} height={40} alt="challenge" className="rounded-lg object-cover" />
             <div>
-              <p className="text-sm font-bold text-gray-800">{project.challenge.name}</p>
+              <p className="text-sm font-bold text-gray-800 line-clamp-2">{project?.challenge?.name}</p>
               <p className="text-xs text-gray-500 font-medium">Voir le challenge</p>
             </div>
           </Link>
         </div>
       )}
 
+      
+
       {/* CONTENT (RESPONSES) */}
-      <div className={`px-4 mt-2 transition-all ${showAllFields ? "max-h-[400px] overflow-y-auto" : ""}`}>
+      <div className={`px-4 mt-2 transition-all ${showAllFields ? "max-h-[230px] overflow-y-auto" : "overflow-y-auto max-h-[180px]"}`}>
+        
+         {((project?.challenge?.typeevaluation == 'jury' && project?.challenge?.resultatdisponible == 1) || (project?.challenge?.typeevaluation != 'jury')) && (
+  <div className="">
+   
+
+    {/* Grille de badges */}
+    <div className="grid grid-cols-2 gap-2 text-[11px] font-bold">
+      {/* Badge Rang */}
+      <div className="flex items-center gap-2 bg-white border border-gray-100 p-1 rounded-xl shadow-sm whitespace-nowrap">
+        <div className="bg-yellow-50 p-1.5 rounded-lg">
+          <Trophy size={14} className="text-yellow-600 shrink-0" />
+        </div>
+        <div className="flex flex-col">
+          <span className="text-[9px] text-gray-500 font-medium leading-none mb-0.5">Rang final</span>
+          <span className="text-gray-900 leading-none text-[12px]">{project?.rank || '-'}</span>
+        </div>
+      </div>
+
+      {/* Badge Score */}
+      <div className="flex items-center gap-2 bg-white border border-gray-100 p-1 rounded-xl shadow-sm whitespace-nowrap">
+        <div className="bg-orange-50 p-1.5 rounded-lg">
+          <Flame size={14} className="text-orange-600 shrink-0" />
+        </div>
+        <div className="flex flex-col">
+          <span className="text-[9px] text-gray-500 font-medium leading-none mb-0.5">{project?.challenge?.typeevaluation == 'vote' ? 'Score final' : 'Note finale'}</span>
+         
+          <div className="flex flex-row items-start justify-center gap-x-0.5">
+            <span className="text-gray-900 leading-none text-[12px]">
+             {project?.challenge?.typeevaluation == 'vote' || project?.challenge?.resultatdisponible == 0
+
+              ? project?.score?.toFixed(2)
+
+              : project?.notefinale ? project?.notefinale?.toFixed(2) : <span className="text-[10px]"> Aucune note<br/> attribuée </span>}
+          </span>
+          <span className="text-[9px]"> {project?.notefinale ? ' /20' : ''} </span>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
+
         {visibleResponses.map((r: any) => (
           <div key={r.id}>{renderResponse(r)}</div>
         ))}
@@ -250,21 +305,52 @@ export default function ProjectCardProfile({ project, challenge }: any) {
 
       {/* FOOTER */}
       <div className="px-4 py-3 flex justify-between items-center bg-gray-50/50 rounded-b-2xl">
-        <span className="text-xs font-bold text-gray-500">{project.votesCount || 0} vote(s)</span>
+        <span className="text-sm font-bold text-gray-500">{project.vote || 0} vote(s)</span>
         <div className="flex items-center gap-5">
           <button className="flex items-center gap-1.5 text-gray-600 hover:text-orange-700 transition">
-            <MessageCircle size={20} onClick={handleNavigateToReel} /> <span className="text-sm font-medium">12</span>
+            <MessageCircle size={15} onClick={handleNavigateToReel} /> <span className="text-xs font-medium">({project?.nombreCommentaire})</span>
           </button>
-          <button onClick={() => setOpenShare(true)} className="flex items-center gap-1.5 text-gray-600 hover:text-orange-700 transition">
-            <Share2 size={18} />
+          <button className="flex items-center gap-1.5 text-xs text-gray-600 hover:text-orange-700 transition">
+            <Share2 size={14} /> ({project?.partage})
           </button>
-          <Maximize2 className="text-orange-700 cursor-pointer hover:scale-110 transition" size={20} onClick={handleNavigateToReel} />
+          {
+            (project?.challenge?.typeevaluation!='vote' && project.notefinale) || (project?.challenge?.typeevaluation=='hybride') ?
+            <Maximize2 className="text-orange-700 cursor-pointer hover:scale-110 transition" size={20} onClick={handleNavigateToReel} />
+            : ''
+          }
         </div>
       </div>
 
-      <ShareModal isOpen={openShare} onClose={() => setOpenShare(false)} projectTitle={project.author.name} />
       <ConfirmationModal isOpen={showConfirmDelete} onClose={() => setShowConfirmDelete(false)} onConfirm={() => setShowConfirmDelete(false)} />
-      <EditScoreModal isOpen={showEditScore} onClose={() => setShowEditScore(false)} project={project} onSave={handleSaveScore} />
+      
+        {/* modal preview document sur grand ecran  */}
+      <AnimatePresence>
+  {isFullscreenPreview && (
+    <div className="fixed inset-0 z-[600] flex items-center justify-center p-0 md:p-4 backdrop-blur-md">
+      <motion.div 
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        onClick={() => setIsFullscreenPreview(null)}
+        className="absolute inset-0 bg-slate-900/95"
+      />
+      <motion.div 
+        initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+        className="relative w-full h-full bg-white md:rounded-[2rem] overflow-hidden flex flex-col shadow-2xl"
+      >
+        <div className="flex justify-between items-center p-4 border-b">
+          <p className="font-black text-slate-800 text-sm">{isFullscreenPreview.label}</p>
+          <button onClick={() => setIsFullscreenPreview(null)} className="p-2 bg-slate-100 hover:bg-red-50 hover:text-red-500 rounded-full">
+            <X size={20} />
+          </button>
+        </div>
+        <iframe 
+          src={isFullscreenPreview.url.match(/\.pdf$/i) ? isFullscreenPreview.url : `https://docs.google.com/gview?url=${encodeURIComponent(isFullscreenPreview.url)}&embedded=true`} 
+          className="w-full flex-1 border-none" 
+        />
+      </motion.div>
+    </div>
+  )}
+</AnimatePresence>
+
     </div>
   );
 }

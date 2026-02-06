@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Eye, EyeOff, LogIn } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, LogIn } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/app/lib/api";
 import { useAuth } from "@/app/context/AuthContext";
@@ -60,14 +60,17 @@ export default function LoginPage() {
       });
 
       // ❌ Identifiants incorrects
+      // console.log(res)
       if (res?.statut === 404) {
         setErrors({ general: res.message });
+        setLoading(false);
         return;
       }
 
       // ❌ Compte non activé
       if (res?.statut === 403) {
         setErrors({ general: res.message });
+        setLoading(false);
         return;
       }
 
@@ -91,8 +94,9 @@ export default function LoginPage() {
         general:
           "Une erreur est survenue. Vérifiez votre connexion internet.",
       });
-    } finally {
       setLoading(false);
+    } finally {
+      
     }
   };
 
@@ -100,10 +104,10 @@ export default function LoginPage() {
 
   return (
     <div className="h-full w-full bg-gray-50">
-     <span className="relative top-8"> <BackButton/> </span>
-      <div className="min-h-screen flex flex-col items-center justify-center px-3">
+     <span className="relative top-3"> <BackButton m={0}/> </span>
+      <div className="h-2/3 flex flex-col items-center justify-center px-3">
       
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-md p-6 py-8 relative -top-4">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-md p-6 py-8 relative">
         {/* Logo */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-extrabold text-gray-900">
@@ -171,7 +175,7 @@ export default function LoginPage() {
 
             <div className="text-right mt-2">
               <Link
-                href="/forgot-password"
+                href="/auth/forgot-password"
                 className="text-sm text-orange-700 hover:underline font-medium"
               >
                 Mot de passe oublié ?
@@ -206,6 +210,15 @@ export default function LoginPage() {
           >
             S’inscrire
           </Link>
+        </p>
+        
+        <p className="p-2 w-full flex flex-row justify-center mt-3">
+          <a
+            href="/"
+            className="text-orange-700 text-xs flex flex-row items-center gap-x-2 hover:underline font-semibold"
+          >
+            <ArrowLeft size={15}/> Retour à l'accueil
+          </a>
         </p>
       </div>
     </div>

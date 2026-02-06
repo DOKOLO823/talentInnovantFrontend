@@ -1,167 +1,218 @@
 "use client";
 
-import { useState } from "react";
-import { X } from "lucide-react";
+import { X, Upload, Link2, Loader2, Calendar, Layout } from "lucide-react";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Props {
   onClose: () => void;
   onSubmit: (data: any) => void;
+  loading: boolean;
 }
 
-export default function ModalAddProject({ onClose, onSubmit }: Props) {
+interface ValidationErrors {
+  [key: string]: string | undefined;
+}
+
+export default function ModalAddProject({ onClose, onSubmit, loading }: Props) {
   const [form, setForm] = useState({
     titre: "",
     description: "",
     technologie: "",
-    year: "",
+    year: '',
     link: "",
   });
 
   const [mediasFiles, setMediasFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
+  const [errors, setErrors] = useState<ValidationErrors>({});
 
-  // Preview files avant upload
   const handleMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    setMediasFiles(files);
+    const maxSize = 15 * 1024 * 1024;
+    let fileError = "";
 
+    files.forEach((file) => {
+      if (file.size > maxSize) fileError = `Le fichier "${file.name}" dépasse 15MB`;
+    });
+
+    if (fileError) {
+      setErrors((prev) => ({ ...prev, medias: fileError }));
+      return;
+    }
+
+    setMediasFiles(files);
+    setErrors((prev) => ({ ...prev, medias: undefined }));
     const previewURLs = files.map((f) => URL.createObjectURL(f));
     setPreviews(previewURLs);
   };
 
+  const handleFieldChange = (field: string, value: string) => {
+    setForm({ ...form, [field]: value });
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
+  };
+
   const handleSubmit = () => {
-    onSubmit({
-      ...form,
-      medias: previews, // Seulement aperçu local
-      technologie: form.technologie.split(",").map((t) => t.trim()),
-    });
+    if (!form.titre) {
+      setErrors((prev) => ({ ...prev, titre: "Le titre est obligatoire" }));
+      return;
+    }
+    onSubmit({ ...form, medias: mediasFiles });
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center overflow-y-auto"
-      aria-modal="true"
-      role="dialog"
-    >
-      <div className="w-full max-w-lg mx-4 my-8">
-        <div className="bg-white rounded-xl shadow-xl border relative">
-
-          {/* === HEADER STICKY === */}
-          <div className="sticky top-0 bg-white z-20 px-5 py-4 border-b rounded-t-xl flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold">Ajouter un projet</h2>
-              <p className="text-sm text-gray-500">Remplis les informations du nouveau projet</p>
-            </div>
-
-            <button
-              onClick={onClose}
-              aria-label="Fermer"
-              className="text-gray-600 hover:text-gray-900 rounded-full p-2"
-            >
-              <X />
-            </button>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white w-full max-w-2xl border border-slate-200 shadow-2xl flex flex-col max-h-[95vh] rounded-xl overflow-hidden"
+      >
+        {/* === HEADER (Sérieux / Gris léger) === */}
+        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-800">Ajouter un projet</h2>
+            <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">
+              Détails et réalisations techniques
+            </p>
           </div>
-
-          {/* === CONTENT SCROLLABLE === */}
-          <div className="px-5 py-4 max-h-[75vh] overflow-y-auto">
-            <div className="space-y-4">
-
-              {/* Titre */}
-              <div>
-                <label className="text-sm font-medium block mb-1">Titre du projet</label>
-                <input
-                  className="w-full border p-2 rounded"
-                  value={form.titre}
-                  onChange={(e) => setForm({ ...form, titre: e.target.value })}
-                />
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="text-sm font-medium block mb-1">Description du projet</label>
-                <textarea
-                  className="w-full border p-3 rounded h-36 resize-vertical"
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                />
-                <p className="text-xs text-gray-400 mt-1">
-                  Présente ton projet : objectif, fonctionnalités, résultats obtenus.
-                </p>
-              </div>
-
-              {/* Technologies */}
-              <div>
-                <label className="text-sm font-medium block mb-1">
-                  Technologies utilisées <span className="text-xs text-gray-400">(séparées par virgules)</span>
-                </label>
-                <input
-                  className="w-full border p-2 rounded"
-                  value={form.technologie}
-                  onChange={(e) => setForm({ ...form, technologie: e.target.value })}
-                />
-              </div>
-
-              {/* Images */}
-              <div>
-                <label className="text-sm font-medium block mb-1">Images du projet</label>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  className="w-full"
-                  onChange={handleMediaChange}
-                />
-                <p className="text-xs text-gray-400 mt-1">
-                  Ajoute une ou plusieurs images de ton projet. Elles ne seront enregistrées que localement pour le moment.
-                </p>
-
-                {previews.length > 0 && (
-                  <div className="grid grid-cols-3 gap-2 mt-3">
-                    {previews.map((p, i) => (
-                      <div
-                        key={i}
-                        className="w-full h-24 rounded bg-gray-100 overflow-hidden flex items-center justify-center"
-                      >
-                        <img src={p} className="object-cover w-full h-full" />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Année + Lien */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium block mb-1">Année de réalisation</label>
-                  <input
-                    className="w-full border p-2 rounded"
-                    value={form.year}
-                    onChange={(e) => setForm({ ...form, year: e.target.value })}
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium block mb-1">Lien vers le projet</label>
-                  <input
-                    className="w-full border p-2 rounded"
-                    value={form.link}
-                    onChange={(e) => setForm({ ...form, link: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              {/* Button */}
-              <button
-                onClick={handleSubmit}
-                className="w-full bg-orange-700 text-white py-2 rounded-lg hover:bg-orange-800 transition"
-              >
-                Enregistrer
-              </button>
-            </div>
-          </div>
-          {/* End scrollable content */}
+          <button 
+            onClick={onClose} 
+            className="text-slate-400 hover:text-slate-600 transition-colors"
+          >
+            <X size={20} />
+          </button>
         </div>
-      </div>
+
+        {/* === CONTENT (Scrollable) === */}
+        <div className="p-6 overflow-y-auto space-y-6">
+          
+          {/* Titre */}
+          <div className="space-y-1.5">
+            <label className="text-[13px] font-semibold text-slate-700">
+              Titre du projet <span className="text-red-500">*</span>
+            </label>
+            <input
+              value={form.titre}
+              onChange={(e) => handleFieldChange("titre", e.target.value)}
+              className={`w-full border ${errors.titre ? 'border-red-500' : 'border-slate-300'} rounded-md px-3 py-2.5 text-sm outline-none focus:border-orange-700 focus:ring-1 focus:ring-orange-700 transition-all shadow-sm`}
+              placeholder="ex: Plateforme E-commerce Next.js"
+            />
+            {errors.titre && <p className="text-red-500 text-[11px] font-medium">{errors.titre}</p>}
+          </div>
+
+          {/* Description */}
+          <div className="space-y-1.5">
+            <div className="flex justify-between">
+              <label className="text-[13px] font-semibold text-slate-700">Description détaillée</label>
+              <span className="text-[11px] text-slate-400">{form.description.length}/5000</span>
+            </div>
+            <textarea
+              value={form.description}
+              onChange={(e) => handleFieldChange("description", e.target.value)}
+              className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm outline-none min-h-[120px] focus:border-orange-700 transition-all shadow-sm"
+              placeholder="Objectifs, défis techniques et solutions apportées..."
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Technologies */}
+            <div className="space-y-1.5">
+              <label className="text-[13px] font-semibold text-slate-700">Technologies utilisées (séparées par des virgules)</label>
+              <div className="relative">
+                <Layout className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                <input
+                  value={form.technologie}
+                  onChange={(e) => handleFieldChange("technologie", e.target.value)}
+                  className="w-full border border-slate-300 rounded-md pl-9 pr-3 py-2.5 text-sm outline-none focus:border-orange-700 shadow-sm"
+                  placeholder="React, Tailwind, Node.js"
+                />
+              </div>
+            </div>
+
+            {/* Année */}
+            <div className="space-y-1.5">
+              <label className="text-[13px] font-semibold text-slate-700">Année de réalisation</label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                <input
+                  type="number"
+                  value={form.year}
+                  onChange={(e) => handleFieldChange("year", e.target.value)}
+                  className="w-full border border-slate-300 rounded-md pl-9 pr-3 py-2.5 text-sm outline-none focus:border-orange-700 shadow-sm"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Lien */}
+          <div className="space-y-1.5">
+            <label className="text-[13px] font-semibold text-slate-700">Lien URL du projet (facultatif)</label>
+            <div className="relative">
+              <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+              <input
+                value={form.link}
+                onChange={(e) => handleFieldChange("link", e.target.value)}
+                className="w-full border border-slate-300 rounded-md pl-9 pr-3 py-2.5 text-sm outline-none focus:border-orange-700 shadow-sm"
+                placeholder="https://mon-projet.com"
+              />
+            </div>
+          </div>
+
+          {/* Upload Images */}
+          <div className="space-y-3 pt-2">
+            <label className="text-[13px] font-semibold text-slate-700 block">Médias visuels (images de la réalisation)</label>
+            <label className="flex flex-col items-center justify-center w-full border-2 border-dashed border-slate-200 rounded-xl p-6 bg-slate-50 hover:bg-orange-50/30 hover:border-orange-200 cursor-pointer transition-all">
+              <div className="p-3 bg-white border border-slate-100 rounded-full text-slate-400 shadow-sm mb-2">
+                <Upload size={20} />
+              </div>
+              <p className="text-sm font-semibold text-slate-700">Cliquez pour ajouter des captures</p>
+              <p className="text-[11px] text-slate-500 mt-1">PNG, JPG ou WebP jusqu'à 15Mo</p>
+              <input type="file" hidden multiple accept="image/*" onChange={handleMediaChange} />
+            </label>
+
+            {/* Previews */}
+            {previews.length > 0 && (
+              <div className="grid grid-cols-4 gap-3 mt-4">
+                {previews.map((p, i) => (
+                  <div key={i} className="relative group aspect-video rounded-lg overflow-hidden border border-slate-200 shadow-sm">
+                    <img src={p} alt="Preview" className="w-full h-full object-cover" />
+                    <button 
+                      onClick={() => {/* Logique de suppression */}}
+                      className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X size={16} className="text-white" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* === FOOTER === */}
+        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end items-center gap-3">
+          <button 
+            onClick={onClose} 
+            className="px-5 py-2 text-sm font-semibold text-slate-500 hover:text-slate-700 transition-colors"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="bg-orange-700 text-white px-8 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-orange-800 disabled:opacity-50 transition-all shadow-md active:scale-95"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="animate-spin" size={18} />
+                Traitement...
+              </>
+            ) : (
+              "Enregistrer le projet"
+            )}
+          </button>
+        </div>
+      </motion.div>
     </div>
   );
 }

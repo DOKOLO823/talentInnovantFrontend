@@ -19,6 +19,7 @@ export async function apiFetch(
     try {
       const authData = JSON.parse(storedAuth);
       token = authData.token;
+      // console.log("Token récupéré pour API:", token);
     } catch (e) {
       console.error("Erreur lecture token", e);
     }

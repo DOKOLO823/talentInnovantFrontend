@@ -1,21 +1,12 @@
 import type { Metadata } from "next";
-// import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "./context/AuthContext";
-
-// const geistSans = Geist({
-//   variable: "--font-geist-sans",
-//   subsets: ["latin"],
-// });
-
-// const geistMono = Geist_Mono({
-//   variable: "--font-geist-mono",
-//   subsets: ["latin"],
-// });
+import ConditionalLayout from "./components/LayoutWrapper";
+import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
   title: "Talent Innovant",
-  description: "Une plateforme qui connecte les talents et les entreprises à travers des challenges d’innovation pour révéler les potentiels cachés et stimuler la créativité.",
+  description: "Une plateforme qui connecte les talents et les entreprises à travers des challenges d'innovation pour révéler les potentiels cachés et stimuler la créativité.",
 };
 
 export default function RootLayout({
@@ -24,12 +15,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr">
-      <body
-      style={{backgroundColor:'white!important'}}
-        // className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-       <AuthProvider>{children}</AuthProvider>
+    <html lang="fr" className="light" style={{ colorScheme: 'light' }}>
+      <body style={{backgroundColor:'white'}}>
+        <AuthProvider>
+          <ConditionalLayout>
+            {children}
+            <Toaster position="top-right" containerStyle={{zIndex: 999999999}} />
+          </ConditionalLayout>
+        </AuthProvider>
       </body>
     </html>
   );

@@ -1,42 +1,105 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation"; 
-import { Menu, X, Heart, User, LogOut, LogIn, Bell } from "lucide-react";
+import { useRouter, usePathname } from "next/navigation";
+import {
+  Menu,
+  X,
+  User,
+  LogOut,
+  LogIn,
+  Bell,
+  Settings,
+  Mail,
+} from "lucide-react";
 import Link from "next/link";
+import { apiFetch } from "@/app/lib/api";
+import apifile from "@/app/lib/apifile";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
-  const pathname = usePathname(); // Pour détecter la route active
-  
-  const [role, setRole] = useState<string>('');
-  const [memoire, setMemoire] = useState<boolean | string>(false);
-  
-  useEffect(() => {
-    const authItem = localStorage.getItem("auth");
-    if (authItem) {
-      setMemoire(true);
-      try {
-        const authData = JSON.parse(authItem);
-        if (authData.user?.statut) setRole(authData.user.statut);
-      } catch (err) {
-        console.error("Erreur parsing auth", err);
-      }
-    }else {
-      setMemoire(false);
-      setRole('');
-    }
-  }, []);
+  const pathname = usePathname();
+  const [role, setRole] = useState<string>("");
+  const [userPP, setUserPP] = useState<string | null>(null);
+  const [userId, setUserId] = useState<number | null>(null);
+  const [userStatus, setUserStatus] = useState<string>("entreprise");
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState<boolean>(true);
+  const [notificationCount, setNotificationCount] = useState(0);
 
-  const isLoggedIn = memoire ? true : false;
-  const notificationCount = 3;
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  // Détermination dynamique du lien de paramètres
+  const settingsPath =
+    role === "talent" ? "/parametres-talent" : "/parametres-entreprise";
+
+  // --- LOGIQUE DE SCROLL ---
+  useEffect(() => {
+    const controlNavbar = () => {
+      if (typeof window !== "undefined") {
+        const currentScrollY = window.scrollY;
+        if (
+          currentScrollY > lastScrollY &&
+          currentScrollY > 50 &&
+          !menuOpen &&
+          userStatus != "entreprise"
+        ) {
+          setIsVisible(false);
+        } else {
+          setIsVisible(true);
+        }
+        setLastScrollY(currentScrollY);
+      }
+    };
+    window.addEventListener("scroll", controlNavbar);
+    return () => window.removeEventListener("scroll", controlNavbar);
+  }, [lastScrollY, menuOpen]);
+
+  // --- RÉCUPÉRATION INFOS UTILISATEUR VIA API ---
+  useEffect(() => {
+    const checkAuth = async () => {
+      const authItem = localStorage.getItem("auth");
+
+      if (authItem) {
+        try {
+          const res = await apiFetch("/user/info", { method: "GET" });
+
+          if (res?.statut === 200) {
+            const userData = res.data.user;
+            setIsLoggedIn(true);
+            setRole(userData.statut);
+            setUserPP(userData.pp);
+            setUserId(userData.id);
+            setUserStatus(userData.statut);
+
+            const notifRes = await apiFetch("/notifications/nonlues", {
+              method: "GET",
+            });
+            if (notifRes?.statut === 200)
+              setNotificationCount(notifRes.unread_count);
+          } else {
+            handleLogout();
+          }
+        } catch (error) {
+          console.error("Erreur auth:", error);
+        }
+      }
+      setIsCheckingAuth(false);
+    };
+
+    checkAuth();
+  }, []);
 
   const closeMenu = () => setMenuOpen(false);
 
   const handleLogout = () => {
     localStorage.removeItem("auth");
-    setRole('');
+    setRole("");
+    setUserPP(null);
+    setUserId(null);
+    setIsLoggedIn(false);
     closeMenu();
     router.push("/auth/login");
   };
@@ -46,111 +109,154 @@ export default function Navbar() {
     { href: "#challenges", label: "Challenges" },
     { href: "#entreprises", label: "Entreprises" },
   ];
-  
+  const pcTalentLinks = [
+    { href: "/home-talent", label: "Accueil" },
+    { href: "/communaute", label: "Communauté" },
+    { href: "/opportunite", label: "Opportunités" },
+  ];
+
+  const pcEntrepriseLinks = [{ href: "/home-entreprise", label: "Accueil" }];
+
   const talentLinks = [
     { href: "/home-talent", label: "Accueil" },
     { href: "/opportunite", label: "Opportunités" },
   ];
 
-  const navLinks = role === 'talent' ? talentLinks : guestLinks;
-  
-  const profileLink = 
-    role === 'talent' ? "/profil-talent/1" :
-    role === 'entreprise' ? "/profil-entreprise/1" :
-    "/auth/login"; 
-    
+  const navLinks =
+    role == "talent"
+      ? pcTalentLinks
+      : role == "entreprise"
+        ? pcEntrepriseLinks
+        : guestLinks;
+
+  const profileLink = userId
+    ? role === "talent"
+      ? `/profil-talent/${userId}`
+      : `/profil-entreprise/${userId}`
+    : "/auth/login";
+
   return (
     <>
-      <nav className="fixed top-0 left-0 w-full bg-white shadow-md z-50">
-        <div className="max-w-7xl mx-auto flex justify-between items-center px-4 sm:px-6 py-3">
-          
-          <div className="flex flex-row items-center justify-start">
+      <nav
+        className={`fixed top-0 left-0 w-full bg-white shadow-md z-50 transition-transform duration-300 ${isVisible ? "translate-y-0" : "-translate-y-full"}`}
+      >
+        <div className="max-w-7xl mx-auto flex justify-between items-center px-4 sm:px-6 py-2">
+          <div className="flex flex-row items-center justify-start flex-shrink-0">
             <button
               onClick={() => setMenuOpen(true)}
-              className={`p-2 rounded-md hover:bg-gray-100 transition md:hidden ${isLoggedIn && 'mr-4'}`}
+              className={`p-2 rounded-md hover:bg-gray-100 transition md:hidden ${isLoggedIn && "mr-2"}`}
             >
               <Menu className="h-6 w-6 text-orange-700" />
             </button>
-
-            <span className="md:text-lg text-md font-bold tracking-wide">
+            <span className="text-sm sm:text-md md:text-lg font-bold tracking-tight whitespace-nowrap">
               TALENT <span className="text-orange-700">INNOVANT</span>
             </span>
           </div>
 
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-3 sm:space-x-6">
             <div className="hidden md:flex space-x-6">
-              {role !== 'entreprise' && navLinks.map((link) => {
-                // Vérification si le lien est actif
-                const isActive = pathname === link.href;
-                
-                return (
+              {!isCheckingAuth &&
+                navLinks.map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}
-                    onClick={closeMenu}
-                    className={`font-medium text-base transition cursor-pointer pb-1 ${
-                      isActive
-                        ? 'text-orange-700 border-b-2 border-orange-700'
-                        : 'text-gray-700 hover:text-orange-600 hover:border-b-2 hover:border-orange-600/50'
-                    }`}
+                    className={`font-medium text-base transition pb-1 ${pathname === link.href ? "text-orange-700 border-b-2 border-orange-700" : "text-gray-700 hover:text-orange-600"}`}
                   >
                     {link.label}
                   </Link>
-                );
-              })}
+                ))}
             </div>
 
-            {isLoggedIn && (
-              <div className="flex items-center space-x-5">
-                {/* Notification : active si le pathname est /notification */}
-                <Link href={'/notification'} className="hidden md:block relative cursor-pointer">
-                  <Bell className={`h-6 w-6 transition ${pathname === '/notification' ? 'text-orange-700' : 'text-gray-700 hover:text-orange-600'}`} />
-                  {notificationCount > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-orange-600 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center">
-                      {notificationCount}
+            {!isCheckingAuth &&
+              (isLoggedIn ? (
+                <div className="flex items-center space-x-4 sm:space-x-5">
+                  <Link
+                    href={"/notification"}
+                    onClick={() => setNotificationCount(0)}
+                    className="hidden md:block relative cursor-pointer"
+                  >
+                    <Bell
+                      className={`h-6 w-6 transition ${pathname === "/notification" ? "text-orange-700" : "text-gray-700 hover:text-orange-600"}`}
+                    />
+                    {notificationCount > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-orange-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                        {notificationCount}
+                      </span>
+                    )}
+                  </Link>
+
+                  <Link
+                    href={profileLink}
+                    className="flex flex-col items-center group"
+                  >
+                    <div className="relative w-8 h-8 sm:w-9 sm:h-9 overflow-hidden rounded-full border border-gray-200 transition group-hover:border-orange-500">
+                      <img
+                        src={
+                          userPP
+                            ? apifile + "/" + userPP
+                            : role == "talent"
+                              ? "../assets/images/pp2.png"
+                              : "../assets/images/ppe.png"
+                        }
+                        alt="Profil"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <span className="text-[10px] sm:text-[11px] font-medium text-gray-500 group-hover:text-orange-700 transition leading-tight mt-0.5">
+                      Mon profil
                     </span>
-                  )}
-                </Link>
+                  </Link>
 
-                <Link href={profileLink}> 
-                  <User className={`h-7 w-7 transition ${pathname.startsWith('/profil') ? 'text-orange-700' : 'text-gray-700 hover:text-orange-600'}`} />
-                </Link>
+                  {/* Icone Paramètres PC */}
+                  <Link
+                    href={settingsPath}
+                    className="hidden md:flex flex-col items-center group"
+                    title="Paramètres"
+                  >
+                    <Settings
+                      className={`h-6 w-6 transition ${pathname === settingsPath ? "text-orange-700" : "text-gray-700 hover:text-orange-600"}`}
+                    />
+                    <span className="text-[10px] sm:text-[11px] font-medium text-gray-500 group-hover:text-orange-700 transition leading-tight mt-0.5">
+                      Paramètres
+                    </span>
+                  </Link>
 
-                {role === 'talent' && (
-                  <button 
+                  <button
                     onClick={handleLogout}
-                    className="hidden md:flex items-center text-gray-700 hover:text-red-600 transition"
+                    className="hidden md:flex items-center text-gray-500 hover:text-red-600 transition"
                     title="Déconnexion"
                   >
                     <LogOut className="h-6 w-6" />
                   </button>
-                )}
-              </div>
-            )}
-            
-            {!isLoggedIn && (
-              <Link
-                href="/auth/login" 
-                className="hidden md:inline-block px-4 py-2 bg-orange-600 text-white rounded-md font-medium hover:bg-orange-700 transition"
-              >
-                Se connecter
-              </Link>
-            )}
+                </div>
+              ) : (
+                <>
+                  <Link
+                    href="/auth/login"
+                    className="hidden md:inline-block px-4 py-2 bg-orange-700 text-white rounded-md font-medium hover:bg-orange-600 transition"
+                  >
+                    Se connecter
+                  </Link>
+                  <Link
+                    href="/auth/login"
+                    className="md:hidden flex items-center text-xs font-bold text-orange-700 border border-orange-700 px-2 py-1 rounded"
+                  >
+                    <LogIn className="h-3 w-3 mr-1" /> Se connecter
+                  </Link>
+                </>
+              ))}
           </div>
         </div>
       </nav>
 
-      <div className="md:hidden"> 
+      {/* Menu Mobile */}
+      <div className="md:hidden">
         <div
-          className={`fixed inset-0 bg-black z-40 transition-opacity duration-300 ${
-            menuOpen ? 'opacity-50 pointer-events-auto' : 'opacity-0 pointer-events-none'
-          }`}
+          className={`fixed inset-0 bg-black z-50 transition-opacity duration-300 ${menuOpen ? "opacity-50" : "opacity-0 pointer-events-none"}`}
           onClick={closeMenu}
         ></div>
-
-        <div 
-          className={`fixed top-0 right-0 h-full w-64 bg-white shadow-lg z-50 p-6 flex flex-col justify-between transition-transform duration-300 transform 
-            ${menuOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        <div
+          className={`fixed top-0 right-0 h-full w-64 bg-white shadow-lg z-50 p-6 flex flex-col justify-between transition-transform duration-300 transform ${menuOpen ? "translate-x-0" : "translate-x-full"}`}
         >
           <div>
             <div className="flex justify-between items-center mb-6">
@@ -162,38 +268,62 @@ export default function Navbar() {
                 <X className="h-6 w-6 text-gray-700" />
               </button>
             </div>
-
             <ul className="space-y-4">
-              {isLoggedIn && role === 'talent' && talentLinks.map(renderMobileLink)}
+              {/* {isLoggedIn && role === 'talent' && talentLinks.map(renderMobileLink)} */}
               {!isLoggedIn && guestLinks.map(renderMobileLink)}
+
               {isLoggedIn && (
-                <li key="/notification" className="md:hidden">
-                   <Link
-                    href="/notification"
-                    onClick={closeMenu}
-                    className={`block font-medium text-base transition ${pathname === '/notification' ? 'text-orange-700 font-bold' : 'text-gray-700'}`}
-                  >
-                    Notifications ({notificationCount})
-                  </Link>
-                </li>
+                <>
+                  {/* <li key="/notifications">
+                    <Link href="/notification" onClick={() => { setNotificationCount(0); closeMenu(); }} className={`flex items-center space-x-2 font-medium text-base transition ${pathname === '/notification' ? 'text-orange-700 font-bold' : 'text-gray-700'}`}>
+                      <Bell className="h-5 w-5" />
+                      <span>Notifications ({notificationCount})</span>
+                    </Link>
+                  </li> */}
+                  {/* Lien Paramètres Mobile */}
+                  <li key="/parametres">
+                    <Link
+                      href={settingsPath}
+                      onClick={closeMenu}
+                      className={`flex items-center space-x-2 font-medium text-base transition ${pathname === settingsPath ? "text-orange-700 font-bold" : "text-gray-700"}`}
+                    >
+                      <Settings className="h-5 w-5" />
+                      <span>Paramètres</span>
+                    </Link>
+                  </li>
+
+                  <li key="/contact">
+                    <Link
+                      href="/contact"
+                      onClick={closeMenu}
+                      className={`flex items-center space-x-2 font-medium text-base transition ${
+                        pathname === "/contact"
+                          ? "text-orange-700 font-bold"
+                          : "text-gray-700 hover:text-orange-700"
+                      }`}
+                    >
+                      <Mail className="h-5 w-5" />
+                      <span>Nous contacter</span>
+                    </Link>
+                  </li>
+                </>
               )}
             </ul>
           </div>
-
-          <div className="border-t pt-4 relative -top-24">
+          <div className="border-t pt-4 relative -top-20">
             {isLoggedIn ? (
-              <button 
+              <button
                 onClick={handleLogout}
-                className="flex items-center space-x-2 text-red-600 hover:text-red-700 font-medium w-full"
+                className="flex items-center space-x-2 text-red-600 font-medium w-full"
               >
                 <LogOut className="h-5 w-5" />
                 <span>Se déconnecter</span>
               </button>
             ) : (
               <Link
-                href="/auth/login" 
+                href="/auth/login"
                 onClick={closeMenu}
-                className="flex items-center space-x-2 text-orange-600 hover:text-orange-700 font-medium"
+                className="flex items-center space-x-2 text-orange-600 font-medium"
               >
                 <LogIn className="h-5 w-5" />
                 <span>Se connecter</span>
@@ -206,21 +336,16 @@ export default function Navbar() {
   );
 
   function renderMobileLink(link: { href: string; label: string }) {
-      const isActive = pathname === link.href;
-      return (
-          <li key={link.href}>
-              <Link
-                  href={link.href}
-                  onClick={closeMenu} 
-                  className={`block font-medium text-base transition ${
-                      isActive 
-                          ? 'text-orange-700 font-bold' 
-                          : 'hover:text-orange-600 text-gray-700'
-                  }`}
-              >
-                  {link.label}
-              </Link>
-          </li>
-      );
+    return (
+      <li key={link.href}>
+        <Link
+          href={link.href}
+          onClick={closeMenu}
+          className={`block font-medium text-base transition ${pathname === link.href ? "text-orange-700 font-bold" : "text-gray-700"}`}
+        >
+          {link.label}
+        </Link>
+      </li>
+    );
   }
 }
