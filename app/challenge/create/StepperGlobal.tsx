@@ -1,7 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Upload, X, Info, Image as ImageIcon, FileText, CheckCircle2, Target, AlertCircle } from "lucide-react";
+import {
+  Upload,
+  X,
+  Info,
+  Image as ImageIcon,
+  FileText,
+  CheckCircle2,
+  Target,
+  AlertCircle,
+} from "lucide-react";
 import toast from "react-hot-toast";
 
 interface StepGeneralInfoProps {
@@ -43,33 +52,34 @@ export default function StepGeneralInfo({
     }
 
     // Validation Objectif (Max 250 - Optionnel selon backend nullable)
-    if (data.objectif && data.objectif.length > 245) {
-      newErrors.objectif = "L'objectif ne doit pas dépasser 245 caractères";
+    if (data.objectif && data.objectif.length > 295) {
+      newErrors.objectif = "L'objectif ne doit pas dépasser 295 caractères";
     }
 
-    // theme 
-     if (data.theme && data.theme.length > 250) {
+    // theme
+    if (data.theme && data.theme.length > 250) {
       newErrors.theme = "Le thème ne doit pas dépasser 250 caractères";
     }
-    // description 
-     if (data.description && data.description.length > 900) {
-      newErrors.description = "La description ne doit pas dépasser 900 caractères";
+    // description
+    if (data.description && data.description.length > 900) {
+      newErrors.description =
+        "La description ne doit pas dépasser 900 caractères";
     }
-    // details 
-     if (data.details && data.details.length > 250) {
-      newErrors.details = "Les détails ne doivent pas dépasser 250 caractères";
+    // details
+    if (data.details && data.details.length > 495) {
+      newErrors.details = "Les détails ne doivent pas dépasser 495 caractères";
     }
 
     setErrors(newErrors);
-    
+
     // LOGIQUE DE TOAST : On affiche la première erreur trouvée
     if (Object.keys(newErrors).length > 0) {
       const firstErrorMessage = Object.values(newErrors)[0];
       toast.error(firstErrorMessage, {
         style: {
-          color: 'red',
-          fontSize: '15px',
-          fontWeight: 'bold',
+          color: "red",
+          fontSize: "15px",
+          fontWeight: "bold",
           // textTransform: 'uppercase',
         },
       });
@@ -104,10 +114,14 @@ export default function StepGeneralInfo({
   const removePhoto = () => setPhotoFile(null);
 
   // Styles Enterprise Strict
-  const labelStyle = "block text-[12px] font-bold uppercase tracking-tight text-slate-900 mb-1.5";
-  const inputStyle = "w-full bg-white border border-slate-300 rounded-md p-2.5 text-sm focus:border-orange-700 focus:ring-1 focus:ring-orange-700 outline-none transition-all placeholder:text-slate-400";
-  const errorInputStyle = "border-red-500 focus:border-red-500 focus:ring-red-500 bg-red-50/30";
-  const cardStyle = "bg-white border border-slate-200 rounded-md p-6 shadow-[0_1px_3px_rgba(0,0,0,0.05)]";
+  const labelStyle =
+    "block text-[12px] font-bold uppercase tracking-tight text-slate-900 mb-1.5";
+  const inputStyle =
+    "w-full bg-white border border-slate-300 rounded-md p-2.5 text-sm focus:border-orange-700 focus:ring-1 focus:ring-orange-700 outline-none transition-all placeholder:text-slate-400";
+  const errorInputStyle =
+    "border-red-500 focus:border-red-500 focus:ring-red-500 bg-red-50/30";
+  const cardStyle =
+    "bg-white border border-slate-200 rounded-md p-6 shadow-[0_1px_3px_rgba(0,0,0,0.05)]";
 
   return (
     <div className="max-w-3xl mx-auto space-y-8 py-4">
@@ -136,7 +150,11 @@ export default function StepGeneralInfo({
                 value={data.titre || ""}
                 onChange={(e) => update("titre", e.target.value)}
               />
-              {errors.titre && <p className="text-red-600 text-[10px] font-bold uppercase flex items-center gap-1 mt-1"><AlertCircle size={10}/> {errors.titre}</p>}
+              {errors.titre && (
+                <p className="text-red-600 text-[10px] font-bold uppercase flex items-center gap-1 mt-1">
+                  <AlertCircle size={10} /> {errors.titre}
+                </p>
+              )}
             </div>
 
             <div className="space-y-1">
@@ -157,7 +175,11 @@ export default function StepGeneralInfo({
                 value={data.objectif || ""}
                 onChange={(e) => update("objectif", e.target.value)}
               />
-              {errors.objectif && <p className="text-red-600 text-[10px] font-bold uppercase flex items-center gap-1 mt-1"><AlertCircle size={10}/> {errors.objectif}</p>}
+              {errors.objectif && (
+                <p className="text-red-600 text-[10px] font-bold uppercase flex items-center gap-1 mt-1">
+                  <AlertCircle size={10} /> {errors.objectif}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -198,8 +220,12 @@ export default function StepGeneralInfo({
                 <Upload className="w-5 h-5 text-orange-700" />
               </div>
               <div className="mt-4 text-center">
-                <p className="text-xs font-bold text-slate-700 uppercase tracking-wide">Sélectionner un fichier</p>
-                <p className="text-[10px] text-slate-500 mt-1 uppercase">JPG, PNG, WEBP — MAX 2MB</p>
+                <p className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                  Sélectionner un fichier
+                </p>
+                <p className="text-[10px] text-slate-500 mt-1 uppercase">
+                  JPG, PNG, WEBP — MAX 2MB
+                </p>
               </div>
               <input
                 type="file"
@@ -220,9 +246,13 @@ export default function StepGeneralInfo({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={14} className="text-orange-700" />
-                  <p className="text-xs font-bold text-slate-900 truncate">{photoFile.name}</p>
+                  <p className="text-xs font-bold text-slate-900 truncate">
+                    {photoFile.name}
+                  </p>
                 </div>
-                <p className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase">{(photoFile.size / 1024).toFixed(0)} KB</p>
+                <p className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase">
+                  {(photoFile.size / 1024).toFixed(0)} KB
+                </p>
                 <button
                   type="button"
                   onClick={removePhoto}
@@ -239,12 +269,14 @@ export default function StepGeneralInfo({
       {/* FOOTER ACTIONS */}
       <div className="flex justify-between items-center pt-6 border-t border-slate-200">
         <div className="flex items-center gap-2 text-slate-400">
-           <Info size={14} />
-           <span className="text-[10px] font-bold uppercase tracking-wider">Étape 1 sur 4</span>
+          <Info size={14} />
+          <span className="text-[10px] font-bold uppercase tracking-wider">
+            Étape 1 sur 4
+          </span>
         </div>
-        <button 
-          type="button" 
-          onClick={handleNext} 
+        <button
+          type="button"
+          onClick={handleNext}
           className="bg-orange-700 text-white px-8 py-2.5 rounded-md text-sm font-bold hover:bg-orange-800 transition-all active:scale-[0.98] shadow-sm flex items-center gap-3"
         >
           Continuer

@@ -43,7 +43,9 @@ export default function EntrepriseEditClient({ id }: { id: string }) {
   useEffect(() => {
     const fetchInfos = async () => {
       try {
-        const res = await apiFetch(`/entreprise/edit-profil`, { method: "GET" });
+        const res = await apiFetch(`/entreprise/edit-profil`, {
+          method: "GET",
+        });
         if (res.statut === 200) {
           const u = res.data.user;
           const e = res.data.entreprise;
@@ -73,7 +75,10 @@ export default function EntrepriseEditClient({ id }: { id: string }) {
     fetchInfos();
   }, [id]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: "pp" | "pc") => {
+  const handleFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: "pp" | "pc",
+  ) => {
     const file = e.target.files?.[0];
     if (file) {
       setFiles((prev) => ({ ...prev, [type]: file }));
@@ -81,74 +86,74 @@ export default function EntrepriseEditClient({ id }: { id: string }) {
     }
   };
 
- const handleSubmit = async () => {
-  setSubmitting(true);
-  setErrors({});
-  
-  const data = new FormData();
-  Object.entries(formData).forEach(([key, value]) => {
-    data.append(key, value);
-  });
-  if (files.pp) data.append("pp", files.pp);
-  if (files.pc) data.append("pc", files.pc);
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    setErrors({});
 
-  try {
-    const res = await apiFetch("/entreprise/update-profil", {
-      method: "POST",
-      body: data, 
+    const data = new FormData();
+    Object.entries(formData).forEach(([key, value]) => {
+      data.append(key, value);
     });
+    if (files.pp) data.append("pp", files.pp);
+    if (files.pc) data.append("pc", files.pc);
 
-    if (res.statut == 200) {
-      // 1. Préparation du profil entreprise
-      const updatedProfile = {
-        ...talent,
-        nom: formData.nom,
-        service: formData.service,
-        description: formData.description,
-        horaire: formData.horaire,
-        siteweb: formData.siteweb,
-        updated_at: new Date().toISOString()
-      };
-
-      // 2. Mise à jour de l'objet User avec les NOUVELLES IMAGES
-      // res.data.user contient normalement les nouveaux chemins 'images/pp/...'
-      const updatedUser = {
-        ...user,
-        telephone: formData.telephone,
-        bio: formData.bio,
-        domaine_id: parseInt(formData.domaine_id),
-        // ON UTILISE ICI LE CHEMIN RENVOYÉ PAR LE BACKEND (res.data.user)
-        pp: res.data?.user?.pp || user.pp, 
-        pc: res.data?.user?.pc || user.pc,
-        entreprise: updatedProfile
-      };
-
-      // 3. Mise à jour du Store Global
-      setAuth({
-        token: token,
-        user: updatedUser,
-        talent: updatedProfile
+    try {
+      const res = await apiFetch("/entreprise/update-profil", {
+        method: "POST",
+        body: data,
       });
 
-      toast.success("Profil mis à jour avec succès !");
-      router.push(`/profil-entreprise/${user.id}`);
-    } else if (res.statut === 422) {
-      setErrors(res.erreurs || {});
-      toast.error(res?.message || "Erreur de validation");
+      if (res.statut == 200) {
+        // 1. Préparation du profil entreprise
+        const updatedProfile = {
+          ...talent,
+          nom: formData.nom,
+          service: formData.service,
+          description: formData.description,
+          horaire: formData.horaire,
+          siteweb: formData.siteweb,
+          updated_at: new Date().toISOString(),
+        };
+
+        // 2. Mise à jour de l'objet User avec les NOUVELLES IMAGES
+        // res.data.user contient normalement les nouveaux chemins 'images/pp/...'
+        const updatedUser = {
+          ...user,
+          telephone: formData.telephone,
+          bio: formData.bio,
+          domaine_id: parseInt(formData.domaine_id),
+          // ON UTILISE ICI LE CHEMIN RENVOYÉ PAR LE BACKEND (res.data.user)
+          pp: res.data?.user?.pp || user.pp,
+          pc: res.data?.user?.pc || user.pc,
+          entreprise: updatedProfile,
+        };
+
+        // 3. Mise à jour du Store Global
+        setAuth({
+          token: token,
+          user: updatedUser,
+          talent: updatedProfile,
+        });
+
+        toast.success("Profil mis à jour avec succès !", { duration: 6000 });
+        router.push(`/profil-entreprise/${user.id}`);
+      } else if (res.statut === 422) {
+        setErrors(res.erreurs || {});
+        toast.error(res?.message || "Erreur de validation");
+      }
+    } catch (err) {
+      toast.error("Erreur de connexion");
+    } finally {
+      setSubmitting(false);
     }
-  } catch (err) {
-    toast.error("Erreur de connexion");
-  } finally {
-    setSubmitting(false);
-  }
-};
+  };
 
-
-  if (loading) return (
-    <div className="flex h-screen items-center justify-center">
-      <Loader2 className="animate-spin text-orange-700" size={40} />
-    </div>
-  );
+  if (loading)
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="animate-spin text-orange-700" size={40} />
+      </div>
+    );
 
   return (
     <div className="w-full pb-20 bg-white">
@@ -157,10 +162,21 @@ export default function EntrepriseEditClient({ id }: { id: string }) {
 
       {/* COVER (PC) */}
       <div className="w-full h-56 md:h-72 relative bg-gray-100">
-        <Image src={previews.pc} alt="cover" fill className="object-cover" priority />
+        <Image
+          src={previews.pc}
+          alt="cover"
+          fill
+          className="object-cover"
+          priority
+        />
         <label className="absolute top-4 right-4 bg-black/50 text-white p-2 rounded-full cursor-pointer hover:bg-black/70 transition">
           <Camera size={18} />
-          <input type="file" className="hidden" onChange={(e) => handleFileChange(e, "pc")} accept="image/*" />
+          <input
+            type="file"
+            className="hidden"
+            onChange={(e) => handleFileChange(e, "pc")}
+            accept="image/*"
+          />
         </label>
       </div>
 
@@ -174,7 +190,12 @@ export default function EntrepriseEditClient({ id }: { id: string }) {
             />
             <label className="absolute bottom-2 right-2 bg-black/60 text-white p-1 rounded-full cursor-pointer hover:bg-black/80 transition">
               <Camera size={16} />
-              <input type="file" className="hidden" onChange={(e) => handleFileChange(e, "pp")} accept="image/*" />
+              <input
+                type="file"
+                className="hidden"
+                onChange={(e) => handleFileChange(e, "pp")}
+                accept="image/*"
+              />
             </label>
           </div>
 
@@ -187,27 +208,39 @@ export default function EntrepriseEditClient({ id }: { id: string }) {
               <div>
                 <label className="text-sm font-medium">Nom</label>
                 <input
-                  className={`mt-1 w-full border rounded px-3 py-2 outline-none focus:border-orange-700 ${errors.nom ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`mt-1 w-full border rounded px-3 py-2 outline-none focus:border-orange-700 ${errors.nom ? "border-red-500" : "border-gray-300"}`}
                   value={formData.nom}
-                  onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, nom: e.target.value })
+                  }
                 />
-                {errors.nom && <p className="text-red-500 text-xs mt-1">{errors.nom[0]}</p>}
+                {errors.nom && (
+                  <p className="text-red-500 text-xs mt-1">{errors.nom[0]}</p>
+                )}
               </div>
 
               {/* Domaine */}
               <div>
                 <label className="text-sm font-medium">Domaine</label>
                 <select
-                  className={`mt-1 w-full border rounded px-3 py-2 outline-none focus:border-orange-700 ${errors.domaine_id ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`mt-1 w-full border rounded px-3 py-2 outline-none focus:border-orange-700 ${errors.domaine_id ? "border-red-500" : "border-gray-300"}`}
                   value={formData.domaine_id}
-                  onChange={(e) => setFormData({ ...formData, domaine_id: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, domaine_id: e.target.value })
+                  }
                 >
                   <option value="">Sélectionnez...</option>
                   {domaines.map((d) => (
-                    <option key={d.id} value={d.id}>{d.nom}</option>
+                    <option key={d.id} value={d.id}>
+                      {d.nom}
+                    </option>
                   ))}
                 </select>
-                {errors.domaine_id && <p className="text-red-500 text-xs mt-1">{errors.domaine_id[0]}</p>}
+                {errors.domaine_id && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.domaine_id[0]}
+                  </p>
+                )}
               </div>
 
               {/* Service */}
@@ -216,7 +249,9 @@ export default function EntrepriseEditClient({ id }: { id: string }) {
                 <input
                   className="mt-1 w-full border border-gray-300 rounded px-3 py-2 outline-none focus:border-orange-700"
                   value={formData.service}
-                  onChange={(e) => setFormData({ ...formData, service: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, service: e.target.value })
+                  }
                 />
               </div>
 
@@ -226,7 +261,9 @@ export default function EntrepriseEditClient({ id }: { id: string }) {
                 <input
                   className="mt-1 w-full border border-gray-300 rounded px-3 py-2 outline-none focus:border-orange-700"
                   value={formData.horaire}
-                  onChange={(e) => setFormData({ ...formData, horaire: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, horaire: e.target.value })
+                  }
                 />
               </div>
 
@@ -236,7 +273,9 @@ export default function EntrepriseEditClient({ id }: { id: string }) {
                 <input
                   className="mt-1 w-full border border-gray-300 rounded px-3 py-2 outline-none focus:border-orange-700"
                   value={formData.siteweb}
-                  onChange={(e) => setFormData({ ...formData, siteweb: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, siteweb: e.target.value })
+                  }
                 />
               </div>
 
@@ -246,7 +285,9 @@ export default function EntrepriseEditClient({ id }: { id: string }) {
                 <input
                   className="mt-1 w-full border border-gray-300 rounded px-3 py-2 outline-none focus:border-orange-700"
                   value={formData.telephone}
-                  onChange={(e) => setFormData({ ...formData, telephone: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, telephone: e.target.value })
+                  }
                 />
               </div>
 
@@ -257,18 +298,24 @@ export default function EntrepriseEditClient({ id }: { id: string }) {
                   className="mt-1 w-full border border-gray-300 rounded px-3 py-2 outline-none focus:border-orange-700"
                   rows={3}
                   value={formData.bio}
-                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, bio: e.target.value })
+                  }
                 />
               </div>
 
               {/* Description */}
               <div className="col-span-1 md:col-span-2">
-                <label className="text-sm font-medium">Description (Entreprise)</label>
+                <label className="text-sm font-medium">
+                  Description (Entreprise)
+                </label>
                 <textarea
                   className="mt-1 w-full border border-gray-300 rounded px-3 py-2 outline-none focus:border-orange-700"
                   rows={4}
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
                 />
               </div>
             </div>

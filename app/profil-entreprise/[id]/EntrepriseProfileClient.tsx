@@ -11,6 +11,7 @@ import TabAbout from "./TabAbout";
 import TabChallenges from "./TabChallenges";
 import TabOpportunites from "./TabOpportunites";
 import apifile from "@/app/lib/apifile";
+import { CheckCircle2 } from "lucide-react";
 
 export default function EntrepriseProfileClient({ id }: { id: string }) {
   const [activeTab, setActiveTab] = useState("about");
@@ -25,7 +26,7 @@ export default function EntrepriseProfileClient({ id }: { id: string }) {
     if (storedAuth) setCurrentUser(JSON.parse(storedAuth).user);
 
     // Récupération du profil entreprise
-    apiFetch(`/entreprise/profil/${id}`).then(res => {
+    apiFetch(`/entreprise/profil/${id}`).then((res) => {
       if (res.statut === 200) setData(res.data);
       setLoading(false);
     });
@@ -36,7 +37,7 @@ export default function EntrepriseProfileClient({ id }: { id: string }) {
 
   const handleToggleAbonnement = async () => {
     if (isToggling || !currentUser) return;
-    
+
     try {
       setIsToggling(true);
       const res = await apiFetch("/entreprise/abonnement/toggle", {
@@ -45,16 +46,19 @@ export default function EntrepriseProfileClient({ id }: { id: string }) {
       });
 
       if (res.statut === 200) {
-        if (res?.message === 'Abonnement réussi.') {
-          toast.success('Vous serez informé des opportunités proposées par cette entreprise', { duration: 5000 });
+        if (res?.message === "Abonnement réussi.") {
+          toast.success(
+            "Vous serez informé des opportunités proposées par cette entreprise",
+            { duration: 5000 },
+          );
         } else {
-          toast.success(res?.message || 'Désabonnement réussi.');
+          toast.success(res?.message || "Désabonnement réussi.");
         }
-        
+
         // Mise à jour locale de l'état is_abonne
         setData((prev: any) => ({
           ...prev,
-          entreprise: { ...prev.entreprise, is_abonne: res.abonne }
+          entreprise: { ...prev.entreprise, is_abonne: res.abonne },
         }));
       }
     } catch (err) {
@@ -64,18 +68,20 @@ export default function EntrepriseProfileClient({ id }: { id: string }) {
     }
   };
 
-  if (loading) return (
-    <div className="w-full h-screen flex items-center justify-center">
-
-       <div className="flex justify-center p-5">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-700"></div>
+  if (loading)
+    return (
+      <div className="w-full h-screen flex items-center justify-center">
+        <div className="flex justify-center p-5">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-700"></div>
+        </div>
+        <div className="animate-pulse text-orange-700 font-bold md:text-xl">
+          Chargement du profil...
+        </div>
       </div>
-      <div className="animate-pulse text-orange-700 font-bold md:text-xl">Chargement du profil...</div>
+    );
 
-    </div>
-  );
-
-  if (!data) return <div className="p-10 text-center mt-24">Entreprise introuvable</div>;
+  if (!data)
+    return <div className="p-10 text-center mt-24">Entreprise introuvable</div>;
 
   const { entreprise, total } = data;
 
@@ -83,10 +89,14 @@ export default function EntrepriseProfileClient({ id }: { id: string }) {
     <div className="w-full">
       <Toaster />
       <BackButton m={16} />
-      
+
       <div className="w-full h-56 md:h-72 relative mt-2">
         <Image
-          src={ entreprise?.user?.pc ? apifile+'/'+entreprise?.user?.pc : "/assets/images/pc2.jpeg"}
+          src={
+            entreprise?.user?.pc
+              ? apifile + "/" + entreprise?.user?.pc
+              : "/assets/images/pc2.jpeg"
+          }
           fill
           className="object-cover"
           alt="cover"
@@ -96,13 +106,37 @@ export default function EntrepriseProfileClient({ id }: { id: string }) {
       <div className="px-4 md:px-8 -mt-20 relative">
         <div className="flex flex-col items-center md:items-start gap-4">
           <div className="w-36 h-36 md:w-40 md:h-40 rounded-full border-4 border-white overflow-hidden shadow-xl bg-white">
-            <img src={entreprise?.user?.pp ? apifile+'/'+entreprise?.user?.pp : '/assets/images/ppe.png'} className="object-cover w-full h-full" alt="logo" />
+            <img
+              src={
+                entreprise?.user?.pp
+                  ? apifile + "/" + entreprise?.user?.pp
+                  : "/assets/images/ppe.png"
+              }
+              className="object-cover w-full h-full"
+              alt="logo"
+            />
           </div>
 
           <div className="text-center md:text-left">
-            <h1 className="text-3xl font-bold">{entreprise?.nom}</h1>
+            <div className="flex justify-center items-center md:justify-start flex-wrap gap-1.5 mb-2">
+              <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+                {entreprise?.nom}
+              </h1>
+
+              {/* Badge de certification Orange-700 : Affiché de manière proche et directe */}
+              {(entreprise?.user?.certifie === 1 ||
+                entreprise?.user?.certifie === true) && (
+                <CheckCircle2
+                  className="w-6 h-6 text-orange-700 fill-orange-700/10 flex-shrink-0"
+                  strokeWidth={2.5}
+                />
+              )}
+            </div>
+
             <p className="text-gray-900 text-lg">{entreprise?.service}</p>
-            <p className="text-gray-600 my-4 text-start">{entreprise?.user?.bio}</p>
+            <p className="text-gray-600 my-4 text-start">
+              {entreprise?.user?.bio}
+            </p>
           </div>
 
           <div className="flex gap-3">
@@ -116,17 +150,22 @@ export default function EntrepriseProfileClient({ id }: { id: string }) {
               </Link>
             ) : (
               /* Bouton S'abonner : Uniquement pour les visiteurs */
-              (currentUser && !isOwner) && (
+              currentUser &&
+              !isOwner && (
                 <button
                   onClick={handleToggleAbonnement}
                   disabled={isToggling}
                   className={`px-6 py-2 rounded-lg shadow font-medium transition-all ${
-                    entreprise.is_abonne 
-                    ? "bg-gray-200 text-gray-700 hover:bg-gray-300" 
-                    : "bg-orange-700 text-white hover:bg-orange-800"
+                    entreprise.is_abonne
+                      ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                      : "bg-orange-700 text-white hover:bg-orange-800"
                   }`}
                 >
-                  {isToggling ? "En cours..." : (entreprise.is_abonne ? "Se désabonner" : "S'abonner")}
+                  {isToggling
+                    ? "En cours..."
+                    : entreprise.is_abonne
+                      ? "Se désabonner"
+                      : "S'abonner"}
                 </button>
               )
             )}
@@ -134,23 +173,33 @@ export default function EntrepriseProfileClient({ id }: { id: string }) {
         </div>
       </div>
 
-      <div className="px-4 md:px-8 mt-6 border-b flex gap-6 bg-white sticky top-0 z-50 pt-4 overflow-x-auto whitespace-nowrap scrollbar-hide">
+      <div className="px-4 md:px-8 mt-6 border-b flex gap-6 bg-white sticky top-0 z-30 pt-4 overflow-x-auto whitespace-nowrap scrollbar-hide">
         {["about", "challenges", "opportunites"].map((t) => (
           <button
             key={t}
             onClick={() => setActiveTab(t)}
             className={`pb-3 border-b-2 shrink-0 ${
-              activeTab === t ? "border-orange-700 text-orange-700 font-semibold" : "border-transparent text-gray-600"
+              activeTab === t
+                ? "border-orange-700 text-orange-700 font-semibold"
+                : "border-transparent text-gray-600"
             }`}
           >
-            {t === "about" ? "À propos" : t === "challenges" ? "Challenges" : "Offres d’opportunités"}
+            {t === "about"
+              ? "À propos"
+              : t === "challenges"
+                ? "Challenges"
+                : "Offres d’opportunités"}
           </button>
         ))}
       </div>
 
       <div className="px-4 md:px-8 mt-6 pb-14">
-        {activeTab === "about" && <TabAbout entreprise={entreprise} total={total} />}
-        {activeTab === "challenges" && <TabChallenges id={id} isOwner={isOwner} />}
+        {activeTab === "about" && (
+          <TabAbout entreprise={entreprise} total={total} />
+        )}
+        {activeTab === "challenges" && (
+          <TabChallenges id={id} isOwner={isOwner} />
+        )}
         {activeTab === "opportunites" && <TabOpportunites id={id} />}
       </div>
     </div>

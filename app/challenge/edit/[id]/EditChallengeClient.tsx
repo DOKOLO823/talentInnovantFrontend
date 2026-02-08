@@ -21,7 +21,9 @@ interface EditChallengeClientProps {
   challengeId: string;
 }
 
-export default function EditChallengeClient({ challengeId }: EditChallengeClientProps) {
+export default function EditChallengeClient({
+  challengeId,
+}: EditChallengeClientProps) {
   const router = useRouter();
 
   // États de gestion de l'interface
@@ -66,7 +68,7 @@ export default function EditChallengeClient({ challengeId }: EditChallengeClient
         // Note: l'endpoint est bien /challenge/${id} selon votre route Laravel
         const [challengeRes, jurysRes] = await Promise.all([
           apiFetch(`/challenge/${challengeId}`),
-          apiFetch("/users"), 
+          apiFetch("/users"),
         ]);
 
         if (challengeRes.statut === 200) {
@@ -84,12 +86,13 @@ export default function EditChallengeClient({ challengeId }: EditChallengeClient
             // Extraction des IDs des domaines depuis la relation pivot
             domaines: data.domaines?.map((d: any) => d.id) || [],
             // Mapping du type d'évaluation (ex: "hybride" -> "Hybride")
-            typeevaluation: data.typeevaluation?.type 
-              ? data.typeevaluation.type.charAt(0).toUpperCase() + data.typeevaluation.type.slice(1) 
+            typeevaluation: data.typeevaluation?.type
+              ? data.typeevaluation.type.charAt(0).toUpperCase() +
+                data.typeevaluation.type.slice(1)
               : "Jury",
             site: data.site || "Talent innovant",
-            nombrecontribution:data.nombrecontribution,
-            details: data?.details
+            nombrecontribution: data.nombrecontribution,
+            details: data?.details,
           };
 
           setChallenge(hydratedChallenge);
@@ -99,15 +102,18 @@ export default function EditChallengeClient({ challengeId }: EditChallengeClient
           if (data.fields) {
             setFields(
               data.fields.map((f: any) => ({
+                id: f.id,
                 label: f.label,
                 type: f.type,
                 is_required: !!f.is_required,
                 options: f.option ? parseBackendData(f.option) : [],
-              }))
+              })),
             );
           }
         } else {
-          toast.error(challengeRes.message || "Impossible de charger le challenge");
+          toast.error(
+            challengeRes.message || "Impossible de charger le challenge",
+          );
         }
       } catch (error) {
         console.error("Erreur de chargement:", error);
@@ -120,7 +126,12 @@ export default function EditChallengeClient({ challengeId }: EditChallengeClient
   }, [challengeId]);
 
   const getTypeEvaluationId = (type: string): string => {
-    const mapping: Record<string, string> = { Jury: "1", Vote: "2", Hybride: "3", hybride: "3" };
+    const mapping: Record<string, string> = {
+      Jury: "1",
+      Vote: "2",
+      Hybride: "3",
+      hybride: "3",
+    };
     return mapping[type] || "1";
   };
 
@@ -132,9 +143,22 @@ export default function EditChallengeClient({ challengeId }: EditChallengeClient
 
     // 1. Champs simples
     const simpleFields = [
-      "titre", "theme", "description", "datefininscription", 
-      "datelancement", "datefin", "site", "lieu", "region", 
-      "ville", "format","nombrecontribution", "objectif", "details", "jury_id", "portee_id"
+      "titre",
+      "theme",
+      "description",
+      "datefininscription",
+      "datelancement",
+      "datefin",
+      "site",
+      "lieu",
+      "region",
+      "ville",
+      "format",
+      "nombrecontribution",
+      "objectif",
+      "details",
+      "jury_id",
+      "portee_id",
     ];
 
     simpleFields.forEach((key) => {
@@ -144,7 +168,10 @@ export default function EditChallengeClient({ challengeId }: EditChallengeClient
     });
 
     formData.append("is_official", challenge.is_official ? "1" : "0");
-    formData.append("typeevaluation_id", getTypeEvaluationId(challenge.typeevaluation));
+    formData.append(
+      "typeevaluation_id",
+      getTypeEvaluationId(challenge.typeevaluation),
+    );
 
     // 2. Image
     if (photoFile) {
@@ -160,13 +187,14 @@ export default function EditChallengeClient({ challengeId }: EditChallengeClient
       publiccible: challenge.publiccible,
       domaines: challenge.domaines,
       nombrecontribution: challenge?.nombrecontribution,
-      details: challenge?.details
+      details: challenge?.details,
     };
 
     Object.entries(arrays).forEach(([key, value]) => {
       if (Array.isArray(value)) {
         value.forEach((item, index) => {
-          if (item !== "" && item !== null) formData.append(`${key}[${index}]`, item.toString());
+          if (item !== "" && item !== null)
+            formData.append(`${key}[${index}]`, item.toString());
         });
       }
     });
@@ -174,12 +202,20 @@ export default function EditChallengeClient({ challengeId }: EditChallengeClient
     // 4. Formulaire dynamique
     fields.forEach((field, index) => {
       if (field.label) {
+        if (field.id) {
+          formData.append(`fields[${index}][id]`, field.id.toString());
+        }
+
         formData.append(`fields[${index}][label]`, field.label);
         formData.append(`fields[${index}][type]`, field.type);
-        formData.append(`fields[${index}][is_required]`, field.is_required ? "1" : "0");
+        formData.append(
+          `fields[${index}][is_required]`,
+          field.is_required ? "1" : "0",
+        );
         if (field.options && field.options.length > 0) {
           field.options.forEach((opt: string, optIdx: number) => {
-            if (opt) formData.append(`fields[${index}][options][${optIdx}]`, opt);
+            if (opt)
+              formData.append(`fields[${index}][options][${optIdx}]`, opt);
           });
         }
       }
@@ -187,7 +223,7 @@ export default function EditChallengeClient({ challengeId }: EditChallengeClient
 
     try {
       const response = await apiFetch(`/challenge/update/${challengeId}`, {
-        method: "POST", 
+        method: "POST",
         body: formData,
       });
 
@@ -218,11 +254,11 @@ export default function EditChallengeClient({ challengeId }: EditChallengeClient
   return (
     <div className="min-h-screen bg-slate-50/50 pb-20">
       <Toaster position="top-right" />
-      
+
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
           <div className="flex items-center gap-4">
-            <button 
+            <button
               onClick={() => router.back()}
               className="p-2 bg-white border border-slate-200 rounded-full hover:bg-slate-50 transition-colors shadow-sm"
             >
@@ -232,7 +268,14 @@ export default function EditChallengeClient({ challengeId }: EditChallengeClient
               <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight">
                 Modifier le Challenge
               </h1>
-              <p className="text-sm text-slate-500 font-medium">Challenge : <span className="text-orange-700">{challenge.titre?.length>30 ? challenge.titre?.substring(0, 30)+'...' :challenge.titre}</span></p>
+              <p className="text-sm text-slate-500 font-medium">
+                Challenge :{" "}
+                <span className="text-orange-700">
+                  {challenge.titre?.length > 30
+                    ? challenge.titre?.substring(0, 30) + "..."
+                    : challenge.titre}
+                </span>
+              </p>
             </div>
           </div>
 
@@ -241,7 +284,11 @@ export default function EditChallengeClient({ challengeId }: EditChallengeClient
             disabled={isSubmitting}
             className="flex items-center justify-center gap-3 bg-slate-900 text-white px-8 py-4 rounded-md text-xs font-black tracking-widest hover:bg-black transition-all shadow-xl disabled:opacity-50"
           >
-            {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+            {isSubmitting ? (
+              <Loader2 className="animate-spin" size={18} />
+            ) : (
+              <Save size={18} />
+            )}
             METTRE À JOUR
           </button>
         </div>
@@ -250,8 +297,8 @@ export default function EditChallengeClient({ challengeId }: EditChallengeClient
           <button
             onClick={() => setActiveTab("infos")}
             className={`flex-1 flex items-center justify-center gap-3 px-6 py-5 text-[11px] font-black uppercase tracking-widest transition-all border-b-4 ${
-              activeTab === "infos" 
-                ? "border-orange-700 text-orange-700 bg-orange-50/30" 
+              activeTab === "infos"
+                ? "border-orange-700 text-orange-700 bg-orange-50/30"
                 : "border-transparent text-slate-400 hover:text-slate-600 hover:bg-slate-50"
             }`}
           >
@@ -260,8 +307,8 @@ export default function EditChallengeClient({ challengeId }: EditChallengeClient
           <button
             onClick={() => setActiveTab("form")}
             className={`flex-1 flex items-center justify-center gap-3 px-6 py-5 text-[11px] font-black uppercase tracking-widest transition-all border-b-4 ${
-              activeTab === "form" 
-                ? "border-orange-700 text-orange-700 bg-orange-50/30" 
+              activeTab === "form"
+                ? "border-orange-700 text-orange-700 bg-orange-50/30"
                 : "border-transparent text-slate-400 hover:text-slate-600 hover:bg-slate-50"
             }`}
           >
@@ -272,48 +319,83 @@ export default function EditChallengeClient({ challengeId }: EditChallengeClient
         <div className="bg-white border-x border-b border-slate-200 rounded-b-xl shadow-sm p-6 md:p-12">
           {activeTab === "infos" ? (
             <div className="animate-in fade-in duration-500">
-              <Stepper 
-                currentStep={1} 
-                currentSubStep={subStep} 
-                totalSubSteps={5} 
+              <Stepper
+                currentStep={1}
+                currentSubStep={subStep}
+                totalSubSteps={5}
                 mainStepTitle="Mode Édition"
               />
-              
+
               <div className="mt-12">
-                {subStep === 1 && <StepGeneralInfo data={challenge} onChange={setChallenge} photoFile={photoFile} setPhotoFile={setPhotoFile} onNext={() => setSubStep(2)} />}
-                {subStep === 2 && <StepPlanning data={challenge} onChange={setChallenge} onNext={() => setSubStep(3)} onBack={() => setSubStep(1)} />}
-                {subStep === 3 && <StepOrganisation data={challenge} onChange={setChallenge} jurys={jurys} onNext={() => setSubStep(4)} onBack={() => setSubStep(2)} />}
-                {subStep === 4 && <StepDomaines data={challenge} onChange={setChallenge} domaines={domainesJSON} onNext={() => setSubStep(5)} onBack={() => setSubStep(3)} />}
+                {subStep === 1 && (
+                  <StepGeneralInfo
+                    data={challenge}
+                    onChange={setChallenge}
+                    photoFile={photoFile}
+                    setPhotoFile={setPhotoFile}
+                    onNext={() => setSubStep(2)}
+                  />
+                )}
+                {subStep === 2 && (
+                  <StepPlanning
+                    data={challenge}
+                    onChange={setChallenge}
+                    onNext={() => setSubStep(3)}
+                    onBack={() => setSubStep(1)}
+                  />
+                )}
+                {subStep === 3 && (
+                  <StepOrganisation
+                    data={challenge}
+                    onChange={setChallenge}
+                    jurys={jurys}
+                    onNext={() => setSubStep(4)}
+                    onBack={() => setSubStep(2)}
+                  />
+                )}
+                {subStep === 4 && (
+                  <StepDomaines
+                    data={challenge}
+                    onChange={setChallenge}
+                    domaines={domainesJSON}
+                    onNext={() => setSubStep(5)}
+                    onBack={() => setSubStep(3)}
+                  />
+                )}
                 {subStep === 5 && (
-                  <StepDetailsChallenge 
-                    data={challenge} 
-                    onChange={setChallenge} 
-                    onNext={() => setActiveTab("form")} 
-                    onBack={() => setSubStep(4)} 
-                    isSubmitting={isSubmitting} 
+                  <StepDetailsChallenge
+                    data={challenge}
+                    onChange={setChallenge}
+                    onNext={() => setActiveTab("form")}
+                    onBack={() => setSubStep(4)}
+                    isSubmitting={isSubmitting}
                     onSubmit={handleUpdate}
-                    forCreate={false} 
+                    forCreate={false}
                   />
                 )}
               </div>
             </div>
           ) : (
             <div className="animate-in fade-in duration-500">
-               <div className="mb-10 p-5 bg-orange-50 border-l-4 border-orange-700 rounded-r-xl shadow-sm">
-                 <h4 className="text-orange-900 font-bold text-sm mb-1 uppercase tracking-tight">Configuration du Formulaire</h4>
-                 <p className="text-orange-700 text-xs leading-relaxed">
-                   Modifiez les questions posées aux candidats. Toute modification ici remplacera les champs actuels lors de la sauvegarde.
-                 </p>
-               </div>
-               
-               <Step2ChallengeForm 
-                 fields={fields} 
-                 setFields={setFields} 
-                 onBack={() => setActiveTab("infos")} 
-                 onSubmit={handleUpdate} 
-                 isSubmitting={isSubmitting}
-                 forCreate={false} 
-               />
+              <div className="mb-10 p-5 bg-orange-50 border-l-4 border-orange-700 rounded-r-xl shadow-sm">
+                <h4 className="text-orange-900 font-bold text-sm mb-1 uppercase tracking-tight">
+                  Configuration du Formulaire
+                </h4>
+                <p className="text-orange-700 text-xs leading-relaxed">
+                  Modifiez les questions posées aux candidats. Toute
+                  modification ici remplacera les champs actuels lors de la
+                  sauvegarde.
+                </p>
+              </div>
+
+              <Step2ChallengeForm
+                fields={fields}
+                setFields={setFields}
+                onBack={() => setActiveTab("infos")}
+                onSubmit={handleUpdate}
+                isSubmitting={isSubmitting}
+                forCreate={false}
+              />
             </div>
           )}
         </div>

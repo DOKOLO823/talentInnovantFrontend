@@ -7,7 +7,7 @@ import apifile from "@/app/lib/apifile";
 export default function TabsProjects({ projects, userId, onRefresh }: any) {
   const [projectsData, setProjectsData] = useState(projects || []);
   const [loading, setLoading] = useState(!projects || projects.length === 0);
-  
+
   useEffect(() => {
     if (!projects || projects.length === 0) {
       fetchUserProjects();
@@ -21,48 +21,49 @@ export default function TabsProjects({ projects, userId, onRefresh }: any) {
     try {
       setLoading(true);
       const res = await apiFetch(`/talent/profil/${userId}`, { method: "GET" });
-      
+
       if (res?.statut === 200) {
-        const transformedProjects = res.posts_par_challenge?.flatMap((challengeGroup: any[]) => 
-          challengeGroup.map((post: any) => ({
-            id: post.id,
-            rank: post.rang,
-            author: {
-              id: res?.user.id,
-              name: res.talent?.nom || res.user.name || "Talent",
-              role: res?.talent?.profession || "Innovateur",
-              avatar: res?.user.pp 
-                ? apifile + '/' + res?.user.pp
-                : null,
-            },
-            challenge: {
-              id: post.challenge_id,
-              name: post.challenge?.titre || "Challenge",
-              image: post.challenge?.photo 
-                ? `${apifile}/storage/${post.challenge.photo}`
-                : "../assets/images/award.jpg",
-              typeevaluation: post.typeevaluation?.type,
-              resultatdisponible: post.challenge?.resultatdisponible == 1 ? 1 : 0,
-              datefin: post?.challenge?.datefin,
-              portee: post?.challenge?.portee?.portee
-            },
-            responses: post.responses?.map((response: any) => ({
-              id: response.id,
-              challenge_field: {
-                label: response.field?.label || "Champ",
-                type: response.field?.type || "text",
+        const transformedProjects =
+          res.posts_par_challenge?.flatMap((challengeGroup: any[]) =>
+            challengeGroup.map((post: any) => ({
+              id: post.id,
+              rank: post.rang,
+              author: {
+                id: res?.user.id,
+                name: res.talent?.nom || res.user.name || "Talent",
+                role: res?.talent?.profession || "Innovateur",
+                avatar: res?.user.pp ? apifile + "/" + res?.user.pp : null,
               },
-              value: response.value,
-            })) || [],
-            notefinale: post.notefinale,
-            score:post.score,
-            vote:post.like,
-            partage:post.partage,
-            idlikeurs:post?.likeurs_ids,
-            nombreCommentaire:post?.nombreCommentaire
-          }))
-        ) || [];
-        
+              challenge: {
+                id: post.challenge_id,
+                name: post.challenge?.titre || "Challenge",
+                image: post.challenge?.photo
+                  ? `${apifile}/storage/${post.challenge.photo}`
+                  : "../assets/images/award.jpg",
+                typeevaluation: post.typeevaluation?.type,
+                resultatdisponible:
+                  post.challenge?.resultatdisponible == 1 ? 1 : 0,
+                datefin: post?.challenge?.datefin,
+                portee: post?.challenge?.portee?.portee,
+              },
+              responses:
+                post.responses?.map((response: any) => ({
+                  id: response.id,
+                  challenge_field: {
+                    label: response.field?.label || "Champ",
+                    type: response.field?.type || "text",
+                  },
+                  value: response.value,
+                })) || [],
+              notefinale: post.notefinale,
+              score: post.score,
+              vote: post.like,
+              partage: post.partage,
+              idlikeurs: post?.likeurs_ids,
+              nombreCommentaire: post?.nombreCommentaire,
+            })),
+          ) || [];
+
         setProjectsData(transformedProjects);
       }
     } catch (error) {
@@ -80,7 +81,7 @@ export default function TabsProjects({ projects, userId, onRefresh }: any) {
     );
   }
 
-  if (projectsData.length === 0) {
+  if (projectsData?.length == 0) {
     return (
       <div className="text-center py-20">
         <p className="text-gray-500">Aucun projet trouvé pour ce talent.</p>

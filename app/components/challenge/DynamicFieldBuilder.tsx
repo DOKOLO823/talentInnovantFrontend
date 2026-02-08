@@ -4,17 +4,16 @@ import { Plus, Trash2, GripVertical, Info, Check } from "lucide-react";
 import { useEffect } from "react";
 
 const FIELD_TYPES = [
-  { value: "text", label: "Texte court" },
-  { value: "textarea", label: "Texte long" },
-  { value: "image", label: "Image" },
-  { value: "video", label: "Vidéo" },
-  { value: "file", label: "Document (PDF, etc.)" },
-  { value: "select", label: "Liste déroulante" },
-  { value: "checkbox", label: "Cases à cocher" },
+  { value: "text", label: "Texte court", id: 1 },
+  { value: "textarea", label: "Texte long", id: 2 },
+  { value: "image", label: "Image", id: 3 },
+  { value: "video", label: "Vidéo", id: 4 },
+  { value: "file", label: "Document (PDF, etc.)", id: 5 },
+  { value: "select", label: "Liste déroulante", id: 6 },
+  { value: "checkbox", label: "Cases à cocher", id: 7 },
 ];
 
 export default function DynamicFieldBuilder({ fields, setFields }: any) {
-  
   useEffect(() => {
     if (fields.length === 0) {
       setFields([{ label: "", type: "text", is_required: true, options: [] }]);
@@ -25,7 +24,7 @@ export default function DynamicFieldBuilder({ fields, setFields }: any) {
     if (lastField.label && lastField.label.trim() !== "") {
       setFields([
         ...fields,
-        { label: "", type: "text", is_required: true, options: [] }
+        { label: "", type: "text", is_required: true, options: [] },
       ]);
     }
   }, [fields, setFields]);
@@ -59,13 +58,17 @@ export default function DynamicFieldBuilder({ fields, setFields }: any) {
 
   const removeOption = (fIdx: number, oIdx: number) => {
     const copy = [...fields];
-    copy[fIdx].options = copy[fIdx].options.filter((_: any, i: number) => i !== oIdx);
+    copy[fIdx].options = copy[fIdx].options.filter(
+      (_: any, i: number) => i !== oIdx,
+    );
     setFields(copy);
   };
 
   // Styles Enterprise Edition
-  const labelStyle = "text-[11px] font-black uppercase tracking-wider text-slate-900 mb-2 block";
-  const inputStyle = "w-full bg-white border border-slate-300 rounded-md p-2.5 text-sm focus:border-orange-700 focus:ring-1 focus:ring-orange-700/20 outline-none transition-all placeholder:text-slate-400";
+  const labelStyle =
+    "text-[11px] font-black uppercase tracking-wider text-slate-900 mb-2 block";
+  const inputStyle =
+    "w-full bg-white border border-slate-300 rounded-md p-2.5 text-sm focus:border-orange-700 focus:ring-1 focus:ring-orange-700/20 outline-none transition-all placeholder:text-slate-400";
 
   return (
     <div className="space-y-6">
@@ -100,7 +103,7 @@ export default function DynamicFieldBuilder({ fields, setFields }: any) {
                 className={inputStyle}
                 placeholder="Ex: Présentez votre solution en 2 phrases"
                 value={field.label}
-                onChange={e => updateField(index, "label", e.target.value)}
+                onChange={(e) => updateField(index, "label", e.target.value)}
               />
             </div>
 
@@ -109,10 +112,12 @@ export default function DynamicFieldBuilder({ fields, setFields }: any) {
               <select
                 className={inputStyle}
                 value={field.type}
-                onChange={e => updateField(index, "type", e.target.value)}
+                onChange={(e) => updateField(index, "type", e.target.value)}
               >
-                {FIELD_TYPES.map(t => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
+                {FIELD_TYPES.map((t) => (
+                  <option key={t.id} value={t.value}>
+                    {t.label}
+                  </option>
                 ))}
               </select>
             </div>
@@ -129,7 +134,7 @@ export default function DynamicFieldBuilder({ fields, setFields }: any) {
                       className="flex-1 bg-slate-50 border border-slate-200 rounded-md p-2 text-sm focus:bg-white focus:border-orange-700 outline-none"
                       placeholder={`Option ${i + 1}`}
                       value={opt}
-                      onChange={e => updateOption(index, i, e.target.value)}
+                      onChange={(e) => updateOption(index, i, e.target.value)}
                     />
                     <button
                       type="button"
@@ -159,9 +164,14 @@ export default function DynamicFieldBuilder({ fields, setFields }: any) {
                   type="checkbox"
                   className="peer h-4 w-4 cursor-pointer appearance-none rounded border border-slate-300 checked:bg-orange-700 checked:border-orange-700 transition-all accent-orange-700"
                   checked={field.is_required}
-                  onChange={e => updateField(index, "is_required", e.target.checked)}
+                  onChange={(e) =>
+                    updateField(index, "is_required", e.target.checked)
+                  }
                 />
-                <Check className="absolute w-3 h-3 text-white left-0.5 pointer-events-none hidden peer-checked:block" strokeWidth={4} />
+                <Check
+                  className="absolute w-3 h-3 text-white left-0.5 pointer-events-none hidden peer-checked:block"
+                  strokeWidth={4}
+                />
               </div>
               <span className="text-[11px] font-bold uppercase tracking-tight text-slate-500 group-hover:text-orange-700 transition-colors">
                 Marquer comme champ obligatoire

@@ -1,15 +1,24 @@
 import EditChallengeClient from "./EditChallengeClient";
 
 interface EditChallengePageProps {
-  params: Promise<{ id: string }>; // On définit params comme une Promise
+  params: Promise<{ id: string }>;
 }
 
-export default async function EditChallengePage({ params }: EditChallengePageProps) {
+// 1. On indique à Next.js de ne pas bloquer si l'ID n'est pas pré-généré
+export const dynamicParams = true;
+
+// 2. On ajoute la fonction minimale pour satisfaire le compilateur
+export async function generateStaticParams() {
+  return [];
+}
+
+export default async function EditChallengePage({
+  params,
+}: EditChallengePageProps) {
   const { id } = await params;
 
   return (
     <main className="min-h-screen bg-slate-50">
-      {/* On injecte l'ID désenveloppé dans le composant Client */}
       <EditChallengeClient challengeId={id} />
     </main>
   );

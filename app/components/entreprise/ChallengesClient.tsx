@@ -15,26 +15,26 @@ export default function ChallengesClient() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  
+
   const [data, setData] = useState({
     enCours: [] as any[],
     termines: [] as any[],
-    avenir: [] as any[]
+    avenir: [] as any[],
   });
 
   const fetchData = async () => {
     const userStr = localStorage.getItem("auth");
-    if(!userStr){
-          router.push("/auth/login");
-          return;
-        }
+    if (!userStr) {
+      router.push("/auth/login");
+      return;
+    }
 
     setLoading(true);
     try {
       const [resEnCours, resTermines, resAvenir] = await Promise.all([
         apiFetch("/entreprise/meschallenges/en-cours", { method: "GET" }),
         apiFetch("/entreprise/meschallenges/termines", { method: "GET" }),
-        apiFetch("/entreprise/meschallenges/avenir", { method: "GET" })
+        apiFetch("/entreprise/meschallenges/avenir", { method: "GET" }),
       ]);
 
       const processData = (list: any[]) => {
@@ -42,26 +42,35 @@ export default function ChallengesClient() {
         return list.map((c: any) => {
           let rewardsArray = ["Prix non défini"];
           try {
-            if (typeof c.recompense === 'string' && c.recompense!='null') {
+            if (typeof c.recompense === "string" && c.recompense != "null") {
               const parsed = JSON.parse(c.recompense);
               rewardsArray = Object.values(parsed);
             }
-          } catch (e) { console.error(e); }
+          } catch (e) {
+            console.error(e);
+          }
 
           return {
             ...c,
             title: c.titre,
-            image: c.photo && apifile + '/' + c.photo || "/assets/images/innov.jpg",
+            image:
+              (c.photo && apifile + "/" + c.photo) ||
+              "/assets/images/innov.jpg",
             locationType: c.lieu || "En ligne",
             startDate: c.datelancement,
             endDate: c.datefin,
-            inscriptionEnd: c.datefininscription,
+            endInscription: c.datefininscription,
             participants: c.nombrecompetiteur || 0,
             rewards: rewardsArray,
-            categories: c.domaines && c.domaines.length > 0 ? c.domaines.map((d: any) => d.nom) : ["Général"],
+            categories:
+              c.domaines && c.domaines.length > 0
+                ? c.domaines.map((d: any) => d.nom)
+                : ["Général"],
             entrepriseNom: c.user?.entreprise?.nom || "Partenaire",
-            entrepriseLogo: c.user?.pp ? `${apifile}/${c.user.pp}` : "../assets/images/ppe.png",
-            entrepriseId: c.user_id
+            entrepriseLogo: c.user?.pp
+              ? `${apifile}/${c.user.pp}`
+              : "../assets/images/ppe.png",
+            entrepriseId: c.user_id,
           };
         });
       };
@@ -69,9 +78,9 @@ export default function ChallengesClient() {
       setData({
         enCours: processData(resEnCours?.challenges_en_cours),
         termines: processData(resTermines?.challenges_termines),
-        avenir: processData(resAvenir?.challenges_avenir)
+        avenir: processData(resAvenir?.challenges_avenir),
       });
-      console.log(resEnCours)
+      console.log(resEnCours);
     } catch (err) {
       console.error("Erreur chargement challenges:", err);
     } finally {
@@ -91,34 +100,47 @@ export default function ChallengesClient() {
 
   const filtered = useMemo(() => {
     return currentList.filter((c: any) =>
-      c.title.toLowerCase().includes(query.toLowerCase())
+      c.title.toLowerCase().includes(query.toLowerCase()),
     );
   }, [currentList, query]);
 
   const EmptyState = () => {
-    if (active === "En cours") return (
-      <div className="text-center py-20 bg-white rounded-xl shadow-sm border border-dashed">
-        <Inbox className="mx-auto text-gray-400 mb-4" size={48} />
-        <p className="text-gray-500">Aucun challenge en cours.</p>
-        <button onClick={() => setActive("À venir")} className="mt-4 text-orange-700 font-semibold hover:underline">
-          Voir les challenges à venir →
-        </button>
-      </div>
-    );
-    if (active === "Terminés") return (
-      <div className="text-center py-20 bg-white rounded-xl shadow-sm border border-dashed">
-        <Inbox className="mx-auto text-gray-400 mb-4" size={48} />
-        <p className="text-gray-500">Vous n'avez pas encore de challenges terminés.</p>
-        <button onClick={() => setActive("En cours")} className="mt-4 text-orange-700 font-semibold hover:underline">
-          Voir les challenges en cours →
-        </button>
-      </div>
-    );
+    if (active === "En cours")
+      return (
+        <div className="text-center py-20 bg-white rounded-xl shadow-sm border border-dashed">
+          <Inbox className="mx-auto text-gray-400 mb-4" size={48} />
+          <p className="text-gray-500">Aucun challenge en cours.</p>
+          <button
+            onClick={() => setActive("À venir")}
+            className="mt-4 text-orange-700 font-semibold hover:underline"
+          >
+            Voir les challenges à venir →
+          </button>
+        </div>
+      );
+    if (active === "Terminés")
+      return (
+        <div className="text-center py-20 bg-white rounded-xl shadow-sm border border-dashed">
+          <Inbox className="mx-auto text-gray-400 mb-4" size={48} />
+          <p className="text-gray-500">
+            Vous n'avez pas encore de challenges terminés.
+          </p>
+          <button
+            onClick={() => setActive("En cours")}
+            className="mt-4 text-orange-700 font-semibold hover:underline"
+          >
+            Voir les challenges en cours →
+          </button>
+        </div>
+      );
     return (
       <div className="text-center py-20 bg-white rounded-xl shadow-sm border border-dashed">
         <Inbox className="mx-auto text-gray-400 mb-4" size={48} />
         <p className="text-gray-500">Aucun challenge prévu pour le moment.</p>
-        <button onClick={() => setActive("En cours")} className="mt-4 text-orange-700 font-semibold hover:underline">
+        <button
+          onClick={() => setActive("En cours")}
+          className="mt-4 text-orange-700 font-semibold hover:underline"
+        >
           Retour aux challenges en cours →
         </button>
       </div>
@@ -128,12 +150,17 @@ export default function ChallengesClient() {
   return (
     <div className="space-y-6">
       <div className="bg-white p-6 rounded-xl mt-14 shadow-sm border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <Toaster/>
+        <Toaster />
         <div>
           <h2 className="text-2xl font-bold text-slate-800">Vos challenges</h2>
-          <p className="text-slate-500">Gérez vos compétitions et suivez les participations.</p>
+          <p className="text-slate-500">
+            Gérez vos compétitions et suivez les participations.
+          </p>
         </div>
-        <Link href="/challenge/create" className="bg-orange-700 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 hover:bg-orange-800 transition-all shadow-md active:scale-95">
+        <Link
+          href="/challenge/create"
+          className="bg-orange-700 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 hover:bg-orange-800 transition-all shadow-md active:scale-95"
+        >
           <PlusCircle size={20} /> Organiser un challenge
         </Link>
       </div>
@@ -147,26 +174,38 @@ export default function ChallengesClient() {
               {[
                 { n: "En cours", count: data.enCours.length },
                 { n: "Terminés", count: data.termines.length },
-                { n: "À venir", count: data.avenir.length }
+                { n: "À venir", count: data.avenir.length },
               ].map((tab) => (
                 <button
                   key={tab.n}
-                  onClick={() => { setActive(tab.n); setQuery(""); }}
+                  onClick={() => {
+                    setActive(tab.n);
+                    setQuery("");
+                  }}
                   className={`px-4 py-2 rounded-md transition-all font-medium text-sm flex items-center gap-2 ${
-                    active === tab.n ? 'bg-white text-orange-700 shadow-sm' : 'text-slate-600 hover:text-orange-600'
+                    active === tab.n
+                      ? "bg-white text-orange-700 shadow-sm"
+                      : "text-slate-600 hover:text-orange-600"
                   }`}
                 >
                   {tab.n}
-                  {!loading && <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${active === tab.n ? 'bg-orange-100' : 'bg-slate-200'}`}>
-                    {tab.count}
-                  </span>}
+                  {!loading && (
+                    <span
+                      className={`text-[10px] px-1.5 py-0.5 rounded-full ${active === tab.n ? "bg-orange-100" : "bg-slate-200"}`}
+                    >
+                      {tab.count}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
           </div>
-          
+
           <div className="lg:ml-auto w-full lg:max-w-md relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              size={18}
+            />
             <input
               className="pl-10 pr-4 py-2 border border-slate-200 rounded-lg w-full focus:ring-2 focus:ring-orange-500 outline-none transition-all text-sm bg-white"
               placeholder={`Rechercher dans ${active.toLowerCase()}...`}
@@ -189,7 +228,8 @@ export default function ChallengesClient() {
             <div className="text-center py-20 bg-white rounded-xl border">
               <Search className="mx-auto text-slate-300 mb-2" size={40} />
               <p className="text-slate-500">
-                Aucun challenge {active.toLowerCase()} ne correspond au mot clé : <span className="font-bold text-slate-800">"{query}"</span>
+                Aucun challenge {active.toLowerCase()} ne correspond au mot clé
+                : <span className="font-bold text-slate-800">"{query}"</span>
               </p>
             </div>
           ) : (
@@ -202,7 +242,7 @@ export default function ChallengesClient() {
         </div>
       )}
 
-      <BackToTop/>
+      <BackToTop />
     </div>
   );
 }

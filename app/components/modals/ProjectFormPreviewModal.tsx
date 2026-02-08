@@ -54,12 +54,20 @@ export default function ProjectFormPreviewModal({
     const commonClasses =
       "w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition duration-200 bg-white text-gray-700";
 
-    if (field.type === "file") {
+    if (
+      field.type === "file" ||
+      field.type === "image" ||
+      field.type === "video"
+    ) {
       return (
         <div className="space-y-2">
-          <div className={`${commonClasses} flex items-center gap-3 bg-gray-50 border-dashed cursor-pointer`}>
+          <div
+            className={`${commonClasses} flex items-center gap-3 bg-gray-50 border-dashed cursor-pointer`}
+          >
             <FileText size={18} className="text-orange-600" />
-            <span className="text-sm text-gray-500">Choisir un fichier (max 30 Mo)</span>
+            <span className="text-sm text-gray-500">
+              Choisir un fichier (max 30 Mo)
+            </span>
           </div>
         </div>
       );
@@ -78,17 +86,25 @@ export default function ProjectFormPreviewModal({
       case "select":
         let optionsList = [];
         try {
-          optionsList = typeof field.option === "string" ? JSON.parse(field.option) : field.option;
+          optionsList =
+            typeof field.option === "string"
+              ? JSON.parse(field.option)
+              : field.option;
         } catch (e) {
           optionsList = field.option?.split(",") || [];
         }
 
         return (
           <select className={commonClasses} defaultValue="">
-            <option value="" disabled>Sélectionner...</option>
-            {Array.isArray(optionsList) && optionsList.map((opt: string, idx: number) => (
-              <option key={idx} value={opt}>{opt}</option>
-            ))}
+            <option value="" disabled>
+              Sélectionner...
+            </option>
+            {Array.isArray(optionsList) &&
+              optionsList.map((opt: string, idx: number) => (
+                <option key={idx} value={opt}>
+                  {opt}
+                </option>
+              ))}
           </select>
         );
       default:
@@ -106,17 +122,27 @@ export default function ProjectFormPreviewModal({
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full max-h-[85vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300">
-        
         {/* Header */}
         <div className="p-4 border-b flex justify-between items-center bg-gray-50/50 backdrop-blur-md sticky top-0 z-20">
           <div className="flex items-center gap-4 min-w-0">
-            <img src={challenge.photo} alt="" className="w-12 h-12 rounded-lg object-cover shadow-sm" />
+            <img
+              src={challenge.photo}
+              alt=""
+              className="w-12 h-12 rounded-lg object-cover shadow-sm"
+            />
             <div className="min-w-0">
-              <h2 className="font-bold text-gray-900 text-lg line-clamp-2">{challenge.titre}</h2>
-              <p className="text-xs text-gray-500">Aperçu du formulaire de participation</p>
+              <h2 className="font-bold text-gray-900 text-lg line-clamp-2">
+                {challenge.titre}
+              </h2>
+              <p className="text-xs text-gray-500">
+                Aperçu du formulaire de participation
+              </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-200 rounded-full transition-colors"
+          >
             <X size={20} className="text-gray-500" />
           </button>
         </div>
@@ -129,12 +155,15 @@ export default function ProjectFormPreviewModal({
               <p className="text-sm text-gray-500">Chargement des champs...</p>
             </div>
           ) : error ? (
-            <div className="text-center py-8 text-red-500 font-medium">{error}</div>
+            <div className="text-center py-8 text-red-500 font-medium">
+              {error}
+            </div>
           ) : (
             <div className="space-y-6">
               <div className="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-r-lg">
                 <p className="text-xs text-orange-700 font-medium leading-tight">
-                  Voici les informations qui seront demandées aux participants pour ce challenge. 
+                  Voici les informations qui seront demandées aux participants
+                  pour ce challenge.
                 </p>
               </div>
 
@@ -142,7 +171,10 @@ export default function ProjectFormPreviewModal({
                 {fields.map((field) => (
                   <div key={field.id} className="space-y-1.5">
                     <label className="block text-sm font-bold text-gray-700">
-                      {field.label} {field.is_required === 1 && <span className="text-red-500">*</span>}
+                      {field.label}{" "}
+                      {field.is_required === 1 && (
+                        <span className="text-red-500">*</span>
+                      )}
                     </label>
                     {renderPreviewField(field)}
                   </div>

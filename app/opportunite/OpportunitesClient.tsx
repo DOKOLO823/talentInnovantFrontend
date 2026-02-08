@@ -10,17 +10,24 @@ import { apiFetch } from "@/app/lib/api";
 // --- FONCTIONS DE GESTION DES DATES (Identiques aux notifications) ---
 const getGroupTitle = (dateString: string): string => {
   if (!dateString) return "Anciennes opportunités";
-  
-  const date = new Date(dateString.includes('Z') || dateString.includes('+') ? dateString : `${dateString.replace(' ', 'T')}Z`);
-  const now = new Date();
-  
-  const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
 
-  if (diffInDays === 0 && date.getDate() === now.getDate()) return "Aujourd'hui";
+  const date = new Date(
+    dateString.includes("Z") || dateString.includes("+")
+      ? dateString
+      : `${dateString.replace(" ", "T")}Z`,
+  );
+  const now = new Date();
+
+  const diffInDays = Math.floor(
+    (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24),
+  );
+
+  if (diffInDays === 0 && date.getDate() === now.getDate())
+    return "Aujourd'hui";
   if (diffInDays <= 1 && date.getDate() !== now.getDate()) return "Hier";
   if (diffInDays < 7) return "Cette semaine";
-  
-  return date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+
+  return date.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
 };
 
 export default function OpportunitesClient() {
@@ -77,46 +84,49 @@ export default function OpportunitesClient() {
 
   // --- FILTRAGE ET GROUPEMENT ---
   const domainesList = useMemo(() => {
-    return ["Tous les domaines", ...new Set(opportunites.map((o: any) => o.domaine?.nom).filter(Boolean))];
+    return [
+      "Tous les domaines",
+      ...new Set(opportunites.map((o: any) => o.domaine?.nom).filter(Boolean)),
+    ];
   }, [opportunites]);
 
   // 1. Filtrer les opportunités d'abord
   const filteredOpps = useMemo(() => {
     return opportunites.filter((o: any) => {
-      const matchTab = o.type.toLowerCase() === activeTab.toLowerCase();
-      const matchDomain = domaine === "Tous les domaines" || o.domaine?.nom === domaine;
-      const matchSearch = 
-        o.titre.toLowerCase().includes(search.toLowerCase()) ||
-        o.description.toLowerCase().includes(search.toLowerCase());
+      const matchTab = o?.type?.toLowerCase() === activeTab?.toLowerCase();
+      const matchDomain =
+        domaine === "Tous les domaines" || o.domaine?.nom === domaine;
+      const matchSearch =
+        o?.titre?.toLowerCase().includes(search?.toLowerCase()) ||
+        o?.description?.toLowerCase().includes(search?.toLowerCase());
       return matchTab && matchDomain && matchSearch;
     });
   }, [activeTab, domaine, search, opportunites]);
 
   // 2. Grouper les opportunités filtrées par période (comme les notifications)
   const groupedOpps = useMemo(() => {
-    // Trier par date décroissante (plus récent d'abord)
-    const sorted = [...filteredOpps].sort((a, b) => 
-      new Date(b.created_at || b.date).getTime() - new Date(a.created_at || a.date).getTime()
-    );
-    
+    // ✅ IMPORTANT : On ne fait PLUS de .sort() ici car le backend s'en occupe déjà.
+    // On se contente de grouper les éléments filtrés.
     const groups: { [key: string]: any[] } = {};
-    
-    sorted.forEach(opp => {
+
+    filteredOpps.forEach((opp) => {
       const title = getGroupTitle(opp.created_at || opp.date);
       if (!groups[title]) groups[title] = [];
       groups[title].push(opp);
     });
-    
+
     return groups;
   }, [filteredOpps]);
 
   return (
     <div className="max-w-6xl mx-auto p-3 pt-24 pb-24">
       <BackButton m={4} />
-      <h1 className="text-2xl md:text-3xl font-bold mb-6 text-gray-900 tracking-tight">Offres d'opportunités</h1>
+      <h1 className="text-2xl md:text-3xl font-bold mb-6 text-gray-900 tracking-tight">
+        Offres d'opportunités
+      </h1>
 
       {/* SEUL CE BLOC (TABS) EST STICKY */}
-      <div 
+      <div
         className={`sticky z-40 bg-white pt-2 px-4 shadow-sm transition-all duration-300 ease-in-out ${
           isScrollingUp ? "top-[64px]" : "top-0"
         }`}
@@ -127,7 +137,9 @@ export default function OpportunitesClient() {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`pb-2 font-medium transition ${
-                activeTab === tab ? "text-orange-700 border-b-2 border-orange-700" : "text-gray-500"
+                activeTab === tab
+                  ? "text-orange-700 border-b-2 border-orange-700"
+                  : "text-gray-500"
               }`}
             >
               {tab}s
@@ -144,7 +156,9 @@ export default function OpportunitesClient() {
           onChange={(e) => setDomaine(e.target.value)}
         >
           {domainesList.map((d: any) => (
-            <option key={d} value={d}>{d}</option>
+            <option key={d} value={d}>
+              {d}
+            </option>
           ))}
         </select>
 
@@ -173,7 +187,7 @@ export default function OpportunitesClient() {
               <h2 className="sticky top-10 z-20 py-2 bg-gray-100 text-[15px] font-semibold text-gray-500 first-letter:uppercase tracking-[0.15em] border-l-4 border-orange-700 pl-3">
                 {title}
               </h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {items.map((opp: any) => (
                   <OpportuniteCard key={opp.id} opp={opp} />
@@ -184,10 +198,12 @@ export default function OpportunitesClient() {
         </div>
       ) : (
         <div className="text-center py-20 bg-gray-50 rounded-xl border border-dashed border-gray-300 mt-8">
-          <p className="text-gray-500">Aucune opportunité trouvée pour vos critères.</p>
+          <p className="text-gray-500">
+            Aucune opportunité trouvée pour vos critères.
+          </p>
         </div>
       )}
-      
+
       <BackToTop />
     </div>
   );

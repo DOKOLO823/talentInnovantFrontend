@@ -21,28 +21,28 @@ export default function TopChallengesList() {
         if (res && res.statut === 200) {
           const mappedData = res.data.map((c: any) => {
             // --- GESTION DES RÉCOMPENSES (Format Objet ou String) ---
-            let rewardsArray: string[] = [];
-            if (c.recompense) {
-              let data = c.recompense;
-              // Si c'est une string (JSON), on parse
-              if (typeof c.recompense === "string") {
-                try {
-                  data = JSON.parse(c.recompense);
-                } catch (e) {
-                  data = { prix: c.recompense };
-                }
-              }
+            // let rewardsArray: string[] = ["Prix non défini"];
+            // if (c.recompense) {
+            //   let data = c.recompense;
+            //   // Si c'est une string (JSON), on parse
+            //   if (typeof c.recompense === "string") {
+            //     try {
+            //       data = JSON.parse(c.recompense);
+            //     } catch (e) {
+            //       data = { prix: c.recompense };
+            //     }
+            //   }
 
-              // Si c'est un objet, on transforme en tableau de chaînes
-              if (typeof data === "object" && data !== null) {
-                rewardsArray = Object.entries(data).map(
-                  ([key, val]) => `${key.replace(/_/g, " ")} : ${val}`,
-                );
-              } else {
-                rewardsArray = [String(data)];
-              }
-            }
-            if (rewardsArray.length === 0) rewardsArray = ["Prix à définir"];
+            //   // Si c'est un objet, on transforme en tableau de chaînes
+            //   if (typeof data === "object" && data !== null) {
+            //     rewardsArray = Object.entries(data).map(
+            //       ([key, val]) => `${key.replace(/_/g, " ")} : ${val}`,
+            //     );
+            //   } else {
+            //     rewardsArray = [String(data)];
+            //   }
+            // }
+            // if (rewardsArray.length === 0) rewardsArray = ["Prix non défini"];
 
             // --- FORMATTAGE DES DATES ---
             const formatDate = (d: string) =>
@@ -59,13 +59,29 @@ export default function TopChallengesList() {
               image: c.photo
                 ? `${apifile}/${c.photo}`
                 : "/assets/images/innov.jpg",
-              locationType:
-                c.lieu === "en ligne" ? "En ligne" : c.ville || "Présentiel",
-              startDate: formatDate(c.datelancement),
-              endDate: formatDate(c.datefin),
-              inscriptionEnd: formatDate(c.datefininscription || c.datefin),
+              locationType: c.lieu,
+              startDate: c.datelancement,
+              endDate: c.datefin,
+              endInscription: c.datefininscription,
               participants: c.participants_count || 0,
-              rewards: rewardsArray,
+              rewards: (() => {
+                let rewardsArray = ["Prix non défini"];
+                try {
+                  if (
+                    typeof c.recompense === "string" &&
+                    c.recompense !== "null"
+                  ) {
+                    const parsed = JSON.parse(c.recompense);
+                    // Object.values transforme {"0":"Prix 1"} en ["Prix 1"]
+                    rewardsArray = Object.values(parsed);
+                  } else if (Array.isArray(c.recompense)) {
+                    rewardsArray = c.recompense;
+                  }
+                } catch (e) {
+                  console.error("Erreur parsing récompenses:", e);
+                }
+                return rewardsArray;
+              })(),
               // On utilise les catégories si elles existent, sinon un tableau vide
               categories: c.domaines
                 ? c.domaines.map((d: any) => d.nom)

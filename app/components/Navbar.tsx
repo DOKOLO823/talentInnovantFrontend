@@ -31,11 +31,12 @@ export default function Navbar() {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
 
-  // Détermination dynamique du lien de paramètres
+  // Petite astuce pour forcer le rafraîchissement de l'image
+  const [imgKey, setImgKey] = useState(Date.now());
+
   const settingsPath =
     role === "talent" ? "/parametres-talent" : "/parametres-entreprise";
 
-  // --- LOGIQUE DE SCROLL ---
   useEffect(() => {
     const controlNavbar = () => {
       if (typeof window !== "undefined") {
@@ -55,14 +56,51 @@ export default function Navbar() {
     };
     window.addEventListener("scroll", controlNavbar);
     return () => window.removeEventListener("scroll", controlNavbar);
-  }, [lastScrollY, menuOpen]);
+  }, [lastScrollY, menuOpen, userStatus]);
 
-  // --- RÉCUPÉRATION INFOS UTILISATEUR VIA API ---
+  useEffect(() => {
+    const syncAuth = () => {
+      const authItem = localStorage.getItem("auth");
+      if (authItem) {
+        const authData = JSON.parse(authItem);
+        if (authData.user?.pp) {
+          setUserPP(authData.user.pp);
+          setImgKey(Date.now()); // On change la clé quand le storage change
+        }
+        setIsLoggedIn(true);
+      }
+    };
+
+    window.addEventListener("local-storage-update", syncAuth);
+    return () => window.removeEventListener("local-storage-update", syncAuth);
+  }, []);
+
+  useEffect(() => {
+    const authItem = localStorage.getItem("auth");
+    if (authItem) {
+      const authData = JSON.parse(authItem);
+      if (authData.user?.pp) {
+        setUserPP(authData.user.pp);
+      }
+      setIsLoggedIn(true);
+    }
+  }, []);
+
   useEffect(() => {
     const checkAuth = async () => {
       const authItem = localStorage.getItem("auth");
+      if (!authItem) {
+        setIsCheckingAuth(false);
+        return;
+      }
 
       if (authItem) {
+        const authData = JSON.parse(authItem);
+        if (authData.user?.pp) {
+          setUserPP(authData.user.pp);
+        }
+        setIsLoggedIn(true);
+
         try {
           const res = await apiFetch("/user/info", { method: "GET" });
 
@@ -70,9 +108,18 @@ export default function Navbar() {
             const userData = res.data.user;
             setIsLoggedIn(true);
             setRole(userData.statut);
-            setUserPP(userData.pp);
             setUserId(userData.id);
             setUserStatus(userData.statut);
+
+            if (userData.pp !== userPP) {
+              setUserPP(userData.pp);
+              setImgKey(Date.now()); // Forcer le refresh ici aussi
+              const authData = JSON.parse(localStorage.getItem("auth") || "{}");
+              if (authData.user) {
+                authData.user.pp = userData.pp;
+                localStorage.setItem("auth", JSON.stringify(authData));
+              }
+            }
 
             const notifRes = await apiFetch("/notifications/nonlues", {
               method: "GET",
@@ -90,7 +137,7 @@ export default function Navbar() {
     };
 
     checkAuth();
-  }, []);
+  }, [userPP]);
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -116,11 +163,6 @@ export default function Navbar() {
   ];
 
   const pcEntrepriseLinks = [{ href: "/home-entreprise", label: "Accueil" }];
-
-  const talentLinks = [
-    { href: "/home-talent", label: "Accueil" },
-    { href: "/opportunite", label: "Opportunités" },
-  ];
 
   const navLinks =
     role == "talent"
@@ -191,15 +233,30 @@ export default function Navbar() {
                   >
                     <div className="relative w-8 h-8 sm:w-9 sm:h-9 overflow-hidden rounded-full border border-gray-200 transition group-hover:border-orange-500">
                       <img
+                        /* On s'assure qu'il n'y a qu'un seul slash entre apifile et userPP */
                         src={
                           userPP
-                            ? apifile + "/" + userPP
-                            : role == "talent"
-                              ? "../assets/images/pp2.png"
-                              : "../assets/images/ppe.png"
+                            ? `${apifile.replace(/\/$/, "")}/${userPP.replace(/^\//, "")}?v=${imgKey}`
+                            : role === "talent"
+                              ? "/assets/images/pp2.png"
+                              : "/assets/images/ppe.png"
                         }
                         alt="Profil"
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          // Évite la boucle infinie si l'image par défaut est aussi introuvable
+                          const defaultImg =
+                            role === "talent"
+                              ? "/assets/images/pp2.png"
+                              : "/assets/images/ppe.png";
+                          if (
+                            target.src !==
+                            window.location.origin + defaultImg
+                          ) {
+                            target.src = defaultImg;
+                          }
+                        }}
                       />
                     </div>
                     <span className="text-[10px] sm:text-[11px] font-medium text-gray-500 group-hover:text-orange-700 transition leading-tight mt-0.5">
@@ -207,7 +264,6 @@ export default function Navbar() {
                     </span>
                   </Link>
 
-                  {/* Icone Paramètres PC */}
                   <Link
                     href={settingsPath}
                     className="hidden md:flex flex-col items-center group"
@@ -269,18 +325,10 @@ export default function Navbar() {
               </button>
             </div>
             <ul className="space-y-4">
-              {/* {isLoggedIn && role === 'talent' && talentLinks.map(renderMobileLink)} */}
               {!isLoggedIn && guestLinks.map(renderMobileLink)}
 
               {isLoggedIn && (
                 <>
-                  {/* <li key="/notifications">
-                    <Link href="/notification" onClick={() => { setNotificationCount(0); closeMenu(); }} className={`flex items-center space-x-2 font-medium text-base transition ${pathname === '/notification' ? 'text-orange-700 font-bold' : 'text-gray-700'}`}>
-                      <Bell className="h-5 w-5" />
-                      <span>Notifications ({notificationCount})</span>
-                    </Link>
-                  </li> */}
-                  {/* Lien Paramètres Mobile */}
                   <li key="/parametres">
                     <Link
                       href={settingsPath}

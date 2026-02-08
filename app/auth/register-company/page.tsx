@@ -47,8 +47,8 @@ export default function RegisterEntreprise() {
     const err: any = {};
     if (!form.nom) err.nom = "Nom de l'entreprise requis";
     if (!form.email) err.email = "Email requis";
-    else if (!isProEmail(form.email))
-      err.email = "Veuillez utiliser un email professionnel";
+    // else if (!isProEmail(form.email))
+    //   err.email = "Veuillez utiliser un email professionnel";
 
     if (!form.password) err.password = "Mot de passe requis";
     if (form.password !== form.confirm)
@@ -105,7 +105,9 @@ export default function RegisterEntreprise() {
 
       if (response.statut === 200) {
         // toast.success("Inscription réussie !");
-        router.push(`/auth/verify-email?email=${encodeURIComponent(form.email)}`);
+        router.push(
+          `/auth/verify-email?email=${encodeURIComponent(form.email)}`,
+        );
       } else if (response.statut === 422) {
         const backendErrors: any = {};
         if (response.errors) {
@@ -128,16 +130,19 @@ export default function RegisterEntreprise() {
 
   return (
     <div className="w-full h-full bg-gray-50">
-      <div className="relative top-8">
-        <BackButton />
+      <div className="relative top-6 ml-3">
+        <BackButton m={0} />
       </div>
       <div className="min-h-screen flex items-center justify-center px-4 py-6">
         <div className="w-full max-w-xl shadow-lg rounded-2xl p-8 bg-white">
-          
           {/* STEPPER */}
           <div className="flex justify-center mb-6 gap-3">
-            <div className={`h-3 w-3 rounded-full ${step === 1 ? "bg-orange-700" : "bg-gray-300"}`} />
-            <div className={`h-3 w-3 rounded-full ${step === 2 ? "bg-orange-700" : "bg-gray-300"}`} />
+            <div
+              className={`h-3 w-3 rounded-full ${step === 1 ? "bg-orange-700" : "bg-gray-300"}`}
+            />
+            <div
+              className={`h-3 w-3 rounded-full ${step === 2 ? "bg-orange-700" : "bg-gray-300"}`}
+            />
           </div>
 
           <h2 className="text-2xl font-semibold text-center text-gray-900">
@@ -157,27 +162,62 @@ export default function RegisterEntreprise() {
                 transition={{ duration: 0.3 }}
                 className="space-y-4 mt-6"
               >
-                <Input label="Nom de l'entreprise" value={form.nom} onChange={(v: any) => handleChange("nom", v)} error={errors.nom} />
-                <Input label="Email professionnel" type="email" value={form.email} onChange={(v: any) => handleChange("email", v)} error={errors.email} />
-                <Input label="Mot de passe" type="password" value={form.password} onChange={(v: any) => handleChange("password", v)} error={errors.password} />
-                <Input label="Confirmer mot de passe" type="password" value={form.confirm} onChange={(v: any) => handleChange("confirm", v)} error={errors.confirm} />
-                
+                <Input
+                  label="Nom de l'entreprise"
+                  value={form.nom}
+                  onChange={(v: any) => handleChange("nom", v)}
+                  error={errors.nom}
+                />
+                <Input
+                  label="Email professionnel"
+                  type="email"
+                  value={form.email}
+                  onChange={(v: any) => handleChange("email", v)}
+                  error={errors.email}
+                />
+                <Input
+                  label="Mot de passe"
+                  type="password"
+                  value={form.password}
+                  onChange={(v: any) => handleChange("password", v)}
+                  error={errors.password}
+                />
+                <Input
+                  label="Confirmer mot de passe"
+                  type="password"
+                  value={form.confirm}
+                  onChange={(v: any) => handleChange("confirm", v)}
+                  error={errors.confirm}
+                />
+
                 {/* SELECT DOMAINE */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Votre domaine principal</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Votre domaine principal
+                  </label>
                   <select
                     className={`w-full mt-1 p-3 border rounded-lg focus:ring-2 focus:ring-orange-700 outline-none transition-all ${
-                      errors.domaine_principal ? "border-red-500" : "border-gray-300"
+                      errors.domaine_principal
+                        ? "border-red-500"
+                        : "border-gray-300"
                     }`}
                     value={form.domaine_principal}
-                    onChange={(e) => handleChange("domaine_principal", e.target.value)}
+                    onChange={(e) =>
+                      handleChange("domaine_principal", e.target.value)
+                    }
                   >
                     <option value="">Sélectionnez...</option>
                     {domaines.map((d) => (
-                      <option key={d.id} value={d.id}>{d.nom}</option>
+                      <option key={d.id} value={d.id}>
+                        {d.nom}
+                      </option>
                     ))}
                   </select>
-                  {errors.domaine_principal && <span className="text-red-500 text-xs mt-1 block">{errors.domaine_principal}</span>}
+                  {errors.domaine_principal && (
+                    <span className="text-red-500 text-xs mt-1 block">
+                      {errors.domaine_principal}
+                    </span>
+                  )}
                 </div>
 
                 <button
@@ -198,21 +238,42 @@ export default function RegisterEntreprise() {
                 transition={{ duration: 0.3 }}
                 className="space-y-4 mt-6"
               >
-                <Input label="Services offerts" value={form.service} onChange={(v: any) => handleChange("service", v)} error={errors.service} />
+                <Input
+                  label="Services offerts"
+                  value={form.service}
+                  onChange={(v: any) => handleChange("service", v)}
+                  error={errors.service}
+                />
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Description de l’entreprise</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Description de l’entreprise
+                  </label>
                   <textarea
-                    className={`w-full mt-1 p-3 border rounded-lg focus:ring-2 focus:ring-orange-700 outline-none ${errors.description ? 'border-red-500' : 'border-gray-300'}`}
+                    className={`w-full mt-1 p-3 border rounded-lg focus:ring-2 focus:ring-orange-700 outline-none ${errors.description ? "border-red-500" : "border-gray-300"}`}
                     rows={4}
                     value={form.description}
-                    onChange={(e) => handleChange("description", e.target.value)}
+                    onChange={(e) =>
+                      handleChange("description", e.target.value)
+                    }
                   />
-                  {errors.description && <span className="text-red-500 text-sm">{errors.description}</span>}
+                  {errors.description && (
+                    <span className="text-red-500 text-sm">
+                      {errors.description}
+                    </span>
+                  )}
                 </div>
 
-                <Input label="Horaire de travail" value={form.horaire} onChange={(v: any) => handleChange("horaire", v)} />
-                <Input label="Site web" value={form.siteweb} onChange={(v: any) => handleChange("siteweb", v)} />
+                <Input
+                  label="Horaire de travail"
+                  value={form.horaire}
+                  onChange={(v: any) => handleChange("horaire", v)}
+                />
+                <Input
+                  label="Site web"
+                  value={form.siteweb}
+                  onChange={(v: any) => handleChange("siteweb", v)}
+                />
 
                 <div className="mt-6 flex justify-between gap-4 w-full">
                   <button
@@ -227,7 +288,11 @@ export default function RegisterEntreprise() {
                     disabled={loading}
                     className=" w-3/4 py-3 text-sm md:text-lg bg-orange-700 text-white rounded-lg hover:bg-orange-800 transition-colors font-bold flex items-center justify-center gap-2"
                   >
-                    {loading ? <Loader2 size={18} className="animate-spin" /> : "Créer le compte"}
+                    {loading ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                      "Créer le compte"
+                    )}
                   </button>
                 </div>
               </motion.div>
@@ -236,7 +301,10 @@ export default function RegisterEntreprise() {
 
           <p className="text-center text-sm text-gray-600 mt-6">
             Déjà une entreprise inscrite ?{" "}
-            <a href="/auth/login" className="text-orange-700 font-medium hover:underline">
+            <a
+              href="/auth/login"
+              className="text-orange-700 font-medium hover:underline"
+            >
               Se connecter
             </a>
           </p>
@@ -258,7 +326,9 @@ function Input({ label, value, onChange, type = "text", error }: any) {
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />
-      {error && <span className="text-red-500 text-xs mt-1 block">{error}</span>}
+      {error && (
+        <span className="text-red-500 text-xs mt-1 block">{error}</span>
+      )}
     </div>
   );
 }

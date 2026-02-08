@@ -2,9 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { 
-  Building2, Loader2, Trophy, Crown, Medal, Star, 
-  User, Check, Plus, ArrowRight 
+import {
+  Building2,
+  Loader2,
+  Trophy,
+  Crown,
+  Medal,
+  Star,
+  User,
+  Check,
+  Plus,
+  ArrowRight,
 } from "lucide-react";
 import { apiFetch } from "@/app/lib/api";
 import apifile from "@/app/lib/apifile";
@@ -12,7 +20,11 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import Link from "next/link";
 
-export default function EntreprisesClient({ allEntreprises }: { allEntreprises: any[] }) {
+export default function EntreprisesClient({
+  allEntreprises,
+}: {
+  allEntreprises: any[];
+}) {
   const [topCompanies, setTopCompanies] = useState<any[]>([]);
   const [companies, setCompanies] = useState<any[]>(allEntreprises);
   const [loadingTop, setLoadingTop] = useState(true);
@@ -21,20 +33,18 @@ export default function EntreprisesClient({ allEntreprises }: { allEntreprises: 
 
   // Charger le Top 10 (Tendances)
   useEffect(() => {
-
-     const userStr = localStorage.getItem("auth");
-    if(!userStr){
-          router.push("/auth/login");
-          return;
-        }
-
+    const userStr = localStorage.getItem("auth");
+    if (!userStr) {
+      router.push("/auth/login");
+      return;
+    }
 
     const fetchTopCompanies = async () => {
       try {
         setLoadingTop(true);
         const res = await apiFetch("/entreprises/top", { method: "GET" });
         if (res?.statut === 200) {
-          setTopCompanies(res.top10);
+          setTopCompanies(res.top100);
         }
       } catch (error) {
         console.error("Erreur chargement top entreprises:", error);
@@ -45,7 +55,10 @@ export default function EntreprisesClient({ allEntreprises }: { allEntreprises: 
     fetchTopCompanies();
   }, []);
 
-  const handleToggleAbonnement = async (e: React.MouseEvent, entrepriseId: number) => {
+  const handleToggleAbonnement = async (
+    e: React.MouseEvent,
+    entrepriseId: number,
+  ) => {
     e.stopPropagation();
     if (isToggling) return;
     try {
@@ -58,18 +71,20 @@ export default function EntreprisesClient({ allEntreprises }: { allEntreprises: 
       if (res.statut === 200) {
         const isNowAbonne = res.abonne;
         toast.success(
-          isNowAbonne 
-            ? "Vous recevrez les prochaines opportunités !" 
+          isNowAbonne
+            ? "Vous recevrez les prochaines opportunités !"
             : "Désabonnement réussi.",
-          { icon: isNowAbonne ? "🔔" : "🔕" }
+          { icon: isNowAbonne ? "🔔" : "🔕" },
         );
 
         // Mettre à jour les deux listes
         const updateList = (list: any[]) =>
-          list.map((c) => (c.id === entrepriseId ? { ...c, is_abonne: isNowAbonne } : c));
-        
-        setTopCompanies(prev => updateList(prev));
-        setCompanies(prev => updateList(prev));
+          list.map((c) =>
+            c.id === entrepriseId ? { ...c, is_abonne: isNowAbonne } : c,
+          );
+
+        setTopCompanies((prev) => updateList(prev));
+        setCompanies((prev) => updateList(prev));
       }
     } catch (err) {
       toast.error("Une erreur est survenue.");
@@ -100,7 +115,10 @@ export default function EntreprisesClient({ allEntreprises }: { allEntreprises: 
             <div className="p-2 bg-orange-100 rounded-xl">
               <Trophy className="w-5 h-5 text-orange-700" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900">Les entreprises en tendances {topCompanies.length > 0 ? `(${topCompanies.length})` : ''}</h3>
+            <h3 className="text-xl font-bold text-gray-900">
+              Les entreprises en tendances{" "}
+              {topCompanies.length > 0 ? `(${topCompanies.length})` : ""}
+            </h3>
           </div>
         </div>
 
@@ -108,13 +126,15 @@ export default function EntreprisesClient({ allEntreprises }: { allEntreprises: 
           <div className="flex justify-center py-20 bg-gray-50/50 rounded-3xl border border-dashed border-gray-200">
             <div className="text-center">
               <Loader2 className="w-10 h-10 animate-spin text-orange-700 mx-auto mb-3" />
-              <p className="text-gray-500 font-medium">Récupération des leaders...</p>
+              <p className="text-gray-500 font-medium">
+                Récupération des leaders...
+              </p>
             </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-y-12">
             {topCompanies.map((company, index) => (
-              <EntrepriseCard 
+              <EntrepriseCard
                 key={`top-${company.id}`}
                 company={company}
                 index={index}
@@ -127,19 +147,35 @@ export default function EntreprisesClient({ allEntreprises }: { allEntreprises: 
           </div>
         )}
       </section>
-
-     
     </div>
   );
 }
 
 // --- COMPOSANT CARD RÉUTILISABLE ---
-function EntrepriseCard({ company, index, isTop, isToggling, onToggle, router }: any) {
-  let SpecialIcon = isTop && index === 0 ? Crown : isTop && index === 1 ? Medal : isTop && index === 2 ? Star : null;
-  const rankStyle = index === 0 ? "text-yellow-700 bg-yellow-50 border-yellow-100" : 
-                    index === 1 ? "text-slate-500 bg-slate-100 border-slate-200" :
-                    index === 2 ? "text-orange-600 bg-orange-50 border-orange-100" : 
-                    "text-gray-500 bg-gray-50 border-gray-100";
+function EntrepriseCard({
+  company,
+  index,
+  isTop,
+  isToggling,
+  onToggle,
+  router,
+}: any) {
+  let SpecialIcon =
+    isTop && index === 0
+      ? Crown
+      : isTop && index === 1
+        ? Medal
+        : isTop && index === 2
+          ? Star
+          : null;
+  const rankStyle =
+    index === 0
+      ? "text-yellow-700 bg-yellow-50 border-yellow-100"
+      : index === 1
+        ? "text-slate-500 bg-slate-100 border-slate-200"
+        : index === 2
+          ? "text-orange-600 bg-orange-50 border-orange-100"
+          : "text-gray-500 bg-gray-50 border-gray-100";
 
   return (
     <motion.div
@@ -147,7 +183,7 @@ function EntrepriseCard({ company, index, isTop, isToggling, onToggle, router }:
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: (index % 4) * 0.05 }}
-      className={`${isTop ? 'w-64 sm:w-72 flex-shrink-0 snap-center' : 'w-full'} 
+      className={`${isTop ? "w-64 sm:w-72 flex-shrink-0 snap-center" : "w-full"} 
         bg-white rounded-3xl p-6 border border-gray-100 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden flex flex-col`}
     >
       {/* Badge Challenges */}
@@ -159,18 +195,26 @@ function EntrepriseCard({ company, index, isTop, isToggling, onToggle, router }:
 
       <div className="text-center flex-grow pt-4">
         {/* Logo / Avatar */}
-        <div 
-          onClick={() => router.push(`/profil-entreprise/${company.user_id || company.id}`)}
+        <div
+          onClick={() =>
+            router.push(`/profil-entreprise/${company.user_id || company.id}`)
+          }
           className="relative inline-block mb-4 cursor-pointer group-hover:scale-105 transition-transform duration-300"
         >
           <img
-            src={company.user?.pp ? `${apifile}/${company.user.pp}` : (company.avatar || "/assets/images/ppe.png")}
+            src={
+              company.user?.pp
+                ? `${apifile}/${company.user.pp}`
+                : company.avatar || "/assets/images/ppe.png"
+            }
             alt={company.nom || company.name}
             className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-4 border-white shadow-md"
           />
           {isTop && SpecialIcon && (
             <div className="absolute -bottom-2 -right-2 bg-white p-2 rounded-full shadow-lg border border-gray-50">
-              <SpecialIcon className={`w-5 h-5 ${index === 0 ? 'text-yellow-500' : 'text-orange-600'}`} />
+              <SpecialIcon
+                className={`w-5 h-5 ${index === 0 ? "text-yellow-500" : "text-orange-600"}`}
+              />
             </div>
           )}
         </div>
@@ -179,14 +223,16 @@ function EntrepriseCard({ company, index, isTop, isToggling, onToggle, router }:
         <h3 className="font-bold text-gray-900 text-lg mb-1 truncate group-hover:text-orange-700 transition-colors px-2">
           {company.nom || company.name}
         </h3>
-        
+
         {/* Points & Rang */}
         <div className="flex items-center justify-center gap-2 mb-6">
           <span className="text-[11px] font-bold text-gray-400 tracking-widest">
             {company.point || company.score || 0} pts
           </span>
           {isTop && (
-            <span className={`flex items-center gap-1 text-[11px] font-black px-2 py-0.5 rounded-md border ${rankStyle}`}>
+            <span
+              className={`flex items-center gap-1 text-[11px] font-black px-2 py-0.5 rounded-md border ${rankStyle}`}
+            >
               {company.rang || index + 1}
             </span>
           )}
@@ -213,7 +259,7 @@ function EntrepriseCard({ company, index, isTop, isToggling, onToggle, router }:
           )}
         </button> */}
 
-        <Link 
+        <Link
           href={`/profil-entreprise/${company.user_id || company.id}`}
           className="w-full py-2.5 px-4 rounded-xl font-semibold text-xs text-gray-400 hover:text-orange-700 flex items-center justify-center gap-1 transition-colors"
         >

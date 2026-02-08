@@ -1,7 +1,18 @@
 import SubmissionDetailClient from "./SubmissionDetailClient";
 
-// On ajoute 'async' pour pouvoir utiliser 'await params'
-export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+// 1. On indique à Next.js de ne pas bloquer si l'ID n'est pas pré-généré
+export const dynamicParams = true;
+
+// 2. On ajoute la fonction minimale pour satisfaire le compilateur
+export async function generateStaticParams() {
+  return [];
+}
+
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   // On attend la résolution des paramètres
   const resolvedParams = await params;
   const id = resolvedParams.id;

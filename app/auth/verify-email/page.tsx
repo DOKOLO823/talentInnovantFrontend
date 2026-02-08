@@ -65,6 +65,22 @@ function VerifyEmailContent() {
     }
   };
 
+  function maskEmail(varEmail: string): string {
+    if (!varEmail || !varEmail.includes("@")) return varEmail;
+
+    const [localPart, domain] = varEmail.split("@");
+
+    if (localPart.length <= 2) {
+      return `${localPart[0]}*@${domain}`;
+    }
+
+    const firstChar = localPart[0];
+    const lastChar = localPart[localPart.length - 1];
+    const masked = "*".repeat(localPart.length - 2);
+
+    return `${firstChar}${masked}${lastChar}@${domain}`;
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 px-4">
       <motion.div
@@ -82,11 +98,19 @@ function VerifyEmailContent() {
           </motion.div>
         </div>
 
-        <h2 className="text-2xl font-bold text-center text-gray-800">Vérifiez votre email</h2>
+        <h2 className="text-2xl font-bold text-center text-gray-800">
+          Vérifiez votre email
+        </h2>
         <p className="text-gray-600 text-center mt-3 leading-relaxed">
           Nous vous avons envoyé un mail contenant un lien d'activation
           {emailFromUrl && (
-            <> à <span className="font-semibold text-gray-800">{emailFromUrl}</span></>
+            <>
+              {" "}
+              à{" "}
+              <span className="font-semibold text-gray-800">
+                {maskEmail(emailFromUrl)}
+              </span>
+            </>
           )}
           . Consultez votre boîte mail pour finaliser votre inscription.
         </p>
@@ -104,10 +128,10 @@ function VerifyEmailContent() {
         )}
 
         {showEmailInput && (
-          <motion.form 
-            initial={{ opacity: 0, height: 0 }} 
-            animate={{ opacity: 1, height: "auto" }} 
-            onSubmit={handleResendLink} 
+          <motion.form
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            onSubmit={handleResendLink}
             className="mt-6 space-y-4"
           >
             <input
@@ -119,8 +143,18 @@ function VerifyEmailContent() {
               disabled={loading}
             />
             <div className="flex gap-3">
-              <button type="button" onClick={() => setShowEmailInput(false)} className="flex-1 px-4 py-3 border rounded-lg">Annuler</button>
-              <button type="submit" disabled={loading} className="flex-1 px-4 py-3 bg-orange-600 text-white rounded-lg">
+              <button
+                type="button"
+                onClick={() => setShowEmailInput(false)}
+                className="flex-1 px-4 py-3 border rounded-lg"
+              >
+                Annuler
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex-1 px-4 py-3 bg-orange-600 text-white rounded-lg"
+              >
                 {loading ? "Envoi..." : "Renvoyer"}
               </button>
             </div>
@@ -129,7 +163,13 @@ function VerifyEmailContent() {
 
         {!showEmailInput && (
           <p className="text-center text-sm text-gray-600 mt-6">
-            Pas reçu ? <button onClick={handleQuickResend} className="text-orange-600 font-semibold">{loading ? "Envoi..." : "Renvoyer le lien"}</button>
+            Pas reçu ?{" "}
+            <button
+              onClick={handleQuickResend}
+              className="text-orange-600 font-semibold"
+            >
+              {loading ? "Envoi..." : "Renvoyer le lien"}
+            </button>
           </p>
         )}
 
@@ -140,7 +180,9 @@ function VerifyEmailContent() {
         </div>
 
         <div className="text-center">
-          <a href="/auth/login" className="text-orange-600 font-medium text-sm">Retour à la connexion</a>
+          <a href="/auth/login" className="text-orange-600 font-medium text-sm">
+            Retour à la connexion
+          </a>
         </div>
       </motion.div>
     </div>
@@ -149,11 +191,13 @@ function VerifyEmailContent() {
 
 export default function VerifyEmail() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="h-12 w-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="h-12 w-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      }
+    >
       <VerifyEmailContent />
     </Suspense>
   );

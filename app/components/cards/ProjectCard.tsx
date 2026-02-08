@@ -4,10 +4,27 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import {
-  MoreVertical, Trash2, Flag, MessageCircle,
-  Maximize2, Trophy, Flame, ChevronDown, ChevronUp,
-  X, UserRound, Copy, Share2, ThumbsUp, AlertTriangle, Loader2,
-  Facebook, Mail, Phone, ExternalLink, Check
+  MoreVertical,
+  Trash2,
+  Flag,
+  MessageCircle,
+  Maximize2,
+  Trophy,
+  Flame,
+  ChevronDown,
+  ChevronUp,
+  X,
+  UserRound,
+  Copy,
+  Share2,
+  ThumbsUp,
+  AlertTriangle,
+  Loader2,
+  Facebook,
+  Mail,
+  Phone,
+  ExternalLink,
+  Check,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
@@ -40,22 +57,24 @@ function ContactModal({ isOpen, onClose, user }: any) {
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-slate-900/60 z-[300] flex items-center justify-center p-4 backdrop-blur-md"
       onClick={onClose}
     >
-      <motion.div 
-        initial={{ scale: 0.9, opacity: 0, y: 20 }} 
-        animate={{ scale: 1, opacity: 1, y: 0 }} 
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
         className="bg-white rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl relative overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-8">
-          <h3 className="font-extrabold text-xl text-slate-800 tracking-tight">Contact</h3>
-          <button 
-            onClick={onClose} 
+          <h3 className="font-extrabold text-xl text-slate-800 tracking-tight">
+            Contact
+          </h3>
+          <button
+            onClick={onClose}
             className="p-2.5 bg-slate-100 hover:bg-red-50 hover:text-red-500 rounded-full transition-all duration-300"
           >
             <X size={20} strokeWidth={2.5} />
@@ -63,75 +82,96 @@ function ContactModal({ isOpen, onClose, user }: any) {
         </div>
 
         <div className="space-y-6">
-          <div 
-            onClick={() => { router.push(`/profil-talent/${user?.id}`); onClose(); }}
+          <div
+            onClick={() => {
+              router.push(`/profil-talent/${user?.id}`);
+              onClose();
+            }}
             className="group flex items-center gap-4 p-4 bg-slate-50 rounded-[2rem] border border-transparent hover:border-orange-200 hover:bg-orange-50/50 transition-all duration-300 cursor-pointer"
           >
             <div className="relative">
-                <Image 
-                    src={apifile + '/' + user?.pp} 
-                    width={64} 
-                    height={64} 
-                    alt="pp" 
-                    className="rounded-full aspect-square object-cover border-4 border-white shadow-md group-hover:scale-105 transition-transform duration-500" 
-                />
-                <div className="absolute -bottom-1 -right-1 bg-orange-500 text-white p-1 rounded-full border-2 border-white">
-                    <ExternalLink size={12} />
-                </div>
+              <Image
+                src={apifile + "/" + user?.pp}
+                width={64}
+                height={64}
+                alt="pp"
+                className="rounded-full aspect-square object-cover border-4 border-white shadow-md group-hover:scale-105 transition-transform duration-500"
+              />
+              <div className="absolute -bottom-1 -right-1 bg-orange-500 text-white p-1 rounded-full border-2 border-white">
+                <ExternalLink size={12} />
+              </div>
             </div>
             <div className="overflow-hidden">
               <p className="font-black text-slate-800 truncate group-hover:text-orange-600 transition-colors">
                 {user?.talent?.nom || user?.name}
               </p>
               <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">
-                {user?.talent?.profession?.length > 25 ? user?.talent?.profession?.substring(0, 25) + "..." : user?.talent?.profession || "Talent"}
+                {user?.talent?.profession?.length > 25
+                  ? user?.talent?.profession?.substring(0, 25) + "..."
+                  : user?.talent?.profession || "Talent"}
               </p>
             </div>
           </div>
 
           <div className="space-y-3">
             <div className="relative group">
-                <a 
-                    href={`mailto:${user?.email}`} 
-                    className="flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-2xl hover:shadow-lg hover:shadow-slate-100 transition-all duration-300"
-                >
-                    <div className="p-3 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
-                        <Mail size={22} />
-                    </div>
-                    <div className="flex-1 overflow-hidden text-left">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">E-mail</p>
-                        <p className="text-sm font-bold text-slate-700 truncate">{user?.email}</p>
-                    </div>
-                </a>
-                <button 
-                    onClick={() => handleCopy(user?.email, 'Email')}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-300 hover:text-slate-600 transition-colors"
-                >
-                    {copied === 'Email' ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
-                </button>
+              <a
+                href={`mailto:${user?.email}`}
+                className="flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-2xl hover:shadow-lg hover:shadow-slate-100 transition-all duration-300"
+              >
+                <div className="p-3 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                  <Mail size={22} />
+                </div>
+                <div className="flex-1 overflow-hidden text-left">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">
+                    E-mail
+                  </p>
+                  <p className="text-sm font-bold text-slate-700 truncate">
+                    {user?.email}
+                  </p>
+                </div>
+              </a>
+              <button
+                onClick={() => handleCopy(user?.email, "Email")}
+                className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-300 hover:text-slate-600 transition-colors"
+              >
+                {copied === "Email" ? (
+                  <Check size={18} className="text-green-500" />
+                ) : (
+                  <Copy size={18} />
+                )}
+              </button>
             </div>
 
             <div className="relative group">
-                <a 
-                    href={`tel:${user?.telephone}`} 
-                    className="flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-2xl hover:shadow-lg hover:shadow-slate-100 transition-all duration-300"
+              <a
+                href={`tel:${user?.telephone}`}
+                className="flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-2xl hover:shadow-lg hover:shadow-slate-100 transition-all duration-300"
+              >
+                <div className="p-3 bg-green-50 text-green-600 rounded-xl group-hover:bg-green-600 group-hover:text-white transition-colors duration-300">
+                  <Phone size={22} />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">
+                    Téléphone
+                  </p>
+                  <p className="text-sm font-bold text-slate-700">
+                    {user?.telephone || "Non renseigné"}
+                  </p>
+                </div>
+              </a>
+              {user?.telephone && (
+                <button
+                  onClick={() => handleCopy(user?.telephone, "Téléphone")}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-300 hover:text-slate-600 transition-colors"
                 >
-                    <div className="p-3 bg-green-50 text-green-600 rounded-xl group-hover:bg-green-600 group-hover:text-white transition-colors duration-300">
-                        <Phone size={22} />
-                    </div>
-                    <div className="flex-1 text-left">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Téléphone</p>
-                        <p className="text-sm font-bold text-slate-700">{user?.telephone || "Non renseigné"}</p>
-                    </div>
-                </a>
-                {user?.telephone && (
-                    <button 
-                        onClick={() => handleCopy(user?.telephone, 'Téléphone')}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-300 hover:text-slate-600 transition-colors"
-                    >
-                        {copied === 'Téléphone' ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
-                    </button>
-                )}
+                  {copied === "Téléphone" ? (
+                    <Check size={18} className="text-green-500" />
+                  ) : (
+                    <Copy size={18} />
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -148,16 +188,38 @@ function DeleteModal({ isOpen, onClose, onConfirm, loading }: any) {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 bg-black/60 z-[300] flex items-center justify-center p-4 backdrop-blur-sm">
-      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl text-center border">
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl text-center border"
+      >
         <div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mb-4 mx-auto">
           <AlertTriangle size={32} />
         </div>
-        <h3 className="font-black text-xl text-gray-900 mb-2">Supprimer le post ?</h3>
-        <p className="text-gray-500 text-sm mb-6">Cette action est irréversible.</p>
+        <h3 className="font-black text-xl text-gray-900 mb-2">
+          Supprimer le post ?
+        </h3>
+        <p className="text-gray-500 text-sm mb-6">
+          Cette action est irréversible.
+        </p>
         <div className="flex w-full gap-3">
-          <button onClick={onClose} disabled={loading} className="flex-1 py-3 bg-gray-100 rounded-xl font-bold">Annuler</button>
-          <button onClick={onConfirm} disabled={loading} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold flex items-center justify-center gap-2">
-            {loading ? <Loader2 className="animate-spin" size={18} /> : "Supprimer"}
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="flex-1 py-3 bg-gray-100 rounded-xl font-bold"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <Loader2 className="animate-spin" size={18} />
+            ) : (
+              "Supprimer"
+            )}
           </button>
         </div>
       </motion.div>
@@ -165,64 +227,143 @@ function DeleteModal({ isOpen, onClose, onConfirm, loading }: any) {
   );
 }
 
-function ShareModal({ isOpen, onClose, onShareSuccess, postId, challengeId }: any) {
+function ShareModal({
+  isOpen,
+  onClose,
+  onShareSuccess,
+  postId,
+  challengeId,
+}: any) {
   const [customMessage, setCustomMessage] = useState("");
-  
+  // On stocke le type en cours de chargement ("whatsapp", "facebook" ou null)
+  const [loadingType, setLoadingType] = useState<string | null>(null);
+
   if (!isOpen) return null;
-  
-  const shareUrl = typeof window !== "undefined" 
-    ? `${window.location.origin}/challenge/reel/${challengeId}?project=${postId}` 
-    : "";
 
-  const finalMessage = customMessage ? `${customMessage}\n\n${shareUrl}` : shareUrl;
+  const shareUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/challenge/reel/${challengeId}?project=${postId}`
+      : "";
 
-  const handleShareAction = (type: 'whatsapp' | 'facebook' | 'copy') => {
-    if (type === 'whatsapp') {
-      window.open(`https://wa.me/?text=${encodeURIComponent(finalMessage)}`, '_blank');
-    } else if (type === 'facebook') {
-      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(customMessage)}`, '_blank');
-    } else if (type === 'copy') {
+  const finalMessage = customMessage
+    ? `${customMessage}\n\n${shareUrl}`
+    : shareUrl;
+
+  const handleShareAction = async (type: "whatsapp" | "facebook" | "copy") => {
+    if (type === "copy") {
       navigator.clipboard.writeText(shareUrl);
       toast.success("Lien copié !");
+      return;
     }
-    
-    onShareSuccess();
-    if(type !== 'copy') onClose();
+
+    try {
+      setLoadingType(type);
+
+      // On attend l'API (pour le compteur de points)
+      await onShareSuccess();
+
+      if (type === "whatsapp") {
+        // WhatsApp accepte le texte + l'URL
+        window.open(
+          `https://wa.me/?text=${encodeURIComponent(finalMessage)}`,
+          "_blank",
+        );
+      } else if (type === "facebook") {
+        // Facebook ignore le texte "custom", il ne prend que l'URL 'u'
+        // On s'assure que l'URL est bien encodée
+        window.open(
+          `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
+          "_blank",
+        );
+      }
+
+      onClose();
+    } catch (error) {
+      toast.error("Erreur lors du partage");
+    } finally {
+      setLoadingType(null);
+    }
   };
 
   return (
     <div className="fixed inset-0 bg-black/60 z-[300] flex items-center justify-center p-4 backdrop-blur-sm">
-      <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl border">
+      <motion.div
+        initial={{ scale: 0.9 }}
+        animate={{ scale: 1 }}
+        className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl border relative overflow-hidden"
+      >
+        {/* Overlay de blocage global pendant le chargement */}
+        {loadingType && (
+          <div className="absolute inset-0 bg-white/40 z-10 flex items-center justify-center cursor-wait" />
+        )}
+
         <div className="flex justify-between items-center mb-4">
-          <h3 className="font-black text-xl text-gray-900">Partager le projet</h3>
-          <button onClick={onClose} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"><X size={20}/></button>
+          <h3 className="font-black text-xl text-gray-900">Partager</h3>
+          <button
+            onClick={onClose}
+            disabled={!!loadingType}
+            className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 disabled:opacity-50"
+          >
+            <X size={20} />
+          </button>
         </div>
 
         <div className="mb-5">
-          <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 block">Ajouter un message (optionnel)</label>
-          <textarea 
+          <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 block">
+            Message (optionnel)
+          </label>
+          <textarea
             className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all resize-none"
             rows={3}
-            placeholder="Dites quelque chose sur ce projet..."
+            disabled={!!loadingType}
             value={customMessage}
             onChange={(e) => setCustomMessage(e.target.value)}
           />
         </div>
 
         <div className="grid grid-cols-3 gap-3">
-          <button onClick={() => handleShareAction('whatsapp')} className="flex flex-col items-center gap-2 group">
+          {/* BOUTON WHATSAPP */}
+          <button
+            onClick={() => handleShareAction("whatsapp")}
+            disabled={!!loadingType}
+            className="flex flex-col items-center gap-2 group disabled:opacity-70"
+          >
             <div className="p-4 bg-[#25D366] text-white rounded-2xl w-full flex justify-center shadow-lg shadow-green-200 group-hover:scale-105 transition-transform">
-              <MessageCircle fill="currentColor" />
+              {loadingType === "whatsapp" ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <MessageCircle fill="currentColor" />
+              )}
             </div>
-            <span className="text-[10px] font-black text-gray-600">WhatsApp</span>
+            <span className="text-[10px] font-black text-gray-600">
+              WhatsApp
+            </span>
           </button>
-          <button onClick={() => handleShareAction('facebook')} className="flex flex-col items-center gap-2 group">
+
+          {/* BOUTON FACEBOOK */}
+          <button
+            onClick={() => handleShareAction("facebook")}
+            disabled={!!loadingType}
+            className="flex flex-col items-center gap-2 group disabled:opacity-70"
+          >
             <div className="p-4 bg-[#1877F2] text-white rounded-2xl w-full flex justify-center shadow-lg shadow-blue-200 group-hover:scale-105 transition-transform">
-              <Facebook fill="currentColor" />
+              {loadingType === "facebook" ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Facebook fill="currentColor" />
+              )}
             </div>
-            <span className="text-[10px] font-black text-gray-600">Facebook</span>
+            <span className="text-[10px] font-black text-gray-600">
+              Facebook
+            </span>
           </button>
-          <button onClick={() => handleShareAction('copy')} className="flex flex-col items-center gap-2 group">
+
+          {/* BOUTON LIEN */}
+          <button
+            onClick={() => handleShareAction("copy")}
+            disabled={!!loadingType}
+            className="flex flex-col items-center gap-2 group"
+          >
             <div className="p-4 bg-gray-800 text-white rounded-2xl w-full flex justify-center shadow-lg shadow-gray-200 group-hover:scale-105 transition-transform">
               <Copy />
             </div>
@@ -242,7 +383,10 @@ function ReadMore({ text }: { text: string }) {
     <div className="text-gray-700 text-[15px] leading-relaxed whitespace-pre-wrap">
       {open || text.length <= limit ? text : text.slice(0, limit) + "..."}
       {text.length > limit && (
-        <button onClick={() => setOpen(!open)} className="ml-1 text-orange-600 font-bold hover:underline lowercase">
+        <button
+          onClick={() => setOpen(!open)}
+          className="ml-1 text-orange-600 font-bold hover:underline lowercase"
+        >
           {open ? "voir moins" : "voir plus"}
         </button>
       )}
@@ -250,26 +394,37 @@ function ReadMore({ text }: { text: string }) {
   );
 }
 
-
-import { 
-  FileText, FileSpreadsheet, Presentation, File, 
-  Eye, EyeOff, Download, FileSearch 
-} from 'lucide-react';
-
+import {
+  FileText,
+  FileSpreadsheet,
+  Presentation,
+  File,
+  Eye,
+  EyeOff,
+  Download,
+  FileSearch,
+} from "lucide-react";
 
 // --- Sous-composants ---
-function ExpandableText({ text, limit = 250 }: { text: string, limit?: number }) {
+function ExpandableText({
+  text,
+  limit = 250,
+}: {
+  text: string;
+  limit?: number;
+}) {
   const [isExpanded, setIsExpanded] = useState(false);
   if (!text) return null;
-  
+
   // Correction ici : Forçage de la taille à 15px comme demandé
-  if (text.length <= limit) return <p className="text-gray-700 text-[15px] leading-relaxed">{text}</p>;
-  
+  if (text.length <= limit)
+    return <p className="text-gray-700 text-[15px] leading-relaxed">{text}</p>;
+
   return (
     <div className="text-gray-700 text-[15px] leading-relaxed">
       <p>
         {isExpanded ? text : `${text.substring(0, limit)}...`}
-        <button 
+        <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="ml-2 text-orange-700 font-bold hover:underline focus:outline-none text-xs md:text-sm"
         >
@@ -280,7 +435,15 @@ function ExpandableText({ text, limit = 250 }: { text: string, limit?: number })
   );
 }
 
-function FileRenderer({ value, type, label }: { value: string; type: string; label: string }) {
+function FileRenderer({
+  value,
+  type,
+  label,
+}: {
+  value: string;
+  type: string;
+  label: string;
+}) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -294,7 +457,7 @@ function FileRenderer({ value, type, label }: { value: string; type: string; lab
           }
         });
       },
-      { threshold: 0.1 } // S'active dès que la vidéo est presque hors vue
+      { threshold: 0.1 }, // S'active dès que la vidéo est presque hors vue
     );
 
     if (videoRef.current) observer.observe(videoRef.current);
@@ -303,7 +466,7 @@ function FileRenderer({ value, type, label }: { value: string; type: string; lab
 
   const handlePlay = (e: React.SyntheticEvent<HTMLVideoElement>) => {
     // 2. Empêcher plusieurs lectures simultanées
-    const allVideos = document.querySelectorAll('video');
+    const allVideos = document.querySelectorAll("video");
     allVideos.forEach((vid) => {
       if (vid !== e.currentTarget) {
         vid.pause();
@@ -313,9 +476,10 @@ function FileRenderer({ value, type, label }: { value: string; type: string; lab
 
   if (!value) return null;
 
-  const fullUrl = value.startsWith('http') ? value : `${apifile}/${value}`;
-  
-  const isImage = value.match(/\.(jpg|jpeg|png|webp|gif)$/i) || type === "image";
+  const fullUrl = value.startsWith("http") ? value : `${apifile}/${value}`;
+
+  const isImage =
+    value.match(/\.(jpg|jpeg|png|webp|gif)$/i) || type === "image";
   const isVideo = value.match(/\.(mp4|mov|webm)$/i) || type === "video";
   const isPDF = /\.pdf$/i.test(value);
   const isDoc = /\.(docx|doc|pptx|ppt|xlsx|xls)$/i.test(value);
@@ -328,9 +492,9 @@ function FileRenderer({ value, type, label }: { value: string; type: string; lab
   if (isVideo) {
     return (
       <div className="mb-4">
-        <video 
+        <video
           ref={videoRef}
-          controls 
+          controls
           onPlay={handlePlay}
           controlsList="nodownload" // Enlève le menu téléchargement
           onContextMenu={(e) => e.preventDefault()} // Bloque le clic droit
@@ -345,10 +509,10 @@ function FileRenderer({ value, type, label }: { value: string; type: string; lab
   if (isImage) {
     return (
       <div className="mb-4">
-        <img 
-          src={fullUrl} 
-          className="rounded-2xl w-full h-[190px] object-cover border border-slate-100 bg-white shadow-sm" 
-          alt={label} 
+        <img
+          src={fullUrl}
+          className="rounded-2xl w-full h-[190px] object-cover border border-slate-100 bg-white shadow-sm"
+          alt={label}
         />
       </div>
     );
@@ -362,27 +526,39 @@ function FileRenderer({ value, type, label }: { value: string; type: string; lab
             <div className="p-1.5 bg-orange-100 text-orange-600 rounded-lg">
               {isPDF ? <FileText size={14} /> : <File size={14} />}
             </div>
-            <span className="text-[10px] font-bold text-slate-600 truncate max-w-[180px] relative -left-1">Aperçu Document</span>
+            <span className="text-[10px] font-bold text-slate-600 truncate max-w-[180px] relative -left-1">
+              Aperçu Document
+            </span>
           </div>
-          
+
           <div className="flex items-center gap-1">
-             <button 
-               onClick={() => setIsFullscreen(true)}
-               className="p-1.5 hover:bg-orange-50 text-orange-600 rounded-md transition-all flex items-center gap-1"
-               title="Voir en grand"
-             >
-               <Maximize2 size={16} />
-               <span className="text-[10px] font-bold uppercase">Plein écran</span>
-             </button>
-             <a href={fullUrl} download className="p-1.5 hover:bg-slate-100 text-slate-400 rounded-md">
-               <Download size={16} />
-             </a>
+            <button
+              onClick={() => setIsFullscreen(true)}
+              className="p-1.5 hover:bg-orange-50 text-orange-600 rounded-md transition-all flex items-center gap-1"
+              title="Voir en grand"
+            >
+              <Maximize2 size={16} />
+              <span className="text-[10px] font-bold uppercase">
+                Plein écran
+              </span>
+            </button>
+            <a
+              href={fullUrl}
+              download
+              className="p-1.5 hover:bg-slate-100 text-slate-400 rounded-md"
+            >
+              <Download size={16} />
+            </a>
           </div>
         </div>
 
         <div className="relative w-full h-[380px] bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm group">
-          <iframe 
-            src={isPDF ? `${fullUrl}#toolbar=0` : `https://docs.google.com/gview?url=${encodeURIComponent(fullUrl)}&embedded=true`} 
+          <iframe
+            src={
+              isPDF
+                ? `${fullUrl}#toolbar=0`
+                : `https://docs.google.com/gview?url=${encodeURIComponent(fullUrl)}&embedded=true`
+            }
             className="w-full h-full border-none"
             title={label}
           />
@@ -392,24 +568,37 @@ function FileRenderer({ value, type, label }: { value: string; type: string; lab
         <AnimatePresence>
           {isFullscreen && (
             <div className="fixed inset-0 z-[600] flex items-center justify-center p-0 md:p-4">
-              <motion.div 
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 onClick={() => setIsFullscreen(false)}
                 className="absolute inset-0 bg-slate-900/95 backdrop-blur-md"
               />
-              <motion.div 
-                initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
                 className="relative w-full h-full bg-white md:rounded-3xl overflow-hidden flex flex-col"
               >
                 <div className="flex justify-between items-center p-4 border-b">
-                  <span className="font-bold text-sm text-slate-700">{label}</span>
-                  <button onClick={() => setIsFullscreen(false)} className="p-2 bg-slate-100 rounded-full hover:bg-red-50 hover:text-red-500 transition-all">
+                  <span className="font-bold text-sm text-slate-700">
+                    {label}
+                  </span>
+                  <button
+                    onClick={() => setIsFullscreen(false)}
+                    className="p-2 bg-slate-100 rounded-full hover:bg-red-50 hover:text-red-500 transition-all"
+                  >
                     <X size={20} />
                   </button>
                 </div>
-                <iframe 
-                  src={isPDF ? fullUrl : `https://docs.google.com/gview?url=${encodeURIComponent(fullUrl)}&embedded=true`} 
-                  className="w-full flex-1 border-none" 
+                <iframe
+                  src={
+                    isPDF
+                      ? fullUrl
+                      : `https://docs.google.com/gview?url=${encodeURIComponent(fullUrl)}&embedded=true`
+                  }
+                  className="w-full flex-1 border-none"
                 />
               </motion.div>
             </div>
@@ -425,11 +614,13 @@ function FileRenderer({ value, type, label }: { value: string; type: string; lab
         <div className="p-2 bg-slate-50 text-slate-400 rounded-lg">
           <File size={18} />
         </div>
-        <span className="text-xs font-bold text-slate-600 truncate">{label}</span>
+        <span className="text-xs font-bold text-slate-600 truncate">
+          {label}
+        </span>
       </div>
-      <a 
-        href={fullUrl} 
-        download 
+      <a
+        href={fullUrl}
+        download
         className="flex items-center gap-2 bg-orange-50 text-orange-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase hover:bg-orange-600 hover:text-white transition-all"
       >
         <Download size={14} /> Télécharger
@@ -460,14 +651,15 @@ export default function ProjectCard({ project, challenge }: any) {
   const params = useParams();
   const idchallenge = params.id;
 
-  const hasLiked = currentUser && likeurs.some((l: any) => l.id == currentUser?.id);
+  const hasLiked =
+    currentUser && likeurs.some((l: any) => l.id == currentUser?.id);
 
   // affichage des 3 bouton de dropdown
-   const shouldShowDropdownButton = () => {
-    if (!(currentUser?.id==project?.user_id)) return false;
-      const now = new Date();
-      const dateFin = new Date(challenge?.datefininscription);
-      return now < dateFin;
+  const shouldShowDropdownButton = () => {
+    if (!(currentUser?.id == project?.user_id)) return false;
+    const now = new Date();
+    const dateFin = new Date(challenge?.datefininscription);
+    return now < dateFin;
   };
 
   useEffect(() => {
@@ -475,7 +667,11 @@ export default function ProjectCard({ project, challenge }: any) {
     if (storedAuth) setCurrentUser(JSON.parse(storedAuth).user);
 
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) setOpenMenu(false);
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      )
+        setOpenMenu(false);
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -486,19 +682,25 @@ export default function ProjectCard({ project, challenge }: any) {
   const isChallengeOwner = currentUser?.id === challenge?.user_id;
   const isAuthor = currentUser?.id == project?.user_id;
 
-  const apiRequest = async (endpoint: string, method: string = "GET", body?: any) => {
+  const apiRequest = async (
+    endpoint: string,
+    method: string = "GET",
+    body?: any,
+    keepalive: boolean = false, // Ajoute ce paramètre
+  ) => {
     const storedAuth = localStorage.getItem("auth");
     const token = storedAuth ? JSON.parse(storedAuth).token : null;
-    const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL
+    const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
     const response = await fetch(`${apiUrl}${endpoint}`, {
       method,
+      keepalive, // <--- Crucial pour les partages
       headers: {
-        "Authorization": `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
-        "Accept": "application/json"
+        Accept: "application/json",
       },
-      body: body ? JSON.stringify(body) : undefined
+      body: body ? JSON.stringify(body) : undefined,
     });
     return response.json();
   };
@@ -508,13 +710,13 @@ export default function ProjectCard({ project, challenge }: any) {
 
     const prevLikes = likes;
     const prevLikeurs = [...likeurs];
-    
+
     if (hasLiked) {
-        setLikes((prev) => prev - 1);
-        setLikeurs((prev) => prev.filter(l => l.id !== currentUser.id));
+      setLikes((prev) => prev - 1);
+      setLikeurs((prev) => prev.filter((l) => l.id !== currentUser.id));
     } else {
-        setLikes((prev) => prev + 1);
-        setLikeurs((prev) => [...prev, { id: currentUser.id }]);
+      setLikes((prev) => prev + 1);
+      setLikeurs((prev) => [...prev, { id: currentUser.id }]);
     }
 
     try {
@@ -522,39 +724,59 @@ export default function ProjectCard({ project, challenge }: any) {
       if (data.statut == 200) {
         setLikes(data.likes);
         setScore(data.score);
-        toast.success(data?.message)
+        toast.success(data?.message);
       } else {
         setLikes(prevLikes);
         setLikeurs(prevLikeurs);
         toast.error(data.message);
       }
-    } catch (e) { 
-        setLikes(prevLikes);
-        setLikeurs(prevLikeurs);
-        toast.error("Erreur de connexion"); 
+    } catch (e) {
+      setLikes(prevLikes);
+      setLikeurs(prevLikeurs);
+      toast.error("Erreur de connexion");
     }
   };
 
-  const handleShare = async () => {
+  // Cette fonction sera appelée par la modale via la prop onShareSuccess
+  const handleShareSuccess = async () => {
     try {
-      const data = await apiRequest(`/challenge/post/partage/${project.id}`);
+      // On force keepalive: true pour que l'appel survive à la redirection vers WhatsApp/FB
+      const data = await apiRequest(
+        `/challenge/post/partage/${project.id}`,
+        "GET",
+        null,
+        true,
+      );
+
       if (data.statut == 200) {
         setShares(data.partages);
         setScore(data.score);
       }
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error("Erreur partage:", e);
+    }
+  };
+
+  // Le bouton de la carte ouvre simplement la modale
+  const handleShareClick = () => {
+    setShowShareModal(true);
   };
 
   const handleReport = async () => {
     if (!currentUser) return toast.error("Connectez-vous pour signaler");
     setOpenMenu(false);
-    toast.loading('Signalement en cours...', { duration: 2000 });
+    toast.loading("Signalement en cours...", { duration: 2000 });
     try {
-      const data = await apiRequest(`/challenge/post/signaler/${project.id}`, "POST");
-      toast.dismiss()
+      const data = await apiRequest(
+        `/challenge/post/signaler/${project.id}`,
+        "POST",
+      );
+      toast.dismiss();
       if (data.statut == 200) toast.success(data.message);
       else toast.error(data.message);
-    } catch (e) { toast.error("Erreur serveur"); }
+    } catch (e) {
+      toast.error("Erreur serveur");
+    }
   };
 
   const handleDelete = async () => {
@@ -567,8 +789,11 @@ export default function ProjectCard({ project, challenge }: any) {
       } else {
         toast.error(data?.message || "Erreur");
       }
-    } catch (e) { toast.error("Erreur"); }
-    finally { setIsDeleting(false); }
+    } catch (e) {
+      toast.error("Erreur");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleNavigateToReel = () => {
@@ -589,11 +814,27 @@ export default function ProjectCard({ project, challenge }: any) {
 
       {/* HEADER */}
       <div className="flex justify-between items-center px-4 pt-4">
-        <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push(`/profil-talent/${project?.user?.id}`)}>
-          <Image src={project?.user?.pp ? apifile+'/'+project?.user?.pp : '../../assets/images/pp2.png'} width={40} height={40} alt="avatar" className="rounded-full object-cover aspect-square border-2 border-gray-100" />
+        <div
+          className="flex items-center gap-3 cursor-pointer"
+          onClick={() => router.push(`/profil-talent/${project?.user?.id}`)}
+        >
+          <Image
+            src={
+              project?.user?.pp
+                ? apifile + "/" + project?.user?.pp
+                : "../../assets/images/pp2.png"
+            }
+            width={40}
+            height={40}
+            alt="avatar"
+            className="rounded-full object-cover aspect-square border-2 border-gray-100"
+          />
           <div>
             <p className="font-bold text-gray-900 leading-tight text-sm hover:text-orange-600 transition-colors first-letter:uppercase">
-              {truncate(project?.user?.talent?.nom || project?.user?.name || "Talent", 20)}
+              {truncate(
+                project?.user?.talent?.nom || project?.user?.name || "Talent",
+                20,
+              )}
             </p>
             <p className="text-[11px] text-gray-500 font-medium first-letter:uppercase">
               {truncate(project?.user?.talent?.profession || "Participant", 20)}
@@ -603,24 +844,42 @@ export default function ProjectCard({ project, challenge }: any) {
 
         <div className="flex items-center gap-1 relative" ref={dropdownRef}>
           {isChallengeOwner && (
-            <button onClick={() => setShowContactModal(true)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-full">
+            <button
+              onClick={() => setShowContactModal(true)}
+              className="p-2 text-blue-600 hover:bg-blue-50 rounded-full"
+            >
               <UserRound size={19} />
             </button>
           )}
-          {shouldShowDropdownButton() && 
-          <button onClick={() => setOpenMenu(!openMenu)} className="p-2 text-gray-400 hover:bg-gray-100 rounded-full transition-colors">
-            <MoreVertical size={20} />
-          </button>}
+          {shouldShowDropdownButton() && (
+            <button
+              onClick={() => setOpenMenu(!openMenu)}
+              className="p-2 text-gray-400 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <MoreVertical size={20} />
+            </button>
+          )}
           <AnimatePresence>
-            {(openMenu && shouldShowDropdownButton()) && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute right-0 top-12 w-48 bg-white border rounded-2xl shadow-xl z-50 overflow-hidden">
+            {openMenu && shouldShowDropdownButton() && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="absolute right-0 top-12 w-48 bg-white border rounded-2xl shadow-xl z-50 overflow-hidden"
+              >
                 {(isChallengeOwner || isAuthor) && (
-                  <button onClick={() => setShowDeleteConfirm(true)} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50">
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50"
+                  >
                     <Trash2 size={18} /> Supprimer le post
                   </button>
                 )}
                 {!isAuthor && (
-                  <button onClick={handleReport} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50">
+                  <button
+                    onClick={handleReport}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50"
+                  >
                     <Flag size={18} /> Signaler
                   </button>
                 )}
@@ -630,109 +889,166 @@ export default function ProjectCard({ project, challenge }: any) {
         </div>
       </div>
 
-   
       {/* CONTENT */}
-      <div className={`px-4 mt-2 space-y-6 overflow-y-auto ${ showAllFields ? 'max-h-[220px]' : 'max-h-[220px]'} scrollbar-thin pb-2`}>
-        
-           {/* RANG / SCORE - Conditionné par le type d'évaluation */}
-     {challenge?.typeevaluation?.type != 'jury' && (
-  <div className="px-4">
-   
+      <div
+        className={`px-4 mt-2 space-y-6 overflow-y-auto ${showAllFields ? "max-h-[220px]" : "max-h-[220px]"} scrollbar-thin pb-2`}
+      >
+        {/* RANG / SCORE - Conditionné par le type d'évaluation */}
+        {challenge?.typeevaluation?.type != "jury" && (
+          <div className="px-4">
+            {/* Grille de badges */}
+            <div className="grid grid-cols-2 gap-2 text-[11px] font-bold">
+              {/* Badge Rang */}
+              <div className="flex items-center gap-2 bg-white border border-gray-100 p-1 rounded-xl shadow-sm whitespace-nowrap">
+                <div className="bg-yellow-50 p-1.5 rounded-lg">
+                  <Trophy size={14} className="text-yellow-600 shrink-0" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[9px] text-gray-500 font-medium leading-none mb-0.5">
+                    Rang provisoire
+                  </span>
+                  <span className="text-gray-900 leading-none text-[12px]">
+                    {project?.rang || "-"}
+                  </span>
+                </div>
+              </div>
 
-    {/* Grille de badges */}
-    <div className="grid grid-cols-2 gap-2 text-[11px] font-bold">
-      {/* Badge Rang */}
-      <div className="flex items-center gap-2 bg-white border border-gray-100 p-1 rounded-xl shadow-sm whitespace-nowrap">
-        <div className="bg-yellow-50 p-1.5 rounded-lg">
-          <Trophy size={14} className="text-yellow-600 shrink-0" />
-        </div>
-        <div className="flex flex-col">
-          <span className="text-[9px] text-gray-500 font-medium leading-none mb-0.5">Rang provisoire</span>
-          <span className="text-gray-900 leading-none text-[12px]">{project?.rang || '-'}</span>
-        </div>
-      </div>
-
-      {/* Badge Score */}
-      <div className="flex items-center gap-2 bg-white border border-gray-100 p-1 rounded-xl shadow-sm whitespace-nowrap">
-        <div className="bg-orange-50 p-1.5 rounded-lg">
-          <Flame size={14} className="text-orange-600 shrink-0" />
-        </div>
-        <div className="flex flex-col">
-          <span className="text-[9px] text-gray-500 font-medium leading-none mb-0.5">Score provisoire</span>
-          <span className="text-gray-900 leading-none text-[12px]">{Number(score).toFixed(2)}</span>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
-
+              {/* Badge Score */}
+              <div className="flex items-center gap-2 bg-white border border-gray-100 p-1 rounded-xl shadow-sm whitespace-nowrap">
+                <div className="bg-orange-50 p-1.5 rounded-lg">
+                  <Flame size={14} className="text-orange-600 shrink-0" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[9px] text-gray-500 font-medium leading-none mb-0.5">
+                    Score provisoire
+                  </span>
+                  <span className="text-gray-900 leading-none text-[12px]">
+                    {Number(score).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {responses.map((r: any, idx: number) => (
-          <div key={r?.id} className={`${!showAllFields && idx > 1 ? 'hidden' : 'block'}`}>
-            <p className="font-bold text-sm text-gray-950 mb-1.5 first-letter:uppercase">{r?.challenge_field?.label}</p>
-            {r?.challenge_field?.type === "text" || r?.challenge_field?.type === "option" ? <ReadMore text={r?.value} /> : <FileRenderer value={r?.value} type={r?.challenge_field?.type} label={r?.challenge_field?.label} />}
+          <div
+            key={r?.id}
+            className={`${!showAllFields && idx > 1 ? "hidden" : "block"}`}
+          >
+            <p className="font-bold text-sm text-gray-950 mb-1.5 first-letter:uppercase">
+              {r?.challenge_field?.label}
+            </p>
+            {r?.challenge_field?.type === "text" ||
+            r?.challenge_field?.type === "option" ? (
+              <ReadMore text={r?.value} />
+            ) : (
+              <FileRenderer
+                value={r?.value}
+                type={r?.challenge_field?.type}
+                label={r?.challenge_field?.label}
+              />
+            )}
           </div>
         ))}
       </div>
 
       {/* VOIR PLUS */}
       {responses.length > 2 && (
-        <button onClick={() => setShowAllFields(!showAllFields)} className="text-orange-600 text-[10px] font-black tracking-widest flex items-center justify-center gap-2 py-3 border-t border-gray-50 hover:bg-orange-50/30 border-t border-gray-200">
-          {showAllFields ? <><ChevronUp size={16} /> Voir moins</> : <><ChevronDown size={16} /> Voir les {responses.length - 2} autres champs</>}
+        <button
+          onClick={() => setShowAllFields(!showAllFields)}
+          className="text-orange-600 text-[10px] font-black tracking-widest flex items-center justify-center gap-2 py-3 border-t border-gray-50 hover:bg-orange-50/30 border-t border-gray-200"
+        >
+          {showAllFields ? (
+            <>
+              <ChevronUp size={16} /> Voir moins
+            </>
+          ) : (
+            <>
+              <ChevronDown size={16} /> Voir les {responses.length - 2} autres
+              champs
+            </>
+          )}
         </button>
       )}
 
       {/* FOOTER RESPONSIVE */}
       <div className="px-5 py-4 flex flex-col sm:flex-row items-center justify-between bg-white border-t border-gray-400 md:gap-x-3">
-        <button 
-          onClick={handleLike} 
+        <button
+          onClick={handleLike}
           className={`w-full sm:w-auto flex items-center justify-center gap-3 px-5 md:px-3 py-1 rounded-xl transition-all active:scale-95
-          ${hasLiked 
-            ? 'bg-orange-700 border-orange-700 text-white shadow-orange-700/20' 
-            : 'bg-gray-200 border-gray-200 text-gray-900'}`}
+          ${
+            hasLiked
+              ? "bg-orange-700 border-orange-700 text-white shadow-orange-700/20"
+              : "bg-gray-200 border-gray-200 text-gray-900"
+          }`}
         >
           <ThumbsUp size={18} className={hasLiked ? "fill-white" : ""} />
           <div className="flex flex-col items-center leading-tight">
             <span className="text-sm font-black">{likes}</span>
-            <span className="text-[9px] font-bold whitespace-nowrap">Vote(s)</span>
+            <span className="text-[9px] font-bold whitespace-nowrap">
+              Vote(s)
+            </span>
           </div>
         </button>
-        
+
         <div className="flex items-center justify-between w-full sm:w-auto sm:gap-6 md:gap-x-3 pt-4 sm:pt-0">
-          <button onClick={handleNavigateToReel} className="flex flex-col items-center group bg-gray-200 px-6 md:px-2 py-1 rounded-xl">
-            <span className="text-sm font-black text-gray-900">{project?.commentaires_count || 0}</span>
+          <button
+            onClick={handleNavigateToReel}
+            className="flex flex-col items-center group bg-gray-200 px-6 md:px-2 py-1 rounded-xl"
+          >
+            <span className="text-sm font-black text-gray-900">
+              {project?.commentaires_count || 0}
+            </span>
             <div className="flex items-center gap-1">
-                <MessageCircle size={14} className="text-gray-400 group-hover:text-orange-600" />
-                <span className="text-[9px] font-bold">Avis</span>
+              <MessageCircle
+                size={14}
+                className="text-gray-400 group-hover:text-orange-600"
+              />
+              <span className="text-[9px] font-bold">Avis</span>
             </div>
           </button>
 
-          <button onClick={() => setShowShareModal(true)} className="flex flex-col items-center group bg-gray-200 px-6 md:px-2 py-1 rounded-xl">
+          <button
+            onClick={() => setShowShareModal(true)}
+            className="flex flex-col items-center group bg-gray-200 px-6 md:px-2 py-1 rounded-xl"
+          >
             <span className="text-sm font-black text-gray-900">{shares}</span>
             <div className="flex items-center gap-1">
-                <Share2 size={14} className="text-gray-400 group-hover:text-orange-600" />
-                <span className="text-[9px] font-bold ">Partage(s)</span>
+              <Share2
+                size={14}
+                className="text-gray-400 group-hover:text-orange-600"
+              />
+              <span className="text-[9px] font-bold ">Partage(s)</span>
             </div>
           </button>
 
-          <button onClick={handleNavigateToReel} className="p-2.5 bg-orange-700 cursor-pointer hover:bg-orange-600 hover:scale-105 text-white rounded-xl active:scale-95 shadow-md px-4 md:px-2.5">
+          <button
+            onClick={handleNavigateToReel}
+            className="p-2.5 bg-orange-700 cursor-pointer hover:bg-orange-600 hover:scale-105 text-white rounded-xl active:scale-95 shadow-md px-4 md:px-2.5"
+          >
             <Maximize2 size={18} />
           </button>
         </div>
       </div>
 
-      <DeleteModal isOpen={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} onConfirm={handleDelete} loading={isDeleting} />
-      <ShareModal 
-        isOpen={showShareModal} 
-        onClose={() => setShowShareModal(false)} 
-        onShareSuccess={handleShare} 
-        postId={project.id} 
-        challengeId={challenge?.id} 
+      <DeleteModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDelete}
+        loading={isDeleting}
       />
-      <ContactModal 
-        isOpen={showContactModal} 
-        onClose={() => setShowContactModal(false)} 
-        user={project?.user} 
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        onShareSuccess={handleShareSuccess}
+        postId={project.id}
+        challengeId={challenge?.id}
+      />
+      <ContactModal
+        isOpen={showContactModal}
+        onClose={() => setShowContactModal(false)}
+        user={project?.user}
       />
     </div>
   );
