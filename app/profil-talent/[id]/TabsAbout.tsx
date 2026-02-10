@@ -73,7 +73,7 @@ export default function TabsAbout({ user }: any) {
             <span className="font-semibold">{levelInfo.name}</span>
             {getStars(levelInfo.stars)}
             <span className="text-gray-500 font-normal text-sm">
-              ({parseFloat(user?.points || 0).toFixed(2)} pts)
+              ({user?.points || 0} pts)
             </span>
           </div>
         }

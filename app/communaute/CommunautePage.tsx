@@ -259,7 +259,9 @@ export default function CommunautePage() {
                     <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-orange-100 mb-2 sm:mb-3 mx-auto">
                       <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-orange-700" />
                     </div>
-                    <div className="text-2xl sm:text-3xl font-bold text-orange-700 text-center mb-1">
+                    <div
+                      className={`${stats?.rang?.includes("ex-") ? "text-sm" : "text-2xl"} font-bold text-orange-700 text-center mb-1`}
+                    >
                       {stats.rang}
                       <span className="text-[11px] text-black font-normal ml-1">
                         / {stats.nombre_talents}
@@ -415,9 +417,9 @@ export default function CommunautePage() {
                           </span>
                         </div>
                         <span className="text-sm font-bold text-gray-600 px-3 py-1 bg-gray-50 rounded-full border border-gray-100 flex items-center gap-1">
-                          {SpecialIcon && (
+                          {/* {SpecialIcon && (
                             <SpecialIcon className="w-3 h-3 text-orange-600" />
-                          )}
+                          )} */}
                           {innovator.rang}
                         </span>
                       </div>
@@ -441,10 +443,10 @@ export default function CommunautePage() {
             </div>
           )}
           {innovators?.length > 0 && (
-            <div className="flex justify-center mt-6">
+            <div className="flex justify-center mt-4">
               <div
                 onClick={() => router.push("/communaute/talents")}
-                className="bg-white py-3 text-orange-700 border border-orange-200 hover:bg-orange-50 font-bold rounded-xl px-8 cursor-pointer"
+                className="bg-white py-3 text-sm sm:text-md text-orange-700 border border-orange-200 hover:bg-orange-50 font-bold rounded-xl px-8 cursor-pointer"
               >
                 Voir tous les talents{" "}
                 <ArrowRight className="w-4 h-4 inline-block ml-1" />
@@ -544,9 +546,9 @@ export default function CommunautePage() {
                         <span
                           className={`flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-lg border ${rankColor}`}
                         >
-                          {SpecialIcon && (
+                          {/* {SpecialIcon && (
                             <SpecialIcon className="w-3.5 h-3.5" />
-                          )}
+                          )} */}
                           {company.rang}
                         </span>
                       </div>
@@ -584,10 +586,10 @@ export default function CommunautePage() {
           )}
 
           {companies?.length > 0 && (
-            <div className="flex justify-center mt-6">
+            <div className="flex justify-center mt-4">
               <div
                 onClick={() => router.push("/communaute/entreprises")}
-                className="bg-white py-3 text-orange-700 border border-orange-200 hover:bg-orange-50 font-bold rounded-xl px-8 cursor-pointer"
+                className="bg-white py-3 text-sm sm:text-md text-orange-700 border border-orange-200 hover:bg-orange-50 font-bold rounded-xl px-8 cursor-pointer"
               >
                 Voir toutes les entreprises{" "}
                 <ArrowRight className="w-4 h-4 inline-block ml-1" />

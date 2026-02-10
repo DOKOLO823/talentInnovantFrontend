@@ -26,6 +26,10 @@ export default function ToutesLesEntreprises() {
   const router = useRouter();
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     const fetchCompanies = async () => {
       try {
         const res = await apiFetch("/entreprises/tous", { method: "GET" });

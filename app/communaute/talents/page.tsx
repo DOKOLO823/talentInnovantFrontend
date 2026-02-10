@@ -27,6 +27,10 @@ export default function TousLesTalents() {
   const router = useRouter();
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     const fetchTalents = async () => {
       try {
         const res = await apiFetch("/talents/tous", { method: "GET" });
