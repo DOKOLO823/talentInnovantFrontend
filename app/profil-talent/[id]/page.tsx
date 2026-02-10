@@ -1,10 +1,8 @@
 import ProfileClient from "./ProfileClient";
 
 export async function generateStaticParams() {
-  return [];
+  return [{ id: "index" }];
 }
-
-// export const dynamic = "force-static";
 
 export default async function Page({ params }: any) {
   // On consomme params pour éviter les erreurs de build
