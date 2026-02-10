@@ -25,6 +25,7 @@ import {
   Phone,
   ExternalLink,
   Check,
+  Info,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
@@ -404,6 +405,8 @@ import {
   Download,
   FileSearch,
 } from "lucide-react";
+import { formatKMMD } from "@/app/utils/formatters";
+import ScoreDetailModal from "../modals/ScoreDetailModal";
 
 // --- Sous-composants ---
 function ExpandableText({
@@ -645,6 +648,8 @@ export default function ProjectCard({ project, challenge }: any) {
   const [shares, setShares] = useState<number>(project?.partage || 0);
   const [score, setScore] = useState<number>(project?.score || 0);
   const [likeurs, setLikeurs] = useState<Likeur[]>(project?.likeurs || []);
+
+  const [showScoreDetail, setShowScoreDetail] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -914,6 +919,7 @@ export default function ProjectCard({ project, challenge }: any) {
               </div>
 
               {/* Badge Score */}
+
               <div className="flex items-center gap-2 bg-white border border-gray-100 p-1 rounded-xl shadow-sm whitespace-nowrap">
                 <div className="bg-orange-50 p-1.5 rounded-lg">
                   <Flame size={14} className="text-orange-600 shrink-0" />
@@ -922,9 +928,21 @@ export default function ProjectCard({ project, challenge }: any) {
                   <span className="text-[9px] text-gray-500 font-medium leading-none mb-0.5">
                     Score provisoire
                   </span>
-                  <span className="text-gray-900 leading-none text-[12px]">
-                    {Number(score).toFixed(2)}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-gray-900 leading-none text-[12px] font-black">
+                      {/* On traite le score comme un entier ici (false) */}
+                      {formatKMMD(score, false)}
+                    </span>
+
+                    {/* Icône i uniquement si > 1000 */}
+
+                    <button
+                      onClick={() => setShowScoreDetail(true)}
+                      className="hover:text-orange-700 transition-colors"
+                    >
+                      <Info size={13} className="text-gray-500" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1031,6 +1049,18 @@ export default function ProjectCard({ project, challenge }: any) {
           </button>
         </div>
       </div>
+
+      <ScoreDetailModal
+        isOpen={showScoreDetail}
+        onClose={() => setShowScoreDetail(false)}
+        isNoteFinale={false} // À mettre à true si tu utilises une variable notefinale
+        data={{
+          value: score,
+          votes: likes,
+          shares: shares,
+          comments: project?.commentaires_count || 0,
+        }}
+      />
 
       <DeleteModal
         isOpen={showDeleteConfirm}

@@ -21,8 +21,10 @@ import {
   Lock,
   Trophy,
   Users,
+  Trash2,
+  Info,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
@@ -30,6 +32,8 @@ import apifile from "@/app/lib/apifile";
 import Link from "next/link";
 import ReadMore from "@/app/components/ReadMore";
 import { API_BASE_URL } from "@/app/lib/api";
+import { formatKMMD } from "@/app/utils/formatters";
+import ScoreDetailModal from "@/app/components/modals/ScoreDetailModal";
 
 // --- Utilitaires ---
 const apiRequest = async (
@@ -42,7 +46,7 @@ const apiRequest = async (
   const token = storedAuth ? JSON.parse(storedAuth).token : null;
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method,
-    keepalive, // Ajout crucial
+    keepalive,
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
@@ -106,14 +110,14 @@ function SwipeInstructionModal({ onComplete }: { onComplete: () => void }) {
         </h3>
         <span className="text-gray-300 text-sm mb-8 leading-relaxed">
           Balayez l'écran vers la{" "}
-          <span className="text-orange-500 font-bold">gauche</span> ou la{" "}
+          <span className="text-orange-500 font-bold">gauche</span> ou vers la{" "}
           <span className="text-orange-500 font-bold">droite</span> pour passer
           d'un projet à l'autre.
         </span>
 
         <button
           onClick={onComplete}
-          className="w-full py-4 bg-orange-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg active:scale-95 transition-transform"
+          className="w-full mt-6 py-4 bg-orange-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg active:scale-95 transition-transform"
         >
           J'ai compris
         </button>
@@ -194,89 +198,93 @@ function FileRenderer({
       </div>
     );
 
-  if (isPreviewable)
+  if (isPreviewable) {
     return (
-      <div className="flex flex-col gap-2 mb-4">
-        <div className="flex items-center justify-between px-1">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-orange-100 text-orange-600 rounded-lg">
-              {isPDF ? <FileText size={14} /> : <File size={14} />}
-            </div>
-            <span className="text-[10px] font-bold text-slate-600 truncate max-w-[180px]">
-              Aperçu Document
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setIsFullscreen(true)}
-              className="p-1.5 hover:bg-orange-50 text-orange-600 rounded-md transition-all flex items-center gap-1"
-            >
-              <Maximize2 size={16} />{" "}
-              <span className="text-[10px] font-bold uppercase">
-                Plein écran
+      <>
+        <div className="flex flex-col gap-2 mb-4">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-orange-100 text-orange-600 rounded-lg">
+                {isPDF ? <FileText size={14} /> : <File size={14} />}
+              </div>
+              <span className="text-[10px] font-bold text-slate-600 truncate max-w-[180px]">
+                Aperçu Document
               </span>
-            </button>
-            <a
-              href={fullUrl}
-              download
-              className="p-1.5 hover:bg-slate-100 text-slate-400 rounded-md"
-            >
-              <Download size={16} />
-            </a>
-          </div>
-        </div>
-        <div className="relative w-full h-[380px] bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-          <iframe
-            src={
-              isPDF
-                ? `${fullUrl}#toolbar=0`
-                : `https://docs.google.com/gview?url=${encodeURIComponent(fullUrl)}&embedded=true`
-            }
-            className="w-full h-full border-none"
-            title={label}
-          />
-        </div>
-        <AnimatePresence>
-          {isFullscreen && (
-            <div className="fixed inset-0 z-[600] flex items-center justify-center p-0 md:p-4">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setIsFullscreen(false)}
-                className="absolute inset-0 bg-slate-900/95 backdrop-blur-md"
-              />
-              <motion.div
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.95, opacity: 0 }}
-                className="relative w-full h-full bg-white md:rounded-3xl overflow-hidden flex flex-col"
-              >
-                <div className="flex justify-between items-center p-4 border-b">
-                  <span className="font-bold text-sm text-slate-700">
-                    {label}
-                  </span>
-                  <button
-                    onClick={() => setIsFullscreen(false)}
-                    className="p-2 bg-slate-100 rounded-full hover:bg-red-50 hover:text-red-500"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-                <iframe
-                  src={
-                    isPDF
-                      ? fullUrl
-                      : `https://docs.google.com/gview?url=${encodeURIComponent(fullUrl)}&embedded=true`
-                  }
-                  className="w-full flex-1 border-none"
-                />
-              </motion.div>
             </div>
-          )}
-        </AnimatePresence>
-      </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setIsFullscreen(true)}
+                className="p-1.5 hover:bg-orange-50 text-orange-600 rounded-md transition-all flex items-center gap-1"
+              >
+                <Maximize2 size={16} />{" "}
+                <span className="text-[10px] font-bold uppercase">
+                  Plein écran
+                </span>
+              </button>
+
+              <a
+                href={fullUrl}
+                download
+                className="p-1.5 hover:bg-slate-100 text-slate-400 rounded-md"
+              >
+                <Download size={16} />
+              </a>
+            </div>
+          </div>
+          <div className="relative w-full h-[380px] bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+            <iframe
+              src={
+                isPDF
+                  ? `${fullUrl}#toolbar=0`
+                  : `https://docs.google.com/gview?url=${encodeURIComponent(fullUrl)}&embedded=true`
+              }
+              className="w-full h-full border-none"
+              title={label}
+            />
+          </div>
+          <AnimatePresence>
+            {isFullscreen && (
+              <div className="fixed inset-0 z-[600] flex items-center justify-center p-0 md:p-4">
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setIsFullscreen(false)}
+                  className="absolute inset-0 bg-slate-900/95 backdrop-blur-md"
+                />
+                <motion.div
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.95, opacity: 0 }}
+                  className="relative w-full h-full bg-white md:rounded-3xl overflow-hidden flex flex-col"
+                >
+                  <div className="flex justify-between items-center p-4 border-b">
+                    <span className="font-bold text-sm text-slate-700">
+                      {label}
+                    </span>
+                    <button
+                      onClick={() => setIsFullscreen(false)}
+                      className="p-2 bg-slate-100 rounded-full hover:bg-red-50 hover:text-red-500"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
+                  <iframe
+                    src={
+                      isPDF
+                        ? fullUrl
+                        : `https://docs.google.com/gview?url=${encodeURIComponent(fullUrl)}&embedded=true`
+                    }
+                    className="w-full flex-1 border-none"
+                  />
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+        </div>
+      </>
     );
+  }
 
   return (
     <div className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-2xl mb-4 shadow-sm">
@@ -288,6 +296,7 @@ function FileRenderer({
           {label}
         </span>
       </div>
+
       <a
         href={fullUrl}
         download
@@ -539,12 +548,21 @@ function ShareModal({
 }
 
 // --- Composant Principal ---
-export default function ProjectReelClient({
-  challenge,
-  initialProjectId,
-}: any) {
+export default function ProjectReelClient() {
   const router = useRouter();
+  const params = useParams();
+  const searchParams = useSearchParams();
+
+  // Récupération des paramètres côté client
+  const challengeId = params?.id as string;
+  const initialProjectId = searchParams?.get("project");
+
+  // pour le modal des details du score
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [challenge, setChallenge] = useState<any>(null);
+  const [challengeNotFound, setChallengeNotFound] = useState(false);
   const [projects, setProjects] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentProject, setCurrentProject] = useState<any>(null);
@@ -571,12 +589,41 @@ export default function ProjectReelClient({
   // --- NOUVEL ÉTAT : Pour savoir si on doit afficher les projets ---
   const [shouldShowProjects, setShouldShowProjects] = useState(false);
 
+  // Récupération de l'utilisateur courant
   useEffect(() => {
     const storedAuth = localStorage.getItem("auth");
     if (storedAuth) {
       setCurrentUser(JSON.parse(storedAuth).user);
     }
   }, []);
+
+  // Récupération du challenge
+  useEffect(() => {
+    const fetchChallenge = async () => {
+      if (!challengeId) {
+        setChallengeNotFound(true);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const data = await apiRequest(`/challenge/details/${challengeId}`);
+        const fetchedChallenge = data?.data?.challenge || data?.challenge;
+
+        if (!fetchedChallenge) {
+          setChallengeNotFound(true);
+        } else {
+          setChallenge(fetchedChallenge);
+        }
+      } catch (error) {
+        setChallengeNotFound(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchChallenge();
+  }, [challengeId]);
 
   const handleCompleteHint = () => {
     setShowSwipeHint(false);
@@ -638,7 +685,6 @@ export default function ProjectReelClient({
     } catch (e) {
       toast.error("Erreur de chargement des projets");
     } finally {
-      setLoading(false);
       setIsSwitchingFilter(false);
     }
   };
@@ -765,7 +811,7 @@ export default function ProjectReelClient({
         `/challenge/post/partage/${currentProject?.id}`,
       );
       if (data.statut === 200) {
-        setShareCount(data.partages); // Met à jour le compteur visuel
+        setShareCount(data.partages);
         setProjects((prev) =>
           prev.map((p) =>
             p.id === currentProject.id ? { ...p, partage: data.partages } : p,
@@ -810,6 +856,39 @@ export default function ProjectReelClient({
     }
   };
 
+  // Affichage du chargement initial
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-orange-700"></div>
+      </div>
+    );
+  }
+
+  // Challenge non trouvé
+  if (challengeNotFound || !challenge) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh] w-full p-8 text-center">
+        <div className="w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center mb-8 rotate-3 shadow-sm">
+          <Trash2 size={40} className="text-red-500" />
+        </div>
+        <h2 className="text-2xl font-black text-slate-900 mb-3 tracking-tight">
+          Challenge introuvable
+        </h2>
+        <p className="text-slate-500 max-w-xs leading-relaxed mb-10">
+          Ce challenge n'est plus disponible ou a été supprimé.
+        </p>
+        <Link
+          href="/home-talent"
+          className="group flex items-center gap-3 px-8 py-4 bg-white border-2 border-slate-900 text-slate-900 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] hover:shadow-none"
+        >
+          <ArrowLeft size={18} /> Retour à l'accueil
+        </Link>
+      </div>
+    );
+  }
+
+  // Vérification de la date de fin d'inscription
   if (
     challenge &&
     new Date(challenge?.datefininscription) > new Date() &&
@@ -851,6 +930,7 @@ export default function ProjectReelClient({
     );
   }
 
+  // Challenge privé
   if (
     challenge &&
     challenge?.portee?.portee == "privee" &&
@@ -878,13 +958,7 @@ export default function ProjectReelClient({
     );
   }
 
-  if (loading)
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-orange-700"></div>
-      </div>
-    );
-
+  // Utilisateur non connecté
   if (!currentUser) {
     return (
       <div className="w-full h-full flex flex-row items-center justify-center relative top-32 p-2">
@@ -1071,7 +1145,7 @@ export default function ProjectReelClient({
                       </p>
                     </div>
 
-                    <div>
+                    <div className="flex flex-col justify-center items-center">
                       <p className="text-[9px] uppercase opacity-60">
                         {(challenge?.typeevaluation?.type === "jury" &&
                           challenge?.resultatdisponible == 1) ||
@@ -1080,20 +1154,40 @@ export default function ProjectReelClient({
                           ? "Note finale"
                           : "Score de popularité"}
                       </p>
-                      <div className=" font-black text-orange-500">
-                        {(challenge?.typeevaluation?.type === "jury" &&
-                          challenge?.resultatdisponible == 1) ||
-                        (challenge?.typeevaluation?.type === "hybride" &&
-                          filterMode === "final") ? (
-                          <div>
-                            <span>
-                              {currentProject?.notefinale?.toFixed(2)}
+
+                      <div className="flex items-center gap-2 font-black text-orange-500">
+                        {/* Logique d'affichage du Score ou de la Note Finale */}
+                        <div className="flex flex-col items-end">
+                          {(challenge?.typeevaluation?.type === "jury" &&
+                            challenge?.resultatdisponible == 1) ||
+                          (challenge?.typeevaluation?.type === "hybride" &&
+                            filterMode === "final") ? (
+                            <div className="flex items-baseline gap-0.5">
+                              <span className="text-lg">
+                                {formatKMMD(currentProject?.notefinale, true)}
+                              </span>
+                              <span className="text-[10px] opacity-70">
+                                /20
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-lg">
+                              {formatKMMD(currentProject?.score, false)}
                             </span>
-                            <span className="text-[10px]"> /20</span>
-                          </div>
-                        ) : (
-                          currentProject?.score?.toFixed(2)
-                        )}
+                          )}
+                        </div>
+
+                        {/* Affichage de l'icône Info (uniquement en mode 'all') */}
+                        {filterMode === "all" &&
+                          challenge?.typeevaluation?.type != "jury" && (
+                            <button
+                              onClick={() => setShowDetailsModal(true)}
+                              className="p-1.5 hover:bg-orange-50 rounded-full transition-colors text-orange-400 hover:text-orange-600"
+                              title="Détails du score"
+                            >
+                              <Info size={18} strokeWidth={2.5} />
+                            </button>
+                          )}
                       </div>
                     </div>
                   </div>
@@ -1251,7 +1345,7 @@ export default function ProjectReelClient({
                 <div className="relative w-10 h-10 flex-shrink-0 rounded-full overflow-hidden border-2 border-gray-200 mt-1">
                   <Image
                     src={
-                      !currentUser?.pp
+                      currentUser?.pp
                         ? `${apifile}/${currentUser.pp}`
                         : "../../assets/images/pp2.png"
                     }
@@ -1284,6 +1378,19 @@ export default function ProjectReelClient({
           </div>
         )}
       </AnimatePresence>
+
+      {/* modal details de score  */}
+      <ScoreDetailModal
+        isOpen={showDetailsModal}
+        onClose={() => setShowDetailsModal(false)}
+        isNoteFinale={false}
+        data={{
+          value: currentProject?.score || 0,
+          votes: currentProject?.like || 0,
+          shares: currentProject?.partage || 0,
+          comments: currentProject?.commentaires_count || 0,
+        }}
+      />
 
       <ShareModal
         isOpen={isShareModalOpen}

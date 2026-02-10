@@ -1,5 +1,9 @@
 import CreateOpportunityClient from "./CreateOpportunityClient";
 
+// export async function generateStaticParams() {
+//   return [];
+// }
+
 export default async function Page() {
   // Plus tard : fetch API
   const domaines = [

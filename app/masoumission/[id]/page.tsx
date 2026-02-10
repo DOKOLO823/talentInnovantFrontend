@@ -1,11 +1,11 @@
 import SubmissionDetailClient from "./SubmissionDetailClient";
 
 // 1. On indique à Next.js de ne pas bloquer si l'ID n'est pas pré-généré
-export const dynamicParams = true;
+// export const dynamicParams = true;
 
 // 2. On ajoute la fonction minimale pour satisfaire le compilateur
 export async function generateStaticParams() {
-  return [];
+  return [{ id: "index" }];
 }
 
 export default async function Page({

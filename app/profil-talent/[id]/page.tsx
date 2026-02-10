@@ -1,11 +1,11 @@
 import ProfileClient from "./ProfileClient";
 
-// 1. On donne un paramètre fictif pour valider l'export statique
 export async function generateStaticParams() {
-  return [{ id: "index" }];
+  return [];
 }
 
-// 2. On utilise une signature simple qui accepte tout
+// export const dynamic = "force-static";
+
 export default async function Page({ params }: any) {
   // On consomme params pour éviter les erreurs de build
   await params;

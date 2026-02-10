@@ -1,5 +1,9 @@
 import CreateChallengeClient from "./CreateChallengeClient";
 
+// export async function generateStaticParams() {
+//   return [];
+// }
+
 export default async function Page() {
   // Dans une vraie application, ces données viendraient d'une API
   const jurys = [

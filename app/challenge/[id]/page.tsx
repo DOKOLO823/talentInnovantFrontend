@@ -2,11 +2,11 @@ import ChallengeClient from "./ChallengeClient";
 
 // Cette fonction règle votre erreur de "Runtime Error"
 export async function generateStaticParams() {
-  return []; 
+  return [{ id: "index" }];
 }
 
 // On force Next.js à ne pas chercher à générer les pages au build
-export const dynamicParams = true; 
+// export const dynamicParams = true;
 
 export default function ChallengePage() {
   return <ChallengeClient />;

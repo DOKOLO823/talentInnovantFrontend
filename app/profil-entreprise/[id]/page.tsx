@@ -2,10 +2,14 @@
 import EntrepriseProfileClient from "./EntrepriseProfileClient";
 
 export async function generateStaticParams() {
-  return [];
+  return [{ id: "index" }];
 }
 
-export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const resolvedParams = await params;
   const id = resolvedParams.id;
 
