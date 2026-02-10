@@ -94,8 +94,8 @@ export default function ProfileClient() {
             : [],
           rang_general: res.rang_general,
           total_talent: res.total_talent,
-          points: res.talent?.point || 0,
-          trophies: res.talent?.trophee || 0,
+          points: res.talent?.point || "-",
+          trophies: res.talent?.trophee || "-",
           region: res.talent?.region || "-",
           city: res.talent?.ville || "-",
           location: res.talent?.localisation || "-",
@@ -188,7 +188,13 @@ export default function ProfileClient() {
 
       {/* COVER */}
       <div className="w-full h-56 md:h-100 relative">
-        <img src={userData.cover} className="object-cover" alt="cover" />
+        <Image
+          src={userData.cover}
+          fill
+          className="object-cover"
+          alt="cover"
+          priority
+        />
       </div>
 
       {/* PHOTO + INFOS */}

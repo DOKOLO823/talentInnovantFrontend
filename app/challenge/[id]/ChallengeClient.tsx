@@ -132,13 +132,14 @@ function PrivateResultCard({ project, rank, challenge }: any) {
       <div className="flex justify-between items-start">
         <div className="flex gap-3">
           <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden relative">
-            <img
+            <Image
               src={
                 project.user?.pp
                   ? `${apifile}/${project.user.pp}`
                   : "/avatar.png"
               }
               alt="User"
+              fill
               className="object-cover"
             />
           </div>
@@ -525,13 +526,14 @@ export default function ChallengeClient() {
       <BackButton m={16} />
 
       <div className="relative w-full h-70 md:h-80 rounded-b-2xl overflow-hidden shadow mt-6">
-        <img
+        <Image
           src={
             challenge.photo
               ? `${apifile}/${challenge.photo}`
               : "../assets/images/innov.jpg"
           }
           alt="Cover"
+          fill
           className="object-cover"
         />
         <div className="absolute inset-0 bg-black/50" />
@@ -1659,7 +1661,7 @@ function ParticipantsSection({
               <div className="flex items-center gap-4">
                 {/* Avatar ou Icône Fallback */}
                 <div className="flex-shrink-0">
-                  <img
+                  <Image
                     src={
                       p.user?.pp
                         ? `${apifile}/${p.user.pp}`

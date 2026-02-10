@@ -91,7 +91,7 @@ function ContactModal({ isOpen, onClose, user }: any) {
             className="group flex items-center gap-4 p-4 bg-slate-50 rounded-[2rem] border border-transparent hover:border-orange-200 hover:bg-orange-50/50 transition-all duration-300 cursor-pointer"
           >
             <div className="relative">
-              <img
+              <Image
                 src={apifile + "/" + user?.pp}
                 width={64}
                 height={64}
@@ -823,7 +823,7 @@ export default function ProjectCard({ project, challenge }: any) {
           className="flex items-center gap-3 cursor-pointer"
           onClick={() => router.push(`/profil-talent/${project?.user?.id}`)}
         >
-          <img
+          <Image
             src={
               project?.user?.pp
                 ? apifile + "/" + project?.user?.pp
