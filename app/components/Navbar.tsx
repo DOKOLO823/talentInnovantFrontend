@@ -60,19 +60,33 @@ export default function Navbar() {
 
   useEffect(() => {
     const syncAuth = () => {
-      const authItem = localStorage.getItem("auth");
-      if (authItem) {
-        const authData = JSON.parse(authItem);
-        if (authData.user?.pp) {
-          setUserPP(authData.user.pp);
-          setImgKey(Date.now()); // On change la clé quand le storage change
+      // On ajoute un tout petit délai pour être sûr que le localStorage est bien écrit
+      setTimeout(() => {
+        const authItem = localStorage.getItem("auth");
+        if (authItem) {
+          try {
+            const authData = JSON.parse(authItem);
+            const newPP = authData.user?.pp;
+
+            if (newPP) {
+              setUserPP(newPP);
+              setImgKey(Date.now()); // Force le rafraîchissement
+              setIsLoggedIn(true);
+            }
+          } catch (e) {
+            console.error("Erreur parsing auth:", e);
+          }
         }
-        setIsLoggedIn(true);
-      }
+      }, 50); // 50ms suffisent
     };
 
     window.addEventListener("local-storage-update", syncAuth);
-    return () => window.removeEventListener("local-storage-update", syncAuth);
+    window.addEventListener("storage", syncAuth); // Pour les changements inter-onglets
+
+    return () => {
+      window.removeEventListener("local-storage-update", syncAuth);
+      window.removeEventListener("storage", syncAuth);
+    };
   }, []);
 
   useEffect(() => {
@@ -233,10 +247,12 @@ export default function Navbar() {
                   >
                     <div className="relative w-8 h-8 sm:w-9 sm:h-9 overflow-hidden rounded-full border border-gray-200 transition group-hover:border-orange-500">
                       <img
-                        /* On s'assure qu'il n'y a qu'un seul slash entre apifile et userPP */
+                        key={imgKey} // Ajoutez la key directement ici aussi
                         src={
                           userPP
-                            ? `${apifile.replace(/\/$/, "")}/${userPP.replace(/^\//, "")}?v=${imgKey}`
+                            ? userPP.startsWith("http")
+                              ? `${userPP}?v=${imgKey}`
+                              : `${apifile.replace(/\/$/, "")}/${userPP.replace(/^\//, "")}?v=${imgKey}`
                             : role === "talent"
                               ? "/assets/images/pp2.png"
                               : "/assets/images/ppe.png"
@@ -245,7 +261,6 @@ export default function Navbar() {
                         className="w-full h-full object-cover"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          // Évite la boucle infinie si l'image par défaut est aussi introuvable
                           const defaultImg =
                             role === "talent"
                               ? "/assets/images/pp2.png"

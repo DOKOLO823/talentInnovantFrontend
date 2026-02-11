@@ -23,6 +23,8 @@ import {
   Users,
   Trash2,
   Info,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
@@ -669,11 +671,15 @@ export default function ProjectReelClient() {
 
       if (fetchedPosts?.length > 0) {
         let index = 0;
-        if (loading && initialProjectId) {
+        // Correction ici : On vérifie la présence de initialProjectId
+        // sans bloquer sur l'état 'loading'
+        if (initialProjectId) {
           const found = fetchedPosts.findIndex(
-            (p: any) => p?.id.toString() === initialProjectId,
+            (p: any) => p?.id.toString() === initialProjectId.toString(),
           );
-          if (found !== -1) index = found;
+          if (found !== -1) {
+            index = found;
+          }
         }
         setCurrentIndex(index);
         setCurrentProject(fetchedPosts[index]);
@@ -869,21 +875,36 @@ export default function ProjectReelClient() {
   if (challengeNotFound || !challenge) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] w-full p-8 text-center">
-        <div className="w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center mb-8 rotate-3 shadow-sm">
-          <Trash2 size={40} className="text-red-500" />
+        <div className="w-20 h-20 bg-orange-50 rounded-3xl flex items-center justify-center mb-8 rotate-3 shadow-sm">
+          <AlertCircle size={40} className="text-orange-600" />
         </div>
+
         <h2 className="text-2xl font-black text-slate-900 mb-3 tracking-tight">
-          Challenge introuvable
+          Contenu inaccessible
         </h2>
-        <p className="text-slate-500 max-w-xs leading-relaxed mb-10">
-          Ce challenge n'est plus disponible ou a été supprimé.
+
+        <p className="text-slate-500 max-w-sm leading-relaxed mb-10">
+          Nous ne parvenons pas à charger ce challenge. Il a pu être supprimé,
+          ou votre connexion internet est peut-être instable.
         </p>
-        <Link
-          href="/home-talent"
-          className="group flex items-center gap-3 px-8 py-4 bg-white border-2 border-slate-900 text-slate-900 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] hover:shadow-none"
-        >
-          <ArrowLeft size={18} /> Retour à l'accueil
-        </Link>
+
+        <div className="flex flex-col sm:flex-row gap-4 w-full justify-center items-center">
+          {/* Bouton Actualiser */}
+          <button
+            onClick={() => window.location.reload()}
+            className="flex items-center gap-3 px-8 py-4 bg-orange-700 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-orange-800 transition-all active:shadow-none active:translate-y-1"
+          >
+            <RefreshCw size={18} /> Actualiser
+          </button>
+
+          {/* Bouton Retour */}
+          <div
+            onClick={() => router.back()}
+            className="flex items-center cursor-pointer gap-3 px-8 py-4 bg-white border-2 border-slate-900 text-slate-900 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all active:shadow-none active:translate-y-1"
+          >
+            <ArrowLeft size={18} /> Retour
+          </div>
+        </div>
       </div>
     );
   }

@@ -6,7 +6,7 @@ import {
   Share2,
   BarChart3,
   Quote,
-} from "lucide-react"; // Ajout de Quote
+} from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function ScoreDetailModal({
@@ -14,14 +14,23 @@ export default function ScoreDetailModal({
   onClose,
   data,
   isNoteFinale,
-  commentJury, // Nouvelle prop
+  commentJury,
 }: any) {
   if (!isOpen) return null;
 
   const WEIGHTS = { VOTE: 2, SHARE: 4, COMMENT: 5 };
+
   const totalValue = isNoteFinale
     ? Number(data.value).toFixed(2)
     : Math.floor(data.value);
+
+  // Calcul logique : Total - (votes + partages) = points réels des commentaires
+  const votePoints = data.votes * WEIGHTS.VOTE;
+  const sharePoints = data.shares * WEIGHTS.SHARE;
+  const commentPoints = Math.max(
+    0,
+    Math.floor(data.value) - (votePoints + sharePoints),
+  );
 
   return (
     <div
@@ -65,28 +74,27 @@ export default function ScoreDetailModal({
               <StatRow
                 label="Vote(s)"
                 count={data.votes}
-                weight={WEIGHTS.VOTE}
+                points={votePoints}
                 icon={<ThumbsUp className="text-blue-600" size={14} />}
                 color="bg-blue-50"
               />
               <StatRow
                 label="Partage(s)"
                 count={data.shares}
-                weight={WEIGHTS.SHARE}
+                points={sharePoints}
                 icon={<Share2 className="text-green-600" size={14} />}
                 color="bg-green-50"
               />
               <StatRow
                 label="Commentaire(s)"
                 count={data.comments}
-                weight={WEIGHTS.COMMENT}
+                points={commentPoints}
                 icon={<MessageSquare className="text-purple-600" size={14} />}
                 color="bg-purple-50"
               />
             </div>
           )}
 
-          {/* Section Commentaire du Jury - Uniquement si Note Finale et commentaire présent */}
           {isNoteFinale && commentJury && (
             <div className="mt-6 p-4 bg-orange-50/50 rounded-2xl border border-orange-100 relative">
               <Quote
@@ -116,7 +124,7 @@ export default function ScoreDetailModal({
   );
 }
 
-function StatRow({ label, count, weight, icon, color }: any) {
+function StatRow({ label, count, points, icon, color }: any) {
   return (
     <div className="flex items-center justify-between p-3 rounded-2xl bg-white border border-slate-100 shadow-sm">
       <div className="flex items-center gap-3">
@@ -126,9 +134,7 @@ function StatRow({ label, count, weight, icon, color }: any) {
           <span className="text-[9px] text-slate-500">{count}</span>
         </div>
       </div>
-      <div className="font-black text-slate-900 text-sm">
-        {count * weight} pts
-      </div>
+      <div className="font-black text-slate-900 text-sm">{points} pts</div>
     </div>
   );
 }

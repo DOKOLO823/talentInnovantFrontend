@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -19,6 +19,7 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function ProfileClient() {
   const params = useParams();
   const userId = params.id as string;
+  const tabsRef = useRef<HTMLDivElement>(null);
 
   const [showPP, setShowPP] = useState(false);
   const [activeTab, setActiveTab] = useState("about");
@@ -28,6 +29,24 @@ export default function ProfileClient() {
   const [error, setError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>();
   const [showContactModal, setShowContactModal] = useState(false);
+
+  // scroller legerement vers le bas lors du clique sur un tab
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+
+    // Petit délai pour laisser le contenu commencer à s'afficher
+    setTimeout(() => {
+      if (tabsRef.current) {
+        const yOffset = -10; // Ajustez cette valeur pour laisser un petit espace en haut
+        const y =
+          tabsRef.current.getBoundingClientRect().top +
+          window.pageYOffset +
+          yOffset;
+
+        window.scrollTo({ top: y, behavior: "smooth" });
+      }
+    }, 100);
+  };
 
   // fonction pour informer le user de la visite d'une ets
   useEffect(() => {
@@ -247,11 +266,14 @@ export default function ProfileClient() {
       )}
 
       {/* TABS (STICKY) */}
-      <div className="px-4 md:px-8 mt-6 border-b flex gap-6 bg-white sticky top-0 z-40 pt-4 overflow-x-auto no-scrollbar">
+      <div
+        ref={tabsRef}
+        className="px-4 md:px-8 mt-6 border-b flex gap-6 bg-white sticky top-0 z-40 pt-4 overflow-x-auto no-scrollbar"
+      >
         {["about", "projets", "portfolio", "cv"].map((tab) => (
           <button
             key={tab}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => handleTabChange(tab)}
             className={`pb-3 border-b-2 whitespace-nowrap ${
               activeTab === tab
                 ? "border-orange-700 text-orange-700 font-semibold"

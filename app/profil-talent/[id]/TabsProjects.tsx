@@ -110,6 +110,12 @@ export default function TabsProjects({
 
   return (
     <div className="space-y-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4 mb-12">
+      {projectsData?.length > 0 && (
+        <h2 className="text-sm md:text-md text-gray-800 mb-6 border-l-4 border-orange-700 pl-3">
+          Projets issus des challenges :
+        </h2>
+      )}
+
       {projectsData?.map((project: any) => (
         <ProjectCardProfile key={project.id} project={project} />
       ))}

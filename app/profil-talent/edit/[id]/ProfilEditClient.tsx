@@ -145,34 +145,30 @@ export default function ProfilEditClient({ userId }: { userId: string }) {
         body: formData,
       });
       if (res.statut === 200) {
-        // On récupère le nom de fichier pur venant du serveur (ex: "images/pp/abc.jpg")
-        const newPP = res.user?.pp || (ppFile ? user.pp : user.pp);
+        // 1. On récupère la valeur exacte du serveur
+        const serverPP = res.user?.pp;
 
-        const updatedTalent = {
-          ...talent,
-          ...talentData,
-          updated_at: new Date().toISOString(),
-        };
-
-        const updatedUser = {
-          ...user,
-          telephone: userData.telephone,
-          bio: userData.bio,
-          // IMPORTANT : On enregistre le chemin RELATIF, pas l'URL complète
-          pp: res.user?.pp || user.pp,
-          talent: updatedTalent,
-        };
-
-        setAuth({
+        // 2. On prépare l'objet complet pour le storage
+        const updatedAuth: any = {
           token: token,
-          user: updatedUser,
-          talent: updatedTalent,
-        });
+          user: {
+            ...user,
+            pp: serverPP || user.pp, // Priorité au retour serveur
+            telephone: userData.telephone,
+            bio: userData.bio,
+          },
+        };
 
-        // Déclenche la mise à jour immédiate de la Navbar
+        // 3. Mise à jour manuelle immédiate du localStorage AVANT l'événement
+        localStorage.setItem("auth", JSON.stringify(updatedAuth));
+
+        // 4. Mise à jour du contexte
+        setAuth(updatedAuth);
+
+        // 5. Envoi du signal
         window.dispatchEvent(new Event("local-storage-update"));
 
-        toast.success("Profil mis à jour !", { duration: 6000 });
+        toast.success("Profil mis à jour !");
         router.push(`/profil-talent/${userId}`);
       } else {
         toast.error(res.message || "Erreur lors de la sauvegarde");
