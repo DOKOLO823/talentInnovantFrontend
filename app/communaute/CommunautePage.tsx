@@ -4,21 +4,20 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "../components/ui/button";
 import {
-  Loader2,
   Trophy,
   Target,
   Award,
   TrendingUp,
   Users,
   Building2,
-  UserCircle,
-  Briefcase,
-  Crown,
-  Medal,
-  Star,
   User,
   ArrowRight,
   CheckCircle2,
+  Crown,
+  Medal,
+  Star,
+  WifiOff,
+  RefreshCw,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
@@ -26,7 +25,61 @@ import { apiFetch } from "@/app/lib/api";
 import apifile from "@/app/lib/apifile";
 import BackButton from "../components/BackButton";
 import Link from "next/link";
-import toast, { Toaster } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
+
+// --- COMPOSANTS SKELETON ---
+const PerformanceSkeleton = () => (
+  <div className="animate-pulse">
+    <div className="flex items-center gap-4 p-4 bg-white rounded-xl border border-gray-100 mb-6 w-full md:max-w-[50%] lg:max-w-[33%]">
+      <div className="w-14 h-14 bg-gray-200 rounded-full" />
+      <div className="flex-1 space-y-2">
+        <div className="h-4 bg-gray-200 rounded w-3/4" />
+        <div className="h-3 bg-gray-100 rounded w-1/2" />
+      </div>
+    </div>
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      {[1, 2, 3, 4].map((i) => (
+        <div
+          key={i}
+          className="bg-white rounded-xl p-5 border border-gray-200 h-32"
+        />
+      ))}
+    </div>
+    <div className="bg-white rounded-xl p-6 border border-gray-200 h-24" />
+  </div>
+);
+
+const CardSkeleton = () => (
+  <div className="bg-white rounded-2xl p-6 border border-gray-100 w-64 sm:w-72 flex-shrink-0 animate-pulse">
+    <div className="flex justify-end mb-4">
+      <div className="w-20 h-6 bg-gray-100 rounded-full" />
+    </div>
+    <div className="w-24 h-24 bg-gray-200 rounded-full mx-auto mb-4" />
+    <div className="h-5 bg-gray-200 rounded w-3/4 mx-auto mb-2" />
+    <div className="h-3 bg-gray-100 rounded w-1/2 mx-auto mb-6" />
+    <div className="h-10 bg-gray-200 rounded-xl w-full" />
+  </div>
+);
+
+const EmptyState = ({ onRetry }: { onRetry: () => void }) => (
+  <div className="flex flex-col items-center justify-center py-12 px-4 text-center bg-white rounded-3xl border border-dashed border-gray-200">
+    <div className="bg-orange-50 p-4 rounded-full mb-4">
+      <WifiOff className="w-8 h-8 text-orange-700" />
+    </div>
+    <h3 className="text-gray-900 font-bold text-lg">Connexion instable</h3>
+    <p className="text-gray-500 text-sm max-w-[250px] mt-2 mb-6">
+      Nous n'avons pas pu charger les données. Vérifiez votre connexion
+      internet.
+    </p>
+    <button
+      onClick={onRetry}
+      className="flex items-center gap-2 px-6 py-2.5 bg-orange-700 text-white rounded-xl font-bold text-sm transition-transform active:scale-95 shadow-lg shadow-orange-100"
+    >
+      <RefreshCw className="w-4 h-4" />
+      Actualiser
+    </button>
+  </div>
+);
 
 export default function CommunautePage() {
   const [stats, setStats] = useState<any>(null);
@@ -35,12 +88,11 @@ export default function CommunautePage() {
   const [loadingStats, setLoadingStats] = useState(true);
   const [loadingInnovators, setLoadingInnovators] = useState(true);
   const [loadingCompanies, setLoadingCompanies] = useState(true);
-  const [isToggling, setIsToggling] = useState<number | null>(null);
 
   const [showNavbar, setShowNavbar] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
 
-  const { user: authUser, token } = useAuth();
+  const { token } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -56,117 +108,70 @@ export default function CommunautePage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScrollY]);
 
-  // Charger les statistiques et infos du talent connecté (BD)
-  useEffect(() => {
-    const fetchStats = async () => {
-      if (!token) return;
-      try {
-        setLoadingStats(true);
-        const res = await apiFetch("/talent/statistiques", { method: "GET" });
-        if (res?.statut === 200) {
-          setStats(res.data);
-        }
-      } catch (error) {
-        console.error("Erreur chargement stats:", error);
-      } finally {
-        setLoadingStats(false);
+  const fetchStats = async () => {
+    if (!token) return;
+    try {
+      setLoadingStats(true);
+      const res = await apiFetch("/talent/statistiques", { method: "GET" });
+      if (res?.statut === 200) setStats(res.data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  const fetchInnovators = async () => {
+    if (!token) return;
+    try {
+      setLoadingInnovators(true);
+      const res = await apiFetch("/talents/top", { method: "GET" });
+      if (res?.statut === 200) {
+        const mapped = res?.top100?.map((t: any) => ({
+          id: t.user_id,
+          name: `${t.nom} ${t.prenom || ""}`,
+          points: t.point || 0,
+          rang: t.rang,
+          profession: t.profession || "Innovateur",
+          nombre_projets:
+            t.nombre_projets ?? (t.user?.challengeposts_count || 0),
+          avatar: t.user?.pp
+            ? `${apifile}/${t.user.pp}`
+            : "/assets/images/pp2.png",
+        }));
+        setInnovators(mapped);
       }
-    };
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoadingInnovators(false);
+    }
+  };
+
+  const fetchCompanies = async () => {
+    if (!token) return;
+    try {
+      setLoadingCompanies(true);
+      const res = await apiFetch("/entreprises/top", { method: "GET" });
+      if (res?.statut === 200) setCompanies(res.top100);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoadingCompanies(false);
+    }
+  };
+
+  useEffect(() => {
     fetchStats();
-  }, [token]);
-
-  // Charger les innovateurs les plus actifs
-  useEffect(() => {
-    const fetchInnovators = async () => {
-      if (!token) return;
-      try {
-        setLoadingInnovators(true);
-        const res = await apiFetch("/talents/top", { method: "GET" });
-        if (res?.statut === 200) {
-          const mappedTalents = res?.top100?.map((t: any) => ({
-            id: t.user_id,
-            name: `${t.nom} ${t.prenom || ""}`,
-            points: t.point || 0,
-            rang: t.rang, // Rang venant du backend ("1er", "2e")
-            profession: t.profession || "Innovateur",
-            nombre_projets:
-              t.nombre_projets ?? (t.user?.challengeposts_count || 0),
-            avatar: t.user?.pp
-              ? `${apifile}/${t.user.pp}`
-              : "/assets/images/pp2.png",
-          }));
-          setInnovators(mappedTalents);
-        }
-      } catch (error) {
-        console.error("Erreur chargement innovateurs:", error);
-      } finally {
-        setLoadingInnovators(false);
-      }
-    };
     fetchInnovators();
-  }, [token]);
-
-  // Charger les entreprises les plus actives
-  useEffect(() => {
-    const fetchCompanies = async () => {
-      if (!token) return;
-      try {
-        setLoadingCompanies(true);
-        const res = await apiFetch("/entreprises/top", { method: "GET" });
-        if (res?.statut === 200) {
-          setCompanies(res.top100); // Utilise le rang backend directement
-        }
-      } catch (error) {
-        console.error("Erreur chargement entreprises:", error);
-      } finally {
-        setLoadingCompanies(false);
-      }
-    };
     fetchCompanies();
   }, [token]);
 
-  // const handleToggleAbonnement = async (
-  //   e: React.MouseEvent,
-  //   entrepriseId: number
-  // ) => {
-  //   e.stopPropagation();
-  //   if (isToggling) return;
-  //   try {
-  //     setIsToggling(entrepriseId);
-  //     const res = await apiFetch("/entreprise/abonnement/toggle", {
-  //       method: "POST",
-  //       body: JSON.stringify({ entreprise_id: entrepriseId }),
-  //     });
-  //     if (res.statut === 200) {
-  //       if(res?.message=='Abonnement réussi.'){
-  //         toast.success('Vous serez informé des opportunités proposées par cette entreprise',{duration:5000})
-  //       }else if(res?.message!='Abonnement réussi.'){
-  //         toast.success(res?.message || 'Désabonnement réussi.')
-  //       }
-  //       setCompanies((prev) =>
-  //         prev.map((c) =>
-  //           c.id === entrepriseId ? { ...c, is_abonne: res.abonne } : c
-  //         )
-  //       );
-  //     }
-  //   } catch (err) {
-  //     console.error("Erreur toggle:", err);
-  //   } finally {
-  //     setIsToggling(null);
-  //   }
-  // };
-
-  // Calcul dynamique du pourcentage
   const calculateProgress = () => {
     if (!stats || !stats.nombre_talents || !stats.rang) return 0;
-
-    // Nettoyage du rang (ex: "1er" -> 1, "2e" -> 2)
     const currentRang = parseInt(stats.rang.replace(/\D/g, ""));
     const total = stats.nombre_talents;
-
     if (total <= 1) return 100;
-
-    // Calcul inversé : si tu es 1er, tu es à 100% de l'objectif de classement
     const percentage = ((total - currentRang + 1) / total) * 100;
     return Math.min(100, Math.max(0, Math.round(percentage)));
   };
@@ -189,12 +194,12 @@ export default function CommunautePage() {
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 leading-tight">
             Communauté
           </h1>
-          <p className="text-sm sm:text-base text-gray-600 mt-2 leading-relaxed">
+          <p className="text-sm sm:text-base text-gray-600 mt-2">
             Découvrez les innovateurs et entreprises les plus actifs
           </p>
         </motion.div>
 
-        {/* Section Mes Performances */}
+        {/* --- PERFORMANCE --- */}
         <section className="mb-8 sm:mb-10">
           <div className="flex items-center gap-2 mb-4 sm:mb-5">
             <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-orange-700 flex-shrink-0" />
@@ -202,399 +207,290 @@ export default function CommunautePage() {
               Mes Performances
             </h2>
           </div>
-
           {loadingStats ? (
-            <div className="flex justify-center py-10">
-              <Loader2 className="w-8 h-8 animate-spin text-orange-700" />
-            </div>
-          ) : (
-            stats && (
-              <>
-                {/* Profil provenant de la BD */}
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="flex items-center gap-4 p-4 bg-white rounded-xl border border-gray-100 shadow-sm mb-6 w-full md:max-w-2/4 lg:max-w-1/3"
+            <PerformanceSkeleton />
+          ) : stats ? (
+            <>
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex items-center gap-4 p-4 bg-white rounded-xl border border-gray-100 shadow-sm mb-6 w-full md:max-w-[50%] lg:max-w-[33%]"
+              >
+                <Link
+                  href={`/profil-talent/${stats?.user.id}`}
+                  className="flex items-center gap-4"
                 >
-                  <Link
-                    href={`/profil-talent/${stats?.user.id}`}
-                    className="flex items-center gap-4"
+                  <div className="relative">
+                    <img
+                      src={
+                        stats?.user?.pp
+                          ? apifile + "/" + stats?.user?.pp
+                          : "../assets/images/pp2.png"
+                      }
+                      alt="Profil"
+                      className="w-14 h-14 rounded-full object-cover border-2 border-orange-100"
+                    />
+                    <div className="absolute -bottom-1 -right-1 bg-green-500 w-4 h-4 rounded-full border-2 border-white"></div>
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-gray-900 uppercase truncate max-w-[150px]">
+                      {stats?.talent?.nom}
+                    </h3>
+                    <p className="text-gray-500 text-sm truncate max-w-[180px]">
+                      {stats?.talent?.profession}
+                    </p>
+                  </div>
+                </Link>
+              </motion.div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
+                {[
+                  {
+                    label: "Rang sur Talent Innovant",
+                    val: stats.rang,
+                    sub: `/ ${stats.nombre_talents}`,
+                    icon: Trophy,
+                  },
+                  { label: "Points", val: stats.points, icon: Award },
+                  {
+                    label: "Challenges participés",
+                    val: stats.nombre_challenges,
+                    icon: Target,
+                  },
+                  {
+                    label: "Projets soumis",
+                    val: stats.nombre_projets,
+                    icon: TrendingUp,
+                  },
+                ].map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm text-center"
                   >
-                    <div className="relative">
-                      <img
-                        src={
-                          stats?.user?.pp
-                            ? apifile + "/" + stats?.user?.pp
-                            : "../assets/images/pp2.png"
-                        }
-                        alt="Ma photo"
-                        className="w-14 h-14 rounded-full object-cover border-2 border-orange-100 shadow-sm"
-                      />
-
-                      <div className="absolute -bottom-1 -right-1 bg-green-500 w-4 h-4 rounded-full border-2 border-white shadow-sm"></div>
+                    <div className="w-10 h-10 rounded-full bg-orange-100 mb-2 mx-auto flex items-center justify-center">
+                      <item.icon className="w-5 h-5 text-orange-700" />
                     </div>
-                    <div>
-                      <h3 className="text-base font-bold text-gray-900 uppercase tracking-tight line-clamp-1">
-                        {stats?.talent?.nom}
-                      </h3>
-                      {stats.talent?.profession && (
-                        <div className="flex items-center gap-1.5 text-gray-500 text-sm mt-0.5">
-                          <span>
-                            {stats?.talent?.profession?.length > 25
-                              ? `${stats?.talent?.profession.substring(
-                                  0,
-                                  25,
-                                )}...`
-                              : stats?.talent?.profession}
-                          </span>
-                        </div>
+                    <div className="text-xl font-bold text-orange-700">
+                      {item.val}{" "}
+                      {item.sub && (
+                        <span className="text-[10px] text-black font-normal">
+                          {item.sub}
+                        </span>
                       )}
                     </div>
-                  </Link>
-                </motion.div>
-
-                {/* Statistiques provenant de la BD */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
-                  <div className="bg-white rounded-xl p-4 sm:p-5 border border-gray-200 shadow-sm">
-                    <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-orange-100 mb-2 sm:mb-3 mx-auto">
-                      <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-orange-700" />
-                    </div>
-                    <div
-                      className={`${stats?.rang?.includes("ex-") ? "text-sm" : "text-2xl"} font-bold text-orange-700 text-center mb-1`}
-                    >
-                      {stats.rang}
-                      <span className="text-[11px] text-black font-normal ml-1">
-                        / {stats.nombre_talents}
-                      </span>
-                    </div>
-                    <p className="text-xs sm:text-sm text-gray-600 text-center font-medium leading-relaxed">
-                      Rang sur Talent Innovant
-                    </p>
+                    <p className="text-xs text-gray-600 mt-1">{item.label}</p>
                   </div>
-
-                  <div className="bg-white rounded-xl p-4 sm:p-5 border border-gray-200 shadow-sm">
-                    <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-orange-100 mb-2 sm:mb-3 mx-auto">
-                      <Award className="w-5 h-5 sm:w-6 sm:h-6 text-orange-700" />
-                    </div>
-                    <div className="text-2xl sm:text-3xl font-bold text-orange-700 text-center mb-1">
-                      {stats.points}
-                    </div>
-                    <p className="text-xs sm:text-sm text-gray-600 text-center font-medium leading-relaxed">
-                      Points
-                    </p>
-                  </div>
-
-                  <div className="bg-white rounded-xl p-4 sm:p-5 border border-gray-200 shadow-sm">
-                    <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-orange-100 mb-2 sm:mb-3 mx-auto">
-                      <Target className="w-5 h-5 sm:w-6 sm:h-6 text-orange-700" />
-                    </div>
-                    <div className="text-2xl sm:text-3xl font-bold text-orange-700 text-center mb-1">
-                      {stats.nombre_challenges}
-                    </div>
-                    <p className="text-xs sm:text-sm text-gray-600 text-center font-medium leading-relaxed">
-                      Challenges participés
-                    </p>
-                  </div>
-
-                  <div className="bg-white rounded-xl p-4 sm:p-5 border border-gray-200 shadow-sm">
-                    <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-orange-100 mb-2 sm:mb-3 mx-auto">
-                      <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-orange-700" />
-                    </div>
-                    <div className="text-2xl sm:text-3xl font-bold text-orange-700 text-center mb-1">
-                      {stats.nombre_projets}
-                    </div>
-                    <p className="text-xs sm:text-sm text-gray-600 text-center font-medium leading-relaxed">
-                      Projets soumis
-                    </p>
-                  </div>
+                ))}
+              </div>
+              <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200 shadow-sm">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-sm font-bold text-gray-700 uppercase">
+                    Votre taux de progression
+                  </h3>
+                  <span className="text-orange-700 font-bold text-sm">
+                    {calculateProgress()}%
+                  </span>
                 </div>
-
-                {/* Barre de progression */}
-                <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200 shadow-sm">
-                  <div className="flex justify-between items-center mb-2">
-                    <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider">
-                      Votre taux de progression
-                    </h3>
-                    <span className="text-orange-700 font-bold text-sm">
-                      {calculateProgress()}%
-                    </span>
-                  </div>
-                  <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${calculateProgress()}%` }}
-                      transition={{ duration: 1.2, ease: "circOut" }}
-                      className="h-full bg-orange-700"
-                    />
-                  </div>
-                  <div className="mt-3">
-                    <p className="text-xs sm:text-sm text-gray-500 leading-relaxed italic">
-                      {stats.rang === "1er"
-                        ? "Félicitations ! Vous êtes au sommet. Maintenez vos efforts et continuez de travailler pour ne pas vous faire dépasser."
-                        : "Continuez de participer aux challenges pour améliorer vos performances et gravir les échelons !"}
-                    </p>
-                  </div>
+                <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${calculateProgress()}%` }}
+                    transition={{ duration: 1.2 }}
+                    className="h-full bg-orange-700"
+                  />
                 </div>
-              </>
-            )
+              </div>
+            </>
+          ) : (
+            <EmptyState onRetry={fetchStats} />
           )}
         </section>
 
-        {/* Innovateurs les plus actifs */}
+        {/* --- TALENTS --- */}
         <section className="mb-8 sm:mb-10">
-          <div className="flex items-center gap-2 mb-4 sm:mb-5">
-            <Users className="w-5 h-5 sm:w-6 sm:h-6 text-orange-700 flex-shrink-0" />
+          <div className="flex items-center gap-2 mb-4">
+            <Users className="w-5 h-5 text-orange-700" />
             <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
               Les talents les plus actifs
             </h2>
           </div>
           {loadingInnovators ? (
-            <div className="flex justify-center py-10">
-              <Loader2 className="w-8 h-8 animate-spin text-orange-700" />
+            <div className="flex gap-4 overflow-x-hidden pb-4">
+              {[1, 2, 3, 4].map((i) => (
+                <CardSkeleton key={i} />
+              ))}
             </div>
-          ) : (
-            <div className="flex gap-3 sm:gap-5 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide -mx-4 sm:-mx-0 px-4 sm:px-0">
-              {innovators?.map((innovator, index) => {
-                let SpecialIcon: any = null;
-                if (index === 0) SpecialIcon = Crown;
-                else if (index === 1) SpecialIcon = Medal;
-                else if (index === 2) SpecialIcon = Star;
-
-                return (
-                  <motion.div
-                    key={innovator.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 group relative overflow-hidden flex-shrink-0 w-64 sm:w-72"
-                  >
-                    {/* Badge Projets - Affiché uniquement si > 0 */}
-                    {innovator?.nombre_projets > 0 && (
-                      <div className="absolute top-4 right-4">
-                        <span className="bg-orange-50 text-orange-700 text-[10px] font-bold px-2.5 py-1 rounded-full border border-orange-100">
+          ) : innovators?.length > 0 ? (
+            <>
+              <div className="flex gap-3 sm:gap-5 overflow-x-auto pb-4 snap-x scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
+                {innovators.map((innovator, index) => {
+                  const Icon =
+                    index === 0
+                      ? Crown
+                      : index === 1
+                        ? Medal
+                        : index === 2
+                          ? Star
+                          : null;
+                  return (
+                    <motion.div
+                      key={innovator.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm w-64 sm:w-72 flex-shrink-0 text-center group"
+                    >
+                      {innovator.nombre_projets > 0 && (
+                        <div className="absolute top-4 right-4 bg-orange-50 text-orange-700 text-[10px] font-bold px-2 py-1 rounded-full border border-orange-100">
                           {innovator.nombre_projets} Projet(s)
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="text-center">
-                      {/* Avatar avec lien vers profil et Icone Spéciale (Couronne, etc.) */}
+                        </div>
+                      )}
                       <Link
                         href={"/profil-talent/" + innovator.id}
                         className="relative inline-block mb-4"
                       >
                         <img
                           src={innovator.avatar}
+                          className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md group-hover:border-orange-100"
                           alt={innovator.name}
-                          className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-4 border-white shadow-md group-hover:border-orange-100 transition-all"
                         />
-                        {SpecialIcon && (
+                        {Icon && (
                           <div className="absolute -bottom-1 -right-1 bg-white p-1.5 rounded-full shadow-lg border border-gray-50">
-                            <SpecialIcon className="w-5 h-5 text-orange-600" />
+                            <Icon className="w-4 h-4 text-orange-600" />
                           </div>
                         )}
                       </Link>
-
-                      {/* Nom et Profession */}
-                      <h3 className="font-bold text-gray-900 text-lg mb-1 truncate group-hover:text-orange-700 transition-colors">
-                        {innovator?.name?.length > 20
-                          ? `${innovator?.name.substring(0, 20)}...`
-                          : innovator?.name}
+                      <h3 className="font-bold text-gray-900 truncate group-hover:text-orange-700">
+                        {innovator.name}
                       </h3>
-                      <p className="text-sm text-gray-500 mb-4 font-medium h-5 truncate leading-relaxed">
-                        {innovator.profession?.length > 25
-                          ? `${innovator.profession.substring(0, 25)}...`
-                          : innovator.profession}
+                      <p className="text-sm text-gray-500 mb-4 truncate">
+                        {innovator.profession}
                       </p>
-
-                      {/* Points et Rang */}
                       <div className="flex items-center justify-center gap-3 mb-6">
-                        <div className="flex items-center gap-1.5 px-3 py-1  rounded-full">
-                          <Trophy className="w-4 h-4 text-orange-600" />
-                          <span className="text-sm font-bold text-orange-700">
-                            {innovator.points}{" "}
-                            <span className="text-[10px]">pts</span>
-                          </span>
+                        <div className="bg-orange-50 px-3 py-1 rounded-full text-orange-700 text-sm font-bold flex items-center gap-1.5">
+                          <Trophy className="w-3 h-3" /> {innovator.points} pts
                         </div>
-                        <span className="text-sm font-bold text-gray-600 px-3 py-1 bg-gray-50 rounded-full border border-gray-100 flex items-center gap-1">
-                          {/* {SpecialIcon && (
-                            <SpecialIcon className="w-3 h-3 text-orange-600" />
-                          )} */}
+                        <span className="text-sm font-bold text-gray-600 px-3 py-1 bg-gray-50 rounded-full border border-gray-100">
                           {innovator.rang}
                         </span>
                       </div>
-
-                      {/* Actions : Contacter et Voir Profil */}
-                      <div className="flex items-center gap-x-2">
-                        <button
-                          onClick={() =>
-                            router.push("/profil-talent/" + innovator.id)
-                          }
-                          className="w-full hover:bg-orange-700 text-orange-700 border border-orange-700 hover:text-white font-semibold rounded-xl py-2.5 px-3 flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm"
-                        >
-                          <User className="w-4 h-4" />
-                          <span className="text-sm">Voir le profil</span>
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          )}
-          {innovators?.length > 0 && (
-            <div className="flex justify-center mt-4">
-              <div
-                onClick={() => router.push("/communaute/talents")}
-                className="bg-white py-3 text-sm sm:text-md text-orange-700 border border-orange-200 hover:bg-orange-50 font-bold rounded-xl px-8 cursor-pointer"
-              >
-                Voir tous les talents{" "}
-                <ArrowRight className="w-4 h-4 inline-block ml-1" />
+                      <button
+                        onClick={() =>
+                          router.push("/profil-talent/" + innovator.id)
+                        }
+                        className="w-full text-orange-700 border border-orange-700 hover:bg-orange-700 hover:text-white font-bold rounded-xl py-2.5 transition-all text-sm"
+                      >
+                        Voir le profil
+                      </button>
+                    </motion.div>
+                  );
+                })}
               </div>
-            </div>
+              <div className="flex justify-center mt-4">
+                <div
+                  onClick={() => router.push("/communaute/talents")}
+                  className="bg-white py-3 text-sm sm:text-md text-orange-700 border border-orange-200 hover:bg-orange-50 font-bold rounded-xl px-8 cursor-pointer"
+                >
+                  Voir tous les talents{" "}
+                  <ArrowRight className="w-4 h-4 inline-block ml-1" />
+                </div>
+              </div>
+            </>
+          ) : (
+            <EmptyState onRetry={fetchInnovators} />
           )}
         </section>
 
-        {/* Entreprises les plus actives */}
+        {/* --- ENTREPRISES --- */}
         <section>
-          <div className="flex items-center gap-2 mb-4 sm:mb-5">
-            <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-orange-700 flex-shrink-0" />
+          <div className="flex items-center gap-2 mb-4">
+            <Building2 className="w-5 h-5 text-orange-700" />
             <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
               Les entreprises les plus actives
             </h2>
           </div>
-
           {loadingCompanies ? (
-            <div className="flex justify-center py-10">
-              <Loader2 className="w-8 h-8 animate-spin text-orange-700" />
+            <div className="flex gap-4 overflow-x-hidden pb-4">
+              {[1, 2, 3, 4].map((i) => (
+                <CardSkeleton key={i} />
+              ))}
             </div>
-          ) : (
-            <div className="flex gap-4 sm:gap-6 overflow-x-auto pb-6 snap-x snap-mandatory scrollbar-hide -mx-4 sm:-mx-0 px-4 sm:px-0">
-              {companies?.map((company, index) => {
-                let SpecialIcon: any = null;
-                let rankColor = "text-gray-600 bg-gray-50 border-gray-100";
-
-                if (index === 0) {
-                  SpecialIcon = Crown;
-                  rankColor = "text-yellow-700 bg-yellow-50 border-yellow-100";
-                } else if (index === 1) {
-                  SpecialIcon = Medal;
-                  rankColor = "text-slate-500 bg-slate-50 border-slate-100";
-                } else if (index === 2) {
-                  SpecialIcon = Star;
-                  rankColor = "text-orange-600 bg-orange-50 border-orange-100";
-                }
-
-                return (
-                  <motion.div
-                    key={company.id}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: index * 0.05 }}
-                    className="flex-shrink-0 w-64 sm:w-72 snap-center bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col group relative overflow-hidden"
-                  >
-                    {/* Décoration de fond au survol */}
-                    <div className="absolute -right-10 -top-10 w-28 h-28 bg-orange-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-2xl" />
-
-                    {/* Badge Challenges - Style Raffiné */}
-                    <div className="flex justify-end mb-4 relative z-10">
-                      <div className="bg-white/80 backdrop-blur-sm text-orange-700 text-[10px] font-bold px-3 py-1.5 rounded-full border border-orange-100 shadow-sm">
-                        {company.nombre_challenges || 0} Challenge(s)
-                      </div>
-                    </div>
-
-                    {/* Contenu cliquable vers le profil */}
-                    <div
-                      className="cursor-pointer text-center relative z-10"
-                      onClick={() =>
-                        router.push(`/profil-entreprise/${company?.user_id}`)
-                      }
+          ) : companies?.length > 0 ? (
+            <>
+              <div className="flex gap-4 sm:gap-6 overflow-x-auto pb-6 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
+                {companies.map((company, index) => {
+                  const rankStyle =
+                    index === 0
+                      ? "text-yellow-700 bg-yellow-50 border-yellow-100"
+                      : index === 1
+                        ? "text-slate-500 bg-slate-50 border-slate-100"
+                        : "text-orange-600 bg-orange-50 border-orange-100";
+                  return (
+                    <motion.div
+                      key={company.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm w-64 sm:w-72 flex-shrink-0 flex flex-col group"
                     >
-                      <div className="relative inline-block mb-4">
+                      <div className="flex justify-end mb-4">
+                        <div className="bg-orange-50 text-orange-700 text-[10px] font-bold px-3 py-1.5 rounded-full border border-orange-100">
+                          {company.nombre_challenges || 0} Challenge(s)
+                        </div>
+                      </div>
+                      <div
+                        className="cursor-pointer text-center"
+                        onClick={() =>
+                          router.push(`/profil-entreprise/${company?.user_id}`)
+                        }
+                      >
                         <img
                           src={
                             company.user?.pp
                               ? `${apifile}/${company?.user?.pp}`
                               : "/assets/images/ppe.png"
                           }
+                          className="w-24 h-24 rounded-2xl mx-auto object-cover shadow-lg border-4 border-white mb-4"
                           alt={company.nom}
-                          className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl mx-auto object-cover shadow-lg border-4 border-white group-hover:border-orange-50 transition-all duration-300"
                         />
+                        <h3 className="font-bold text-gray-900 truncate group-hover:text-orange-700 flex items-center justify-center gap-1.5">
+                          {company.nom}
+                          {company.user?.certifie && (
+                            <CheckCircle2 className="w-4 h-4 text-orange-700 fill-orange-700/10" />
+                          )}
+                        </h3>
+                        <div className="flex items-center justify-center gap-2 mt-2 mb-6">
+                          <span className="text-xs text-gray-400 font-semibold">
+                            {company.point || 0} pts
+                          </span>
+                          <span
+                            className={`text-xs font-bold px-3 py-1 rounded-lg border ${rankStyle}`}
+                          >
+                            {company.rang}
+                          </span>
+                        </div>
                       </div>
-
-                      <h3 className="font-bold text-gray-900 mb-1 truncate text-base sm:text-lg group-hover:text-orange-700 transition-colors flex items-center justify-center gap-1.5">
-                        {company?.nom?.length > 19
-                          ? `${company?.nom.substring(0, 19)}...`
-                          : company?.nom}
-
-                        {/* Badge de certification Orange-700 */}
-                        {(company?.user?.certifie === 1 ||
-                          company?.user?.certifie === true) && (
-                          <CheckCircle2
-                            className="w-4 h-4 text-orange-700 fill-orange-700/10 flex-shrink-0"
-                            strokeWidth={2.5}
-                          />
-                        )}
-                      </h3>
-
-                      {/* Points et Rang */}
-                      <div className="flex items-center justify-center gap-2 mb-6">
-                        <span className="text-xs font-semibold text-gray-400 tracking-tighter">
-                          {company.point || 0} pts
-                        </span>
-                        <span
-                          className={`flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-lg border ${rankColor}`}
-                        >
-                          {/* {SpecialIcon && (
-                            <SpecialIcon className="w-3.5 h-3.5" />
-                          )} */}
-                          {company.rang}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Bouton d'action avec gestion d'état */}
-                    <div className="mt-auto relative z-10">
                       <button
                         onClick={() =>
                           router.push(`/profil-entreprise/${company?.user_id}`)
                         }
-                        // onClick={(e) => handleToggleAbonnement(e, company.id)}
-                        // disabled={isToggling === company.id}
-                        className="w-full transition-all duration-300 font-bold rounded-xl py-2.5 shadow-sm active:scale-95 bg-orange-700 hover:bg-orange-800 text-white shadow-orange-100 shadow-lg"
-                        // company.is_abonne
-                        //   ? "bg-gray-50 text-gray-500 hover:bg-red-50 border border-gray-100"
-                        //   : "bg-orange-700 hover:bg-orange-800 text-white shadow-orange-100 shadow-lg"
-                        // }
+                        className="mt-auto w-full bg-orange-700 text-white font-bold rounded-xl py-2.5 shadow-lg shadow-orange-100 text-sm"
                       >
-                        {/* {isToggling === company.id ? (
-                  <div className="flex flex-row justify-center items-center"><Loader2 className="w-5 h-5 animate-spin" /></div>
-                ) : company.is_abonne ? ( */}
-                        {/* <span className="text-xs sm:text-sm">Se désabonner</span> */}
-                        {/* ) : (
-                  <span className="text-xs sm:text-sm">S'abonner</span>
-                )} */}
-
-                        <span className="text-sm">Voir l'entreprise</span>
+                        Voir l'entreprise
                       </button>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          )}
-
-          {companies?.length > 0 && (
-            <div className="flex justify-center mt-4">
-              <div
-                onClick={() => router.push("/communaute/entreprises")}
-                className="bg-white py-3 text-sm sm:text-md text-orange-700 border border-orange-200 hover:bg-orange-50 font-bold rounded-xl px-8 cursor-pointer"
-              >
-                Voir toutes les entreprises{" "}
-                <ArrowRight className="w-4 h-4 inline-block ml-1" />
+                    </motion.div>
+                  );
+                })}
               </div>
-            </div>
+              <div className="flex justify-center mt-4">
+                <div
+                  onClick={() => router.push("/communaute/entreprises")}
+                  className="bg-white py-3 text-sm sm:text-md text-orange-700 border border-orange-200 hover:bg-orange-50 font-bold rounded-xl px-8 cursor-pointer"
+                >
+                  Voir toutes les entreprises{" "}
+                  <ArrowRight className="w-4 h-4 inline-block ml-1" />
+                </div>
+              </div>
+            </>
+          ) : (
+            <EmptyState onRetry={fetchCompanies} />
           )}
         </section>
       </div>
