@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Calendar,
@@ -356,6 +356,39 @@ export default function ChallengeClient() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
+  const contentAnchorRef = useRef<HTMLDivElement>(null);
+
+  // fonction pour gerer le scroll de l'ecran quand on clique sur un tab
+  const handleTabClick = (
+    e: React.MouseEvent<HTMLButtonElement>,
+    tabId: string,
+  ) => {
+    // 1. Changer l'onglet actif
+    setActiveTab(tabId);
+
+    // 2. Scroll Horizontal du bouton (pour le centrer ou le rendre visible)
+    const target = e.currentTarget;
+    target.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "center", // Centre le tab dans la zone visible horizontalement
+    });
+
+    // 3. Scroll Vertical de la page
+    // On attend un court instant que l'onglet s'active pour défiler
+    setTimeout(() => {
+      if (contentAnchorRef.current) {
+        const yOffset = -120; // Ajustez cette valeur pour laisser de l'espace en haut (hauteur du menu sticky)
+        const element = contentAnchorRef.current;
+        const y =
+          element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+
+        window.scrollTo({ top: y, behavior: "smooth" });
+      }
+    }, 100);
+  };
+
   // modal external link handle function
   const confirmExternalRedirect = () => {
     let url = challenge.site;
@@ -439,10 +472,12 @@ export default function ChallengeClient() {
   };
 
   const handleShareSuccess = async () => {
-    try {
-      await apiFetch(`/challenge/partager/${challengeId}`);
-    } catch (e) {
-      console.error("Erreur increment partage");
+    if (currentUser) {
+      try {
+        await apiFetch(`/challenge/partager/${challengeId}`);
+      } catch (e) {
+        console.error("Erreur increment partage");
+      }
     }
   };
 
@@ -636,7 +671,7 @@ export default function ChallengeClient() {
           {tabs?.map((t) => (
             <button
               key={t.id}
-              onClick={() => setActiveTab(t.id)}
+              onClick={(e) => handleTabClick(e, t.id)}
               className={`px-6 py-3 whitespace-nowrap font-medium border-b-2 transition ${activeTab === t.id ? "border-orange-700 text-orange-700" : "border-transparent text-gray-600 hover:text-black"}`}
             >
               {t.label}
@@ -644,6 +679,8 @@ export default function ChallengeClient() {
           ))}
         </div>
       </div>
+
+      <div ref={contentAnchorRef} className="h-1" />
 
       <div className="mt-8 px-3 max-w-7xl mx-auto">
         {activeTab === "stats" && (

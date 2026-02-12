@@ -144,28 +144,38 @@ export default function ProfilEditClient({ userId }: { userId: string }) {
         method: "POST",
         body: formData,
       });
-      if (res.statut === 200) {
-        // 1. On récupère la valeur exacte du serveur
-        const serverPP = res.user?.pp;
+      // Dans ton handleSubmit, remplace la partie du succès (res.statut === 200) par ceci :
 
-        // 2. On prépare l'objet complet pour le storage
-        const updatedAuth: any = {
-          token: token,
-          user: {
-            ...user,
-            pp: serverPP || user.pp, // Priorité au retour serveur
-            telephone: userData.telephone,
-            bio: userData.bio,
-          },
+      if (res.statut === 200) {
+        const updatedUserFromServer = res.user;
+
+        // 1. On prépare le nouvel objet talent mis à jour
+        const updatedTalent = {
+          ...talent, // On garde les anciennes données (id, etc.)
+          nom: talentData.nom,
+          prenom: talentData.prenom,
+          profession: talentData.profession,
+          region: talentData.region,
+          ville: talentData.ville,
+          localisation: talentData.localisation,
+          competence: talentData.competence,
         };
 
-        // 3. Mise à jour manuelle immédiate du localStorage AVANT l'événement
-        localStorage.setItem("auth", JSON.stringify(updatedAuth));
+        // 2. On prépare l'objet complet pour le storage (incluant talent !)
+        const updatedAuth = {
+          token: token, // On garde le token actuel
+          user: {
+            ...user, // On garde les anciennes infos (id, email...)
+            ...updatedUserFromServer, // On ecrase avec les nouvelles (pp, pc, bio...)
+          },
+          talent: updatedTalent, // On remet l'objet talent pour la Home
+        };
 
-        // 4. Mise à jour du contexte
+        // 3. Sauvegarde physique et mise à jour du contexte
+        localStorage.setItem("auth", JSON.stringify(updatedAuth));
         setAuth(updatedAuth);
 
-        // 5. Envoi du signal
+        // 4. Notification pour les composants comme la Navbar
         window.dispatchEvent(new Event("local-storage-update"));
 
         toast.success("Profil mis à jour !");

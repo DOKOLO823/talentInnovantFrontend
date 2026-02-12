@@ -129,12 +129,12 @@ export default function TopChallengesList() {
   return (
     <div className="relative">
       <section id="challenges" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="md:text-2xl md:text-3xl font-bold text-gray-900 mb-5 border-l-4 border-orange-700 pl-3">
+        <div className="w-full mx-auto pl-2 pr-4 sm:pr-6 lg:pr-8">
+          <h2 className="md:text-2xl md:text-3xl ml-3 font-bold text-gray-900 mb-5 border-l-4 border-orange-700 pl-3">
             Les top challenges du moment
           </h2>
           {/* Container avec défilement horizontal et snapping */}
-          <div className="flex space-x-6 pb-6 overflow-x-auto scrollbar-hide snap-x snap-mandatory px-2">
+          <div className="flex space-x-3 pb-6 overflow-x-auto scrollbar-hide snap-x snap-mandatory px-2">
             {challenges?.map((challenge) => (
               <div
                 key={challenge.id}
