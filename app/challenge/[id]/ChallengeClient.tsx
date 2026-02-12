@@ -437,6 +437,20 @@ export default function ChallengeClient() {
   const isJury = currentUser?.id === challenge?.jury_id;
   const hasLiked = currentUser ? likeursIds.includes(currentUser.id) : false;
 
+  // on choisit le tab actif par defaut en fonction du role du user qui navigue sur TI
+  useEffect(() => {
+    // On ne change l'onglet que si le challenge est chargé
+    if (challenge) {
+      if (isOwner) {
+        setActiveTab("stats");
+      } else if (isJury) {
+        setActiveTab("evaluate");
+      } else {
+        setActiveTab("overview");
+      }
+    }
+  }, [challenge, currentUser, isOwner, isJury]);
+
   const handleLike = async () => {
     if (!currentUser) return setShowLoginModal(true);
 
@@ -682,47 +696,54 @@ export default function ChallengeClient() {
 
       <div ref={contentAnchorRef} className="h-1" />
 
-      <div className="mt-8 px-3 max-w-7xl mx-auto">
-        {activeTab === "stats" && (
-          <ChallengeAnalytics challengeId={challenge?.id} />
-        )}
-        {activeTab === "evaluate" && (
-          <EvaluateProjectsSection challenge={challenge} />
-        )}
-        {activeTab === "overview" && <OverviewSection challenge={challenge} />}
-        {activeTab === "projects" && (
-          <ProjectsSection
-            challenge={challenge}
-            currentUser={currentUser}
-            isOwner={isOwner}
-          />
-        )}
-        {activeTab === "rules" && (
-          <ListSection title="Règles du challenge" data={challenge?.principe} />
-        )}
-        {activeTab === "criteria" && (
-          <ListSection
-            title="Critères d'évaluation"
-            data={challenge?.critereevaluation}
-          />
-        )}
-        {activeTab === "rewards" && (
-          <ListSection title="Récompenses" data={challenge?.recompense} />
-        )}
-        {activeTab === "participants" && (
-          <ParticipantsSection
-            challengeId={challengeId}
-            currentUser={currentUser}
-          />
-        )}
-        {activeTab === "results" && (
-          <ResultsSection
-            challenge={challenge}
-            isOwner={isOwner}
-            currentUser={currentUser}
-          />
-        )}
-      </div>
+      {!loading && (
+        <div className="mt-8 px-3 max-w-7xl mx-auto">
+          {activeTab === "stats" && (
+            <ChallengeAnalytics challengeId={challenge?.id} />
+          )}
+          {activeTab === "evaluate" && (
+            <EvaluateProjectsSection challenge={challenge} />
+          )}
+          {activeTab === "overview" && (
+            <OverviewSection challenge={challenge} />
+          )}
+          {activeTab === "projects" && (
+            <ProjectsSection
+              challenge={challenge}
+              currentUser={currentUser}
+              isOwner={isOwner}
+            />
+          )}
+          {activeTab === "rules" && (
+            <ListSection
+              title="Règles du challenge"
+              data={challenge?.principe}
+            />
+          )}
+          {activeTab === "criteria" && (
+            <ListSection
+              title="Critères d'évaluation"
+              data={challenge?.critereevaluation}
+            />
+          )}
+          {activeTab === "rewards" && (
+            <ListSection title="Récompenses" data={challenge?.recompense} />
+          )}
+          {activeTab === "participants" && (
+            <ParticipantsSection
+              challengeId={challengeId}
+              currentUser={currentUser}
+            />
+          )}
+          {activeTab === "results" && (
+            <ResultsSection
+              challenge={challenge}
+              isOwner={isOwner}
+              currentUser={currentUser}
+            />
+          )}
+        </div>
+      )}
 
       <AnimatePresence>
         {showShareModal && (

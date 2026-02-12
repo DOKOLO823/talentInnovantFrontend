@@ -105,7 +105,7 @@ export default function ChallengeAnalytics({
       {/* HEADER SECTION */}
       <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
         <LayoutDashboard className="text-orange-700" size={24} />
-        <h2 className="text-xl font-bold text-slate-800 tracking-tight">
+        <h2 className="text-[15px] md:text-xl font-bold text-slate-800 tracking-tight">
           Statistiques de performance du challenge
         </h2>
       </div>
@@ -128,7 +128,7 @@ export default function ChallengeAnalytics({
             </div>
           </div>
           <div className="mt-4 flex items-center text-orange-700 text-sm font-medium">
-            <TrendingUp size={16} className="mr-1" /> En cours
+            <TrendingUp size={16} className="mr-1" /> En cours de progression
           </div>
         </div>
 

@@ -15,6 +15,9 @@ import {
   Phone,
   ArrowRight,
   LucideIcon,
+  Award,
+  UserCheck,
+  Rocket,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -23,6 +26,7 @@ import TopChallengesList from "../components/TopChallengesList";
 import FiltreChallenge from "../components/recherche/FiltreChallenge";
 import Footer from "../components/Footer";
 import { motion } from "framer-motion";
+import StatsSection from "../components/guest/StatsSection";
 
 const CONTACT_PHONE = "+237 655 62 41 68";
 const WHATSAPP_GROUP_LINK =
@@ -60,17 +64,17 @@ export default function Home() {
           </div>
 
           {/* 2. CONTENU - Ajout de pt-20 sur mobile pour éviter le chevauchement avec la Navbar */}
-          <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 w-full pt-20 md:pt-0">
+          <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 w-full pt-10 md:pt-0">
             <div className="max-w-3xl">
               {/* Badge Professionnel */}
               <motion.div
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="inline-flex items-center px-4 py-1.5 rounded-lg bg-orange-700/10 border border-orange-700/30 text-orange-500 text-xs font-bold uppercase tracking-widest mb-6"
+                className="inline-flex items-center px-4 rounded-lg bg-orange-700/10 border border-orange-700/30 text-orange-500 text-xs font-bold uppercase tracking-widest mb-6"
               >
-                <span className="h-1.5 w-1.5 rounded-full bg-orange-600 mr-2 shadow-[0_0_8px_rgba(234,88,12,0.8)]"></span>
-                Le Hub de l'innovation
+                {/* <span className="h-1.5 w-1.5 rounded-full bg-orange-600 mr-2 shadow-[0_0_8px_rgba(234,88,12,0.8)]"></span> */}
+                {/* Le Hub de l'innovation */}
               </motion.div>
 
               {/* Titre Principal - Taille ajustée pour mobile */}
@@ -78,22 +82,49 @@ export default function Home() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
-                className="text-4xl sm:text-4xl md:text-6xl font-extrabold text-white leading-tight md:leading-[1.1]"
+                className="font-extrabold text-white leading-tight md:leading-[1.1]"
               >
-                <span className="text-orange-600">TALENT INNOVANT</span>,
-                révélez votre potentiel.
+                <span className="text-orange-600 text-2xl md:text-6xl">
+                  TALENT INNOVANT :{" "}
+                </span>
+                <span className="text-2xl md:text-5xl">
+                  Le carrefour des opportunités.
+                </span>
               </motion.h1>
 
               {/* Sous-titre */}
-              <motion.p
+              <motion.div
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="mt-6 text-base md:text-xl text-gray-300 max-w-2xl leading-relaxed"
+                className="mt-6 space-y-4 max-w-2xl"
               >
-                La plateforme qui réunit talents passionnés et entreprises
-                audacieuses autour de challenges d'innovation.
-              </motion.p>
+                {/* Section Talents */}
+                <div className="flex items-start gap-3">
+                  <div className="mt-2 h-2.5 w-2.5 rounded-full bg-orange-700 shrink-0 shadow-[0_0_10px_rgba(194,65,12,0.5)]" />
+                  <p className="text-[16px] md:text-lg text-gray-100 leading-relaxed">
+                    <span className="font-bold text-white whitespace-nowrap">
+                      Pour les talents
+                    </span>{" "}
+                    : Propulsez votre carrière grâce aux opportunités des
+                    challenges d'innovation et accédez à des offres d'emploi ou
+                    de stages adaptées à votre domaine.
+                  </p>
+                </div>
+
+                {/* Section Entreprises */}
+                <div className="flex items-start gap-3">
+                  <div className="mt-2 h-2.5 w-2.5 rounded-full bg-orange-700 shrink-0 shadow-[0_0_10px_rgba(194,65,12,0.5)]" />
+                  <p className="text-[16px] md:text-lg text-gray-100 leading-relaxed">
+                    <span className="font-bold text-white whitespace-nowrap">
+                      Pour les entreprises
+                    </span>{" "}
+                    : Organisez et Gérez vos challenges en toute facilité pour
+                    promouvoir votre marque, dénicher des idées ou recruter
+                    parmi une vaste communauté de talents passionnés.
+                  </p>
+                </div>
+              </motion.div>
 
               {/* Boutons d'action */}
               <motion.div
@@ -121,6 +152,9 @@ export default function Home() {
 
           {/* L'élément de brouillard a été supprimé pour un fini net */}
         </section>
+
+        {/* les stats  */}
+        <StatsSection />
         {/* ===================== RECHERCHE ===================== */}
         <FiltreChallenge />
 
@@ -145,17 +179,17 @@ export default function Home() {
                 {
                   icon: Code,
                   title: "Révélez votre potentiel",
-                  desc: "Mettez vos compétences à l’épreuve sur des cas réels d’entreprise et faites-vous remarquer.",
+                  desc: "Mettez vos compétences à l’épreuve sur des challenges d'innovation et faites-vous remarquer.",
                 },
                 {
                   icon: Briefcase,
                   title: "Découvrez des opportunités",
-                  desc: "Les challenges mènent souvent à des stages, des emplois ou des collaborations d’affaires.",
+                  desc: "Accédez à des stages, des emplois ou des collaborations d’affaires adaptés à votre domaine.",
                 },
                 {
-                  icon: Zap,
-                  title: "Stimulez votre créativité",
-                  desc: "Travaillez sur des projets innovants et variés qui repoussent les limites du possible.",
+                  icon: UserCheck, // Ou UserCheck selon ta préférence
+                  title: "Valorisez votre image professionnelle",
+                  desc: "Bénéficiez gratuitement d'un portfolio professionnel, mettez en avant votre profil à travers vos compétences et vos réalisations.",
                 },
               ].map((item, i) => (
                 <div
@@ -206,10 +240,11 @@ export default function Home() {
             <div className="grid md:grid-cols-3 gap-8">
               {[
                 {
-                  icon: Users,
-                  title: "Accès à des talents ciblés",
-                  desc: "Trouvez rapidement des profils qualifiés adaptés à vos besoins métiers.",
+                  icon: Rocket,
+                  title: "Innovez en quelques clics",
+                  desc: "Organisez et gérez vos challenges d'innovation en toute simplicité et touchez une vaste audience de talents en un temps record.",
                 },
+
                 {
                   icon: Compass,
                   title: "Solutions innovantes rapides",
@@ -219,6 +254,11 @@ export default function Home() {
                   icon: DollarSign,
                   title: "Renforcez votre marque employeur",
                   desc: "Valorisez votre entreprise auprès d’une communauté de jeunes talents.",
+                },
+                {
+                  icon: Users,
+                  title: "Accès à des talents ciblés",
+                  desc: "Trouvez rapidement des profils qualifiés adaptés à vos besoins métiers.",
                 },
               ].map((item, i) => (
                 <div
