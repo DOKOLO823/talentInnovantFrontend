@@ -233,7 +233,7 @@ export default function ChallengeAnalytics({
         <div className="bg-white border border-slate-200 p-6 rounded-xl shadow-sm">
           <h4 className="text-sm font-bold text-slate-700 mb-6 flex items-center gap-2">
             <div className="w-1 h-4 bg-orange-700 rounded-full" />
-            Répartition par domaine technique
+            Nombre de participants par domaine
           </h4>
           <div className="h-[250px] w-full">
             <ResponsiveContainer width="100%" height="100%">

@@ -903,7 +903,7 @@ function EvaluateProjectsSection({ challenge }: any) {
       const data = await response.json();
 
       if (data.statut === 200) {
-        toast.success(data.message, { id: publishToast });
+        toast.success(data.message, { id: publishToast, duration: 6000 });
         // setTimeout(() => window.location.reload(), 1000);
       } else {
         toast.error(data.message || "Erreur", { id: publishToast });

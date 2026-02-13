@@ -1213,16 +1213,19 @@ export default function ProjectReelClient() {
                     </div>
                   </div>
 
-                  {currentProject?.commentairejury?.[0]?.commentairejury && (
-                    <div className="pt-4 border-t border-white/10">
-                      <p className="text-[9px] font-black uppercase text-orange-500 mb-1 tracking-widest text-center">
-                        Le mot du jury
-                      </p>
-                      <ReadMore
-                        text={currentProject.commentairejury[0].commentairejury}
-                      />
-                    </div>
-                  )}
+                  {currentProject?.commentairejury?.[0]?.commentairejury &&
+                    filterMode != "all" && (
+                      <div className="pt-4 border-t border-white/10">
+                        <p className="text-[9px] font-black uppercase text-orange-500 mb-1 tracking-widest text-center">
+                          Le mot du jury
+                        </p>
+                        <ReadMore
+                          text={
+                            currentProject.commentairejury[0].commentairejury
+                          }
+                        />
+                      </div>
+                    )}
                 </div>
               )}
 

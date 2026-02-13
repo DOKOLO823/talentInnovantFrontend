@@ -659,9 +659,10 @@ export default function ProjectCardResult({ project, challenge }: any) {
 
   // Déterminer le type de valeur à afficher
   const isVoteType =
-    project?.challenge?.typeevaluation === "vote" ||
-    project?.challenge?.resultatdisponible === 0;
+    challenge?.typeevaluation?.type === "vote" ||
+    challenge?.resultatdisponible === 0;
   const displayValue = isVoteType ? project?.score : project?.notefinale;
+
   const labelBadge = isVoteType ? "Score final" : "Note finale";
   const commentJury = project?.commentairejury?.[0]?.commentairejury || "";
 
@@ -1044,13 +1045,13 @@ export default function ProjectCardResult({ project, challenge }: any) {
         <ScoreDetailModal
           isOpen={showScoreDetail}
           onClose={() => setShowScoreDetail(false)}
-          isNoteFinale={!isVoteType}
+          isNoteFinale={project.notefinale ? true : false}
           commentJury={commentJury}
           data={{
             value: displayValue || 0,
-            votes: project?.vote || 0, // Vérifie si c'est 'vote' ou 'like' dans cet objet
+            votes: project?.like || 0, // Vérifie si c'est 'vote' ou 'like' dans cet objet
             shares: project?.partage || 0,
-            comments: project?.nombreCommentaire || 0,
+            comments: project?.commentaires_count || 0,
           }}
         />
 
