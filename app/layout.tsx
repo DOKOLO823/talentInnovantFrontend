@@ -21,6 +21,8 @@ export default function RootLayout({
       <body style={{ backgroundColor: "white" }}>
         <Script
           async
+          defer
+          data-domain="talentinnovant.com"
           src="https://plausible.io/js/pa-uLE2cMjjUniEqBVE--pha.js"
           strategy="afterInteractive"
         />
