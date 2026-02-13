@@ -170,7 +170,7 @@ export default function RegisterEntreprise() {
                   error={errors.nom}
                 />
                 <Input
-                  label="Email professionnel"
+                  label="Email"
                   type="email"
                   value={form.email}
                   onChange={(v: any) => handleChange("email", v)}
@@ -194,7 +194,7 @@ export default function RegisterEntreprise() {
                 {/* SELECT DOMAINE */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Votre domaine principal
+                    Domaine principal de l'entreprise
                   </label>
                   <select
                     className={`w-full mt-1 p-3 border rounded-lg focus:ring-2 focus:ring-orange-700 outline-none transition-all ${
