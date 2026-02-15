@@ -89,7 +89,7 @@ export default function TalentsClient() {
           <div className="flex flex-col items-center justify-center py-20 space-y-4">
             <Loader2 className="w-10 h-10 animate-spin text-orange-700" />
             <p className="text-gray-500 font-medium">
-              Analyse des meilleurs profils...
+              Chargement des profils...
             </p>
           </div>
         ) : (

@@ -832,7 +832,6 @@ export default function ProjectReelClient() {
   const handleComment = async () => {
     if (!newComment.trim() || !currentUser) return;
     const commentTxt = newComment;
-    setNewComment("");
     setLoadComment(true);
     try {
       const data = await apiRequest(
@@ -852,6 +851,7 @@ export default function ProjectReelClient() {
         ]);
         setTotalComments((prev) => prev + 1);
         scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+        setNewComment("");
       } else if (data.statut == 403) {
         toast.error(data.message);
       }

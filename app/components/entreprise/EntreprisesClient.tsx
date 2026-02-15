@@ -127,7 +127,7 @@ export default function EntreprisesClient({
             <div className="text-center">
               <Loader2 className="w-10 h-10 animate-spin text-orange-700 mx-auto mb-3" />
               <p className="text-gray-500 font-medium">
-                Récupération des leaders...
+                Récupération des entreprises...
               </p>
             </div>
           </div>

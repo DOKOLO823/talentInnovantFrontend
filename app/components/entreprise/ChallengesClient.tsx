@@ -80,7 +80,7 @@ export default function ChallengesClient() {
         termines: processData(resTermines?.challenges_termines),
         avenir: processData(resAvenir?.challenges_avenir),
       });
-      console.log(resEnCours);
+      // console.log(resEnCours);
     } catch (err) {
       console.error("Erreur chargement challenges:", err);
     } finally {

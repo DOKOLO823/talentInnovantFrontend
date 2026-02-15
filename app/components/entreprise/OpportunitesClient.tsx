@@ -1,7 +1,14 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Search, Plus, Briefcase, LayoutGrid, Loader2, AlertCircle } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Briefcase,
+  LayoutGrid,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
 import { OpportuniteCard } from "../opportunite/OpportuniteCard";
 import { motion, AnimatePresence } from "framer-motion";
 import CreateOpportunityModal from "./CreateOpportunityModal";
@@ -17,7 +24,7 @@ export default function OpportunitesClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
+
   const tabs = ["Emploi", "Stage", "Autre"];
   const [active, setActive] = useState(tabs[0]);
   const [query, setQuery] = useState("");
@@ -25,18 +32,17 @@ export default function OpportunitesClient() {
   const router = useRouter();
 
   useEffect(() => {
-
-     const userStr = localStorage.getItem("auth");
-    if(!userStr){
-          router.push("/auth/login");
-          return;
-        }
+    const userStr = localStorage.getItem("auth");
+    if (!userStr) {
+      router.push("/auth/login");
+      return;
+    }
 
     const fetchOpps = async () => {
       try {
         setLoading(true);
         const res = await apiFetch("/mes-opportunites", { method: "GET" });
-        const data = res.data || res; 
+        const data = res.data || res;
         setOpportunites(Array.isArray(data) ? data : []);
       } catch (err: any) {
         console.error("Erreur auth:", err);
@@ -57,31 +63,39 @@ export default function OpportunitesClient() {
     const names = opportunites
       .map((o: any) => o.domaine?.nom || o.domaine) // Gère objet ou string
       .filter(Boolean);
-    
+
     // Set permet de supprimer les doublons
     return ["Tous les domaines", ...Array.from(new Set(names))];
   }, [opportunites]);
 
-  const filtered = useMemo(() =>
-    opportunites.filter((o: any) => {
-      const matchType = o.type?.toLowerCase() === active.toLowerCase();
-      const currentDom = o.domaine?.nom || o.domaine;
-      const matchDomaine = domaine === "Tous les domaines" || currentDom === domaine;
-      const matchSearch = o.titre?.toLowerCase().includes(query.toLowerCase());
-      return matchType && matchDomaine && matchSearch;
-    }), [opportunites, active, domaine, query]
+  const filtered = useMemo(
+    () =>
+      opportunites.filter((o: any) => {
+        const matchType = o.type?.toLowerCase() === active.toLowerCase();
+        const currentDom = o.domaine?.nom || o.domaine;
+        const matchDomaine =
+          domaine === "Tous les domaines" || currentDom === domaine;
+        const matchSearch = o.titre
+          ?.toLowerCase()
+          .includes(query.toLowerCase());
+        return matchType && matchDomaine && matchSearch;
+      }),
+    [opportunites, active, domaine, query],
   );
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {/* HEADER */}
       <div className="bg-white p-6 md:p-8 rounded-[1rem] mt-6 shadow-sm border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-6">
-        <Toaster/>
+        <Toaster />
         <div className="flex items-center gap-4">
-          
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Mes Opportunités</h2>
-            <p className="text-gray-500 font-medium">Gérez vos publications en temps réel</p>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Mes Opportunités
+            </h2>
+            <p className="text-gray-500 font-medium">
+              Gérez vos publications en temps réel
+            </p>
           </div>
         </div>
 
@@ -102,7 +116,9 @@ export default function OpportunitesClient() {
                 key={t}
                 onClick={() => setActive(t)}
                 className={`flex-1 lg:flex-none px-8 py-3 rounded-xl text-sm font-bold transition-all ${
-                  active === t ? "bg-white text-orange-700 shadow-sm" : "text-gray-500"
+                  active === t
+                    ? "bg-white text-orange-700 shadow-sm"
+                    : "text-gray-500"
                 }`}
               >
                 {t}s
@@ -117,12 +133,17 @@ export default function OpportunitesClient() {
               className="bg-gray-50 border-none p-3.5 rounded-xl text-sm font-bold outline-none ring-1 ring-gray-200 focus:ring-2 focus:ring-orange-500"
             >
               {filterDomaines.map((d: any) => (
-                <option key={d} value={d}>{d}</option>
+                <option key={d} value={d}>
+                  {d}
+                </option>
               ))}
             </select>
 
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <Search
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                size={18}
+              />
               <input
                 className="pl-12 p-3.5 bg-gray-50 border-none rounded-xl text-sm w-full sm:w-64 outline-none ring-1 ring-gray-200 focus:ring-2 focus:ring-orange-500"
                 placeholder="Rechercher une offre..."
@@ -136,7 +157,9 @@ export default function OpportunitesClient() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <Loader2 className="animate-spin text-orange-600 mb-4" size={48} />
-            <p className="text-gray-500 font-bold animate-pulse">Synchronisation...</p>
+            <p className="text-gray-500 font-bold animate-pulse">
+              Chargement...
+            </p>
           </div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-24 text-red-500">
@@ -148,14 +171,24 @@ export default function OpportunitesClient() {
             <AnimatePresence mode="popLayout">
               {filtered.length ? (
                 filtered.map((o: any) => (
-                 
-                    <OpportuniteCard key={o.id || `opp-${Math.random()}`} opp={o} />
-                  
+                  <OpportuniteCard
+                    key={o.id || `opp-${Math.random()}`}
+                    opp={o}
+                  />
                 ))
               ) : (
-                <motion.div key="empty" initial={{ opacity: 0 }} className="w-full py-20 text-center">
-                  <LayoutGrid className="mx-auto text-gray-200 mb-4" size={64} />
-                  <p className="text-gray-400 font-bold text-lg">Aucun résultat</p>
+                <motion.div
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  className="w-full py-20 text-center"
+                >
+                  <LayoutGrid
+                    className="mx-auto text-gray-200 mb-4"
+                    size={64}
+                  />
+                  <p className="text-gray-400 font-bold text-lg">
+                    Aucun résultat
+                  </p>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -166,7 +199,7 @@ export default function OpportunitesClient() {
       {/* MODAL */}
       <AnimatePresence>
         {isModalOpen && (
-          <CreateOpportunityModal 
+          <CreateOpportunityModal
             onClose={() => setIsModalOpen(false)}
             domaines={domainesJSON}
             onSuccess={(newOpp: any) => {
