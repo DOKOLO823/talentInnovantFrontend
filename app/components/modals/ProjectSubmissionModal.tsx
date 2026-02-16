@@ -120,7 +120,7 @@ export default function ProjectSubmissionModal({
       payload.append(`responses[${index}][type]`, field.type);
 
       const value = formData[field.id];
-      if (field.type === "file") {
+      if (["file", "video", "image"].includes(field.type)) {
         if (value instanceof File) {
           payload.append(`responses[${index}][value]`, value);
         }
@@ -218,7 +218,21 @@ export default function ProjectSubmissionModal({
             placeholder={`Votre réponse ici...`}
           />
         );
+
       case "option":
+      case "select":
+        let optionsList = [];
+        try {
+          optionsList =
+            typeof field.option === "string"
+              ? JSON.parse(field.option)
+              : field.option;
+        } catch (e) {
+          // Si le JSON parse échoue, on tente un split par virgule (fallback)
+          optionsList =
+            typeof field.option === "string" ? field.option.split(",") : [];
+        }
+
         return (
           <select
             value={formData[field.id] || ""}
@@ -226,13 +240,15 @@ export default function ProjectSubmissionModal({
             className={`${commonClasses} ${errorClasses}`}
           >
             <option value="">Sélectionner...</option>
-            {JSON.parse(field.option)?.map((opt: string, idx: number) => (
-              <option key={idx} value={opt}>
-                {opt}
-              </option>
-            ))}
+            {Array.isArray(optionsList) &&
+              optionsList.map((opt: string, idx: number) => (
+                <option key={idx} value={opt}>
+                  {opt}
+                </option>
+              ))}
           </select>
         );
+
       default:
         return (
           <input
