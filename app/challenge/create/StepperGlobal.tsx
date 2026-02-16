@@ -66,8 +66,8 @@ export default function StepGeneralInfo({
         "La description ne doit pas dépasser 900 caractères";
     }
     // details
-    if (data.details && data.details.length > 495) {
-      newErrors.details = "Les détails ne doivent pas dépasser 495 caractères";
+    if (data.details && data.details.length > 1000) {
+      newErrors.details = "Les détails ne doivent pas dépasser 1000 caractères";
     }
 
     setErrors(newErrors);
