@@ -52,8 +52,8 @@ export default function StepGeneralInfo({
     }
 
     // Validation Objectif (Max 250 - Optionnel selon backend nullable)
-    if (data.objectif && data.objectif.length > 295) {
-      newErrors.objectif = "L'objectif ne doit pas dépasser 295 caractères";
+    if (data.objectif && data.objectif.length > 500) {
+      newErrors.objectif = "L'objectif ne doit pas dépasser 500 caractères";
     }
 
     // theme
