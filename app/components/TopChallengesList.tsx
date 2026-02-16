@@ -59,7 +59,8 @@ export default function TopChallengesList() {
               image: c.photo
                 ? `${apifile}/${c.photo}`
                 : "/assets/images/innov.jpg",
-              locationType: c.lieu,
+              locationType: c.lieu || "",
+              site: c.site || "",
               startDate: c.datelancement,
               endDate: c.datefin,
               endInscription: c.datefininscription,
