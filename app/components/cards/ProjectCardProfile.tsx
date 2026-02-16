@@ -203,7 +203,7 @@ export default function ProjectCardProfile({ project, challenge }: any) {
     const isDoc = value.match(/\.(docx|doc|pptx|ppt|xlsx|xls)$/i);
     const isPreviewable = isPDF || isDoc;
 
-    if (type === "text" || type === "textarea" || type === "option") {
+    if (["text", "textarea", "option", "select"].includes(type)) {
       return (
         <div className="mb-4 py-4 bg-white border border-slate-100 rounded-2xl">
           <p className="text-[10px] font-black uppercase text-orange-600 mb-1 tracking-widest">

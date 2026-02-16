@@ -174,8 +174,9 @@ function FileRenderer({
   const isDoc = /\.(docx|doc|pptx|ppt|xlsx|xls)$/i.test(value);
   const isPreviewable = isPDF || isDoc;
 
-  if (type === "text" || type === "textarea" || type === "option")
+  if (["text", "textarea", "option", "select"].includes(type)) {
     return <ExpandableText text={value} />;
+  }
 
   if (isVideo)
     return (
