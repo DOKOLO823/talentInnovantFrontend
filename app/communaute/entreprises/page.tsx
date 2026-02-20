@@ -49,6 +49,10 @@ export default function ToutesLesEntreprises() {
     c.nom.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
+  const onRefresh = () => {
+    window.location.reload();
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <BackButton m={16} />
@@ -78,7 +82,7 @@ export default function ToutesLesEntreprises() {
           <div className="flex justify-center py-20">
             <Loader2 className="w-10 h-10 animate-spin text-orange-700" />
           </div>
-        ) : (
+        ) : filtered?.length > 0 ? (
           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
             {filtered.map((company, index) => (
               <motion.div
@@ -139,6 +143,20 @@ export default function ToutesLesEntreprises() {
               </motion.div>
             ))}
           </div>
+        ) : (
+          <>
+            <div className="text-center py-20">
+              <p className="text-gray-500">
+                Erreur de chargement. Problème de réseau
+              </p>
+              <button
+                onClick={onRefresh}
+                className="mt-4 bg-orange-700 text-white px-4 py-2 rounded-lg hover:bg-orange-800 transition-colors"
+              >
+                Actualiser
+              </button>
+            </div>
+          </>
         )}
       </div>
 

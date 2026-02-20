@@ -96,25 +96,28 @@ export default function TabsProjects({
 
   if (projectsData?.length === 0) {
     return (
-      <div className="text-center py-20">
-        <p className="text-gray-500">Aucun projet trouvé pour ce talent.</p>
-        <button
-          onClick={onRefresh}
-          className="mt-4 bg-orange-700 text-white px-4 py-2 rounded-lg hover:bg-orange-800 transition-colors"
-        >
-          Actualiser
-        </button>
-      </div>
+      <>
+        <h2 className="text-sm md:text-md text-gray-800 mb-6 border-l-4 border-orange-700 pl-3">
+          Projets issus des challenges :
+        </h2>
+        <div className="text-center py-20">
+          <p className="text-gray-500">Aucun projet trouvé pour ce talent.</p>
+          <button
+            onClick={onRefresh}
+            className="mt-4 bg-orange-700 text-white px-4 py-2 rounded-lg hover:bg-orange-800 transition-colors"
+          >
+            Actualiser
+          </button>
+        </div>
+      </>
     );
   }
 
   return (
     <div className="space-y-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4 mb-12">
-      {projectsData?.length > 0 && (
-        <h2 className="text-sm md:text-md text-gray-800 mb-6 border-l-4 border-orange-700 pl-3">
-          Projets issus des challenges :
-        </h2>
-      )}
+      <h2 className="text-sm md:text-md text-gray-800 mb-6 border-l-4 border-orange-700 pl-3">
+        Projets issus des challenges :
+      </h2>
 
       {projectsData?.map((project: any) => (
         <ProjectCardProfile key={project.id} project={project} />
