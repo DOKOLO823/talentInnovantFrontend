@@ -27,6 +27,7 @@ import FiltreChallenge from "../components/recherche/FiltreChallenge";
 import Footer from "../components/Footer";
 import { motion } from "framer-motion";
 import StatsSection from "../components/guest/StatsSection";
+import { useRouter } from "next/navigation";
 
 const CONTACT_PHONE = "+237 655 62 41 68";
 const WHATSAPP_GROUP_LINK =
@@ -47,6 +48,7 @@ interface HowItWorksStepProps {
 }
 
 export default function Home() {
+  const router = useRouter();
   return (
     <div className="min-h-screen bg-gray-50">
       <main>
@@ -64,7 +66,7 @@ export default function Home() {
           </div>
 
           {/* 2. CONTENU - Ajout de pt-20 sur mobile pour éviter le chevauchement avec la Navbar */}
-          <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 w-full pt-10 md:pt-0">
+          <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 w-full pt-5 md:pt-0">
             <div className="max-w-3xl">
               {/* Badge Professionnel */}
               <motion.div
@@ -133,19 +135,19 @@ export default function Home() {
                 transition={{ duration: 0.5, delay: 0.3 }}
                 className="flex flex-col sm:flex-row gap-4 mt-10"
               >
-                <Link
-                  href="/auth/register-talent"
-                  className="px-8 py-4 bg-orange-700 hover:bg-orange-800 text-white font-bold rounded-lg transition-all shadow-lg flex items-center justify-center active:scale-95"
+                <div
+                  onClick={() => router.push("/auth/register-talent")}
+                  className="px-8 py-4 cursor-pointer bg-orange-700 hover:bg-orange-800 text-white font-bold rounded-lg transition-all shadow-lg flex items-center justify-center active:scale-95"
                 >
                   Rejoindre comme talent
-                </Link>
+                </div>
 
-                <Link
-                  href="/auth/register-company"
-                  className="px-8 py-4 bg-transparent border border-white/40 hover:bg-white hover:text-black text-white font-bold rounded-lg transition-all flex items-center justify-center active:scale-95"
+                <div
+                  onClick={() => router.push("/auth/register-company")}
+                  className="px-8 py-4 cursor-pointer bg-transparent border border-white/40 hover:bg-white hover:text-black text-white font-bold rounded-lg transition-all flex items-center justify-center active:scale-95"
                 >
                   Espace Entreprise
-                </Link>
+                </div>
               </motion.div>
             </div>
           </div>
@@ -211,13 +213,13 @@ export default function Home() {
               ))}
             </div>
             <div className="mt-14">
-              <Link
-                href="auth/register-talent"
-                className="inline-flex items-center justify-center px-4 md:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold rounded-full text-white bg-orange-700 hover:bg-orange-600 transition-all shadow-lg transform hover:scale-105 w-full sm:w-auto"
+              <div
+                onClick={() => router.push("/auth/register-talent")}
+                className="inline-flex cursor-pointer items-center justify-center px-4 md:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold rounded-full text-white bg-orange-700 hover:bg-orange-600 transition-all shadow-lg transform hover:scale-105 w-full sm:w-auto"
               >
                 Je deviens un Talent Innovant
                 <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
+              </div>
             </div>
           </div>
         </section>
@@ -283,13 +285,13 @@ export default function Home() {
 
             {/* CTA */}
             <div className="mt-14">
-              <Link
-                href="auth/register-company"
-                className="inline-flex items-center justify-center px-10 py-4 text-sm md:text-lg font-semibold rounded-full text-white bg-black/80 hover:bg-black transition-all shadow-xl transform hover:scale-105 w-full sm:w-auto"
+              <div
+                onClick={() => router.push("/auth/register-company")}
+                className="inline-flex cursor-pointer items-center justify-center px-10 py-4 text-sm md:text-lg font-semibold rounded-full text-white bg-black/80 hover:bg-black transition-all shadow-xl transform hover:scale-105 w-full sm:w-auto"
               >
                 Rejoindre comme Entreprise
                 <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
+              </div>
             </div>
           </div>
         </section>

@@ -405,14 +405,14 @@ export default function CommunautePage() {
                         </p>
 
                         <div className="flex items-center justify-center gap-3 mb-6">
-                          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full">
+                          <div className="flex items-center gap-1 py-1">
                             <Trophy className="w-4 h-4 text-orange-600" />
-                            <span className="text-sm font-bold text-orange-700">
+                            <span className="text-xs font-bold text-orange-700">
                               {innovator.points}{" "}
                               <span className="text-[10px]">pts</span>
                             </span>
                           </div>
-                          <span className="text-sm font-bold text-gray-600 px-3 py-1 bg-gray-50 rounded-full border border-gray-100 flex items-center gap-1">
+                          <span className="text-xs font-bold text-gray-600 px-3 py-1 bg-gray-50 rounded-full border border-gray-100 flex items-center gap-1">
                             {innovator.rang}
                           </span>
                         </div>
