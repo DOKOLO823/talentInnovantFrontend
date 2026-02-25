@@ -243,7 +243,7 @@ function ShareModal({
 
   const shareUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/challenge/reel/${challengeId}?project=${postId}`
+      ? `${window.location.origin}/challenge/${challengeId}/reel?project=${postId}`
       : "";
 
   const finalMessage = customMessage
