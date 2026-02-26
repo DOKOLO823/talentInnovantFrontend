@@ -660,17 +660,43 @@ function SentRequestCard({ request }: { request: any }) {
 function ActiveCollabCard({ talent }: { talent: any }) {
   const person = talent;
 
+  // --- FONCTION DE CORRECTION DU NUMÉRO ---
+  const formatWhatsAppNumber = (num: any) => {
+    // 1. Si la valeur est vide, nulle ou indéfinie, on retourne une chaîne vide
+    if (num === null || num === undefined) return "";
+
+    // 2. On force la conversion en String au cas où c'est un Number
+    let cleaned = String(num).replace(/\D/g, "");
+
+    // 3. Si après nettoyage il n'y a plus rien, on arrête
+    if (!cleaned) return "";
+
+    // 4. Gestion de l'indicatif Cameroun (237)
+    if (!cleaned.startsWith("237")) {
+      // Si l'utilisateur a saisi un 0 au début par réflexe (ex: 0690...), on l'enlève
+      if (cleaned.startsWith("0")) {
+        cleaned = cleaned.substring(1);
+      }
+      cleaned = "237" + cleaned;
+    }
+
+    return cleaned;
+  };
+
+  const formattedPhone = formatWhatsAppNumber(person.telephone);
+
   // 1. Préparer la phrase personnalisée
   const message = `Bonjour ${person.prenom}, nous sommes collaborateurs sur TALENT INNOVANT. Je viens vers toi pour discuter d'un projet. Es-tu disponible pour échanger ?`;
 
-  // 2. Encoder la phrase pour l'URL (remplace les espaces par %20, etc.)
+  // 2. Encoder la phrase pour l'URL
   const encodedMessage = encodeURIComponent(message);
 
-  // 3. Construire l'URL WhatsApp finale
-  const whatsappUrl = `https://wa.me/${person.telephone}?text=${encodedMessage}`;
+  // 3. Construire l'URL WhatsApp avec le numéro formaté
+  const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodedMessage}`;
 
   return (
     <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm h-full">
+      {/* ... reste du code (header de la carte) identique ... */}
       <div className="flex gap-4 items-center mb-6">
         <Link
           href={`/profil-talent/${person.partner_id || person.id}`}
@@ -691,18 +717,11 @@ function ActiveCollabCard({ talent }: { talent: any }) {
           <p className="text-orange-600 text-[11px] font-bold uppercase tracking-wide">
             {person.profession || "Innovateur"}
           </p>
-          {(person.talent?.ville || person.talent?.region) && (
-            <p className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
-              <MapPin size={10} /> {person.talent?.ville}
-              {person.talent?.ville && ", "}
-              {person.talent?.region}
-            </p>
-          )}
         </div>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        {/* WhatsApp avec message pré-rempli */}
+        {/* WhatsApp avec numéro corrigé */}
         <a
           href={whatsappUrl}
           target="_blank"
@@ -719,7 +738,7 @@ function ActiveCollabCard({ talent }: { talent: any }) {
           </span>
         </a>
 
-        {/* Bouton Appeler (Inchangé) */}
+        {/* Bouton Appeler - On peut garder le format original car le téléphone gère mieux le local */}
         <a
           href={`tel:${person.telephone}`}
           className="flex flex-col items-center gap-2 p-3 bg-slate-50 rounded-2xl transition-all active:scale-95 hover:bg-blue-50"
@@ -734,7 +753,7 @@ function ActiveCollabCard({ talent }: { talent: any }) {
           </span>
         </a>
 
-        {/* Bouton SMS (Inchangé) */}
+        {/* Bouton SMS */}
         <a
           href={`sms:${person.telephone}?body=${encodedMessage}`}
           className="flex flex-col items-center gap-2 p-3 bg-slate-50 rounded-2xl transition-all active:scale-95 hover:bg-orange-50"
