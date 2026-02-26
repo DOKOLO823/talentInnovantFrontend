@@ -247,7 +247,9 @@ export default function ReseauPage() {
   return (
     <div className="min-h-screen bg-white pb-20">
       <Toaster position="top-center" />
-      <BackButton />
+      <div className="ml-4">
+        <BackButton />
+      </div>
 
       <header className="px-4 flex items-center gap-4 bg-white mt-8">
         <h1 className="text-xl font-bold text-slate-800">Mon Réseau</h1>
@@ -373,11 +375,11 @@ export default function ReseauPage() {
             <div ref={contentRef} className="scroll-mt-28">
               {subTab === "actives" && (
                 <>
-                  <div className="mt-6">
+                  <div className="mt-6 mb-3">
                     <div className="relative">
                       <input
                         type="text"
-                        placeholder="Rechercher..."
+                        placeholder="Recherche par nom..."
                         className="w-full p-4 pl-12 bg-gray-50 border border-gray-100 rounded-2xl outline-none"
                         onChange={(e) => setSearchTerm(e.target.value)}
                       />
@@ -391,7 +393,7 @@ export default function ReseauPage() {
                     <SkeletonCard />
                   ) : filteredData.length === 0 && !loading ? (
                     <EmptyState
-                      message="Aucune collaboration active. C'est peut-être un probleme de connexion internet."
+                      message="Vous n'avez aucune collaboration active. C'est peut-être un probleme de connexion internet."
                       onRetry={fetchData} // <--- Appel de la fonction ici
                     />
                   ) : (
@@ -410,7 +412,7 @@ export default function ReseauPage() {
                     <SkeletonCard />
                   ) : filteredData.length === 0 && !loading ? (
                     <EmptyState
-                      message="Aucune demande reçue. C'est peut-être un probleme de connexion internet."
+                      message="Vous n'avez reçu aucune demande de collaboration. C'est peut-être un probleme de connexion internet."
                       onRetry={fetchData} // <--- Appel de la fonction ici
                     />
                   ) : (
@@ -433,7 +435,7 @@ export default function ReseauPage() {
                     <SkeletonCard />
                   ) : filteredData.length === 0 && !loading ? (
                     <EmptyState
-                      message="Aucune demande envoyée. C'est peut-être un probleme de connexion internet."
+                      message="Vous n'avez envoyé aucune demande de collaboration. C'est peut-être un probleme de connexion internet."
                       onRetry={fetchData} // <--- Appel de la fonction ici
                     />
                   ) : (
@@ -484,31 +486,24 @@ function ReceivedRequestCard({
     try {
       let res;
       if (action === "accepter") {
-        // Le backend attend { "demande_id": ID } en POST
         res = await apiFetch(`/reseau/collaborations/accepter`, {
           method: "POST",
           body: JSON.stringify({ demande_id: request.id }),
         });
       } else {
-        // Route refuser : /reseau/collaborations/refuser/{id} en GET selon vos routes
         res = await apiFetch(`/reseau/collaborations/refuser/${request.id}`, {
           method: "GET",
         });
       }
 
       if (res?.statut === 200) {
-        toast.success(res.message || "Action effectuée avec succès", {
-          duration: 6000,
-        });
+        toast.success(res.message || "Action effectuée avec succès");
         onRefresh();
       } else {
-        toast.error(res?.message || "Une erreur est survenue", {
-          duration: 6000,
-        });
+        toast.error(res?.message || "Une erreur est survenue");
       }
     } catch (e) {
-      console.error(e);
-      toast.error("Erreur de connexion au serveur");
+      toast.error("Erreur de connexion");
     } finally {
       setLoadingAction(null);
     }
@@ -536,22 +531,16 @@ function ReceivedRequestCard({
           <p className="text-[10px] font-bold text-orange-600 uppercase">
             {sender?.talent?.profession || "Talent"}
           </p>
-          {(sender?.talent?.ville || sender?.talent?.region) && (
-            <div className="flex items-center gap-1 mt-0.5 text-slate-500">
-              <MapPin size={10} />
-              <span className="text-[10px]">
-                {sender.talent.ville}
-                {sender.talent.ville && sender.talent.region ? ", " : ""}
-                {sender.talent.region}
-              </span>
-            </div>
-          )}
+          {/* 1. AJOUT DE LA DATE ICI */}
+          <p className="text-[10px] text-slate-400 mt-1">
+            Envoyé le {formatDateFr(request.created_at)}
+          </p>
         </div>
       </div>
 
       <div className="bg-gray-50 p-4 rounded-2xl mb-4 border border-dashed">
         <p
-          className={` text-gray-600 italic leading-relaxed ${!isExpanded ? "line-clamp-4" : ""}`}
+          className={`text-gray-600 italic leading-relaxed ${!isExpanded ? "line-clamp-4" : ""}`}
         >
           "{request.message || "Bonjour, j'aimerais collaborer avec vous."}"
         </p>
@@ -565,32 +554,39 @@ function ReceivedRequestCard({
         )}
       </div>
 
-      <div className="flex gap-3">
-        <button
-          disabled={loadingAction !== null}
-          onClick={() => handleAction("refuser")}
-          className="flex-1 py-3 rounded-xl border border-red-100 text-red-600 font-bold text-sm flex items-center justify-center"
-        >
-          {loadingAction === "refuser" ? (
-            <span className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></span>
-          ) : (
-            "Refuser"
-          )}
-        </button>
-        <button
-          disabled={loadingAction !== null}
-          onClick={() => handleAction("accepter")}
-          className="flex-[2] py-3 rounded-xl bg-orange-700 text-white font-bold text-sm flex items-center justify-center gap-2"
-        >
-          {loadingAction === "accepter" ? (
-            <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-          ) : (
-            <>
-              <Check size={18} /> Accepter
-            </>
-          )}
-        </button>
-      </div>
+      {/* 2. LOGIQUE DES BOUTONS OU DU MESSAGE DE COLLAB ACTIVE */}
+      {request.est_accepte ? (
+        <div className="w-full py-3 rounded-xl bg-green-50 text-green-700 font-bold text-xs flex items-center justify-center gap-2 border border-green-100">
+          <Check size={14} /> Vous êtes déjà collaborateurs
+        </div>
+      ) : (
+        <div className="flex gap-3">
+          <button
+            disabled={loadingAction !== null}
+            onClick={() => handleAction("refuser")}
+            className="flex-1 py-3 rounded-xl border border-red-100 text-red-600 font-bold text-sm flex items-center justify-center"
+          >
+            {loadingAction === "refuser" ? (
+              <span className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></span>
+            ) : (
+              "Refuser"
+            )}
+          </button>
+          <button
+            disabled={loadingAction !== null}
+            onClick={() => handleAction("accepter")}
+            className="flex-[2] py-3 rounded-xl bg-orange-700 text-white font-bold text-sm flex items-center justify-center gap-2"
+          >
+            {loadingAction === "accepter" ? (
+              <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+            ) : (
+              <>
+                <Check size={18} /> Accepter
+              </>
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -21,6 +21,8 @@ export default function ParametresTalent() {
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(false);
   const [receiveEmail, setReceiveEmail] = useState(false);
+  const [isAvailable, setIsAvailable] = useState(false);
+  const [togglingAvail, setTogglingAvail] = useState(false);
 
   // Charger les infos du talent au montage
   useEffect(() => {
@@ -31,8 +33,10 @@ export default function ParametresTalent() {
     try {
       const res = await apiFetch("/talent-infos", { method: "GET" });
       if (res.statut == 200) {
+        // console.log(res);
         // On synchronise le state avec la valeur "oui"/"non" de la BD
         setReceiveEmail(res.talent.recevoirchallengemail == "oui");
+        setIsAvailable(res.user.disponible == 1);
       }
     } catch (error) {
       console.error("Erreur chargement paramètres:", error);
@@ -62,6 +66,32 @@ export default function ParametresTalent() {
       toast.error("Erreur de connexion au serveur.");
     } finally {
       setToggling(false);
+    }
+  };
+
+  // 3. La fonction de bascule (Toggle)
+  const handleToggleAvailability = async () => {
+    if (togglingAvail) return;
+
+    setTogglingAvail(true);
+    try {
+      const res = await apiFetch(
+        "/reseau/collaborations/toggle-disponibilite",
+        {
+          method: "GET",
+        },
+      );
+      if (res.statut === 200) {
+        setIsAvailable(res.disponible == 1);
+        toast.success(res.message);
+      } else {
+        toast.error(res.message || "Une erreur est survenue.");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Erreur de connexion au serveur.");
+    } finally {
+      setTogglingAvail(false);
     }
   };
 
@@ -163,6 +193,67 @@ export default function ParametresTalent() {
                     ) : (
                       receiveEmail && (
                         <CheckCircle2 className="text-orange-600" size={14} />
+                      )
+                    )}
+                  </motion.span>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* Section Visibilité Réseau */}
+          <section className="mt-8">
+            <div className="flex items-center gap-2 mb-4 px-2">
+              <ShieldCheck size={18} className="text-orange-600" />
+              <h2 className="text-xs font-black uppercase tracking-widest text-slate-700">
+                Visibilité & Réseau
+              </h2>
+            </div>
+
+            <div className="bg-white rounded-[28px] border border-slate-100 shadow-sm overflow-hidden">
+              <div className="p-6 flex items-center justify-between group transition-all">
+                <div className="flex flex-col items-start gap-4">
+                  <div
+                    className={`p-3 rounded-2xl transition-colors ${
+                      isAvailable
+                        ? "bg-green-100 text-green-600"
+                        : "bg-slate-100 text-slate-400"
+                    }`}
+                  >
+                    <CheckCircle2 size={14} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900">
+                      Disponible pour collaboration
+                    </h3>
+                    <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-[220px] md:max-w-xs">
+                      Si désactivé, vous ne serez plus suggéré aux autres
+                      talents comme collaborateur et vous ne recevrez plus de
+                      demandes de collaboration.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Toggle Disponibilité */}
+                <button
+                  onClick={handleToggleAvailability}
+                  disabled={togglingAvail}
+                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none ${
+                    isAvailable ? "bg-green-600" : "bg-slate-200"
+                  } ${togglingAvail ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                >
+                  <motion.span
+                    animate={{ x: isAvailable ? 28 : 4 }}
+                    className="flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-lg"
+                  >
+                    {togglingAvail ? (
+                      <Loader2
+                        className="animate-spin text-slate-600"
+                        size={12}
+                      />
+                    ) : (
+                      isAvailable && (
+                        <CheckCircle2 className="text-green-600" size={14} />
                       )
                     )}
                   </motion.span>

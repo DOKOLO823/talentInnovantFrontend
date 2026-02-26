@@ -138,7 +138,9 @@ export default function SearchCollaborators() {
   return (
     <div className="min-h-screen bg-white pb-20">
       <Toaster position="top-center" />
-      <BackButton />
+      <div className="ml-3">
+        <BackButton />
+      </div>
 
       <header className="px-4 flex items-center gap-4 bg-white mt-8 mb-6">
         <h1 className="text-xl font-bold text-slate-800">
@@ -146,12 +148,13 @@ export default function SearchCollaborators() {
         </h1>
       </header>
 
-      <div className="px-4 space-y-6">
+      <div className="px-4 space-y-4">
         {/* Sélecteurs */}
-        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-          <div className="min-w-[200px] flex-shrink-0">
+        <span className="text-[12px] pl-3 text-slate-500">Filtre :</span>
+        <div className="flex gap-3 overflow-x-auto no-scrollbar scrollbar-hide pb-2">
+          <div className="w-2/3 flex-shrink-0">
             <select
-              className="w-full p-3 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-orange-500 appearance-none"
+              className="w-full p-3 bg-slate-50 rounded-2xl border border-slate-300 text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-orange-500 appearance-none"
               value={filters.domaine}
               onChange={(e) =>
                 setFilters({ ...filters, domaine: e.target.value })
@@ -168,7 +171,7 @@ export default function SearchCollaborators() {
 
           <div className="min-w-[180px] flex-shrink-0">
             <select
-              className="w-full p-3 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-orange-500 appearance-none"
+              className="w-full p-3 bg-slate-50 rounded-2xl border border-slate-300 text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-orange-500 appearance-none"
               value={filters.region}
               onChange={(e) =>
                 setFilters({ ...filters, region: e.target.value, ville: "" })
@@ -185,7 +188,7 @@ export default function SearchCollaborators() {
 
           <div className="min-w-[180px] flex-shrink-0">
             <select
-              className="w-full p-3 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-orange-500 appearance-none disabled:opacity-50"
+              className="w-full p-3 bg-slate-50 rounded-2xl border border-slate-300 text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-orange-500 appearance-none disabled:opacity-50"
               value={filters.ville}
               disabled={!filters.region}
               onChange={(e) =>
@@ -202,9 +205,8 @@ export default function SearchCollaborators() {
             </select>
           </div>
         </div>
-
         {/* Barre de recherche */}
-        <div className="bg-white border border-slate-100 p-5 rounded-[2.5rem] shadow-sm">
+        <div className="bg-white border border-slate-100 p-5 rounded-[2.5rem] shadow-sm ">
           <div className="flex flex-col gap-3">
             <div className="relative">
               <input
@@ -238,7 +240,6 @@ export default function SearchCollaborators() {
             </div>
           </div>
         </div>
-
         {/* Fil d'Ariane */}
         {activeFiltersLabel.length > 0 && (
           <div className="flex items-center gap-2 px-2 animate-in fade-in slide-in-from-left-2">
@@ -277,8 +278,7 @@ export default function SearchCollaborators() {
             </div>
           </div>
         )}
-
-        <div className="pt-4">
+        <div className="pt-4 mt-5">
           {loading ? (
             <SkeletonCard />
           ) : filteredTalents.length > 0 ? (
@@ -565,8 +565,7 @@ function TalentPropositionCard({
                 <X size={20} />
               </button>
               <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <Info className="text-orange-600" /> Bio de{" "}
-                {talent.talent?.prenom}
+                <Info className="text-orange-600" /> Bio de {talent.talent?.nom}
               </h3>
               <p className="text-slate-600 leading-relaxed italic text-sm">
                 "{talent.bio}"
