@@ -532,7 +532,7 @@ function ReceivedRequestCard({
             {sender?.talent?.profession || "Talent"}
           </p>
           {/* 1. AJOUT DE LA DATE ICI */}
-          <p className="text-[10px] text-slate-400 mt-1">
+          <p className="text-[10px] text-slate-500 mt-1">
             Envoyé le {formatDateFr(request.created_at)}
           </p>
         </div>
