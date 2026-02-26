@@ -108,9 +108,10 @@ export default function Home() {
                     <span className="font-bold text-white whitespace-nowrap">
                       Pour les talents
                     </span>{" "}
-                    : Propulsez votre carrière grâce aux opportunités des
-                    challenges d'innovation et accédez à des offres d'emploi ou
-                    de stages adaptées à votre domaine.
+                    : Passez de l'idée à l'action en participant à des
+                    challenges d'innovation et profitez d'un accompagnement
+                    stratégique pour réaliser vos projets et révéler votre
+                    potentiel.
                   </p>
                 </div>
 
@@ -184,9 +185,9 @@ export default function Home() {
                   desc: "Mettez vos compétences à l’épreuve sur des challenges d'innovation et faites-vous remarquer.",
                 },
                 {
-                  icon: Briefcase,
-                  title: "Découvrez des opportunités",
-                  desc: "Accédez à des stages, des emplois ou des collaborations d’affaires adaptés à votre domaine.",
+                  icon: Rocket,
+                  title: "Concrétisez vos ambitions",
+                  desc: "Trouvez des partenaires clés pour vos projets, préparez-vous aux challenges d'innovation et consultez des mentors pour propulser vos projets.",
                 },
                 {
                   icon: UserCheck, // Ou UserCheck selon ta préférence

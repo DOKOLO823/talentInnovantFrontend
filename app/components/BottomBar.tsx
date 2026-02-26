@@ -3,20 +3,18 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Home, Bell, Briefcase, Users } from "lucide-react";
+import { Home, Bell, Users, Share2, Network } from "lucide-react"; // Share2 est excellent pour le réseau
 import { apiFetch } from "@/app/lib/api";
 
 export default function BottomBar() {
   const pathname = usePathname();
   const [role, setRole] = useState<string | null>(null);
   const [notificationCount, setNotificationCount] = useState<number>(0);
-  const [opportuniteCount, setOpportuniteCount] = useState<number>(0);
+  const [reseauCount, setReseauCount] = useState<number>(0); // Nouveau state Réseau
 
-  // États pour gérer l'affichage conditionnel pendant le chargement
   const [loadingNotifs, setLoadingNotifs] = useState(true);
-  const [loadingOpports, setLoadingOpports] = useState(true);
+  const [loadingReseau, setLoadingReseau] = useState(true); // Loading pour réseau
 
-  // États pour la gestion du scroll
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
 
@@ -24,30 +22,29 @@ export default function BottomBar() {
     const authItem = localStorage.getItem("auth");
     if (authItem) {
       const authData = JSON.parse(authItem);
-      setRole(authData.user?.statut || 'guest');
+      setRole(authData.user?.statut || "guest");
 
-      // Fetch unread notifications count
+      // 1. Notifications classiques
       apiFetch("/notifications/nonlues", { method: "GET" })
-        .then(res => {
+        .then((res) => {
           if (res?.statut === 200) setNotificationCount(res.unread_count);
         })
         .finally(() => setLoadingNotifs(false));
-      
-      // Fetch unread opportunities count
-      apiFetch("/opportunites/nonlues", { method: "GET" })
-        .then(res => {
-          if (res?.statut === 200) setOpportuniteCount(res.unread_count);
+
+      // 2. Notifications Réseau (Collaborations reçues non lues)
+      apiFetch("/reseau/notifications/count", { method: "GET" })
+        .then((res) => {
+          // Note : on utilise res.nombre car c'est ce que ton backend renvoie
+          if (res?.statut === 200) setReseauCount(res.nombre);
         })
-        .finally(() => setLoadingOpports(false));
+        .finally(() => setLoadingReseau(false));
     }
   }, []);
 
-  // Logique de détection du scroll pour masquer/afficher la barre
   useEffect(() => {
     const controlNavbar = () => {
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         const currentScrollY = window.scrollY;
-
         if (currentScrollY > lastScrollY && currentScrollY > 50) {
           setIsVisible(false);
         } else {
@@ -56,44 +53,41 @@ export default function BottomBar() {
         setLastScrollY(currentScrollY);
       }
     };
-
-    window.addEventListener('scroll', controlNavbar);
-    return () => {
-      window.removeEventListener('scroll', controlNavbar);
-    };
+    window.addEventListener("scroll", controlNavbar);
+    return () => window.removeEventListener("scroll", controlNavbar);
   }, [lastScrollY]);
 
-  if (role !== 'talent') return null;
+  if (role !== "talent") return null;
 
   const navItems = [
-    { 
-      href: "/home-talent", 
-      label: "Accueil", 
-      Icon: Home 
+    {
+      href: "/home-talent",
+      label: "Accueil",
+      Icon: Home,
     },
-    { 
-      href: "/notification", 
-      label: "Notifications", 
-      Icon: Bell, 
-      badge: notificationCount, 
-      isLoading: loadingNotifs 
+    {
+      href: "/notification",
+      label: "Notifications",
+      Icon: Bell,
+      badge: notificationCount,
+      isLoading: loadingNotifs,
     },
-    { 
-      href: "/communaute", 
-      label: "Communauté", 
-      Icon: Users 
+    {
+      href: "/communaute",
+      label: "Communauté",
+      Icon: Users,
     },
-    { 
-      href: "/opportunite", 
-      label: "Opportunités", 
-      Icon: Briefcase, 
-      badge: opportuniteCount, 
-      isLoading: loadingOpports 
+    {
+      href: "/reseau", // Nouveau lien
+      label: "Réseau",
+      Icon: Network, // Icône de partage/réseau
+      badge: reseauCount,
+      isLoading: loadingReseau,
     },
   ];
 
   return (
-    <div 
+    <div
       className={`fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 shadow-2xl md:hidden z-50 transition-transform duration-300 ease-in-out ${
         isVisible ? "translate-y-0" : "translate-y-full"
       }`}
@@ -101,29 +95,34 @@ export default function BottomBar() {
       <div className="flex justify-around items-center h-16 max-w-lg mx-auto">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
-          // On affiche le badge seulement s'il est défini ET que le chargement est terminé
-          const showBadge = item.badge !== undefined && !item.isLoading;
+          // Condition pour afficher le badge : existant, chargé, et supérieur à 0
+          const showBadge =
+            item.badge !== undefined && !item.isLoading && item.badge > 0;
 
           return (
-            <Link 
+            <Link
               key={item.href}
               href={item.href}
               onClick={() => {
                 if (item.label === "Notifications") setNotificationCount(0);
-                if (item.label === "Opportunités") setOpportuniteCount(0);
+                if (item.label === "Réseau") setReseauCount(0);
               }}
               className="flex flex-col items-center justify-center p-2 pt-1.5 w-full h-full hover:bg-gray-50 transition-colors"
             >
               <div className="relative">
-                <item.Icon className={`w-6 h-6 ${isActive ? "text-orange-700" : "text-gray-500"}`} />
-                
+                <item.Icon
+                  className={`w-6 h-6 ${isActive ? "text-orange-700" : "text-gray-500"}`}
+                />
+
                 {showBadge && (
-                  <span className="absolute -top-1 -right-2 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                    {item.badge! > 9 ? '9+' : item.badge}
+                  <span className="absolute -top-1 -right-2 bg-red-600 text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center border-2 border-white">
+                    {item.badge! > 9 ? "9+" : item.badge}
                   </span>
                 )}
               </div>
-              <span className={`text-xs mt-0.5 font-medium ${isActive ? "text-orange-700" : "text-gray-600"}`}>
+              <span
+                className={`text-[10px] mt-1 font-medium ${isActive ? "text-orange-700" : "text-gray-600"}`}
+              >
                 {item.label}
               </span>
             </Link>
