@@ -3,17 +3,17 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Home, Bell, Users, Share2, Network } from "lucide-react"; // Share2 est excellent pour le réseau
+import { Home, Bell, Users, Network } from "lucide-react";
 import { apiFetch } from "@/app/lib/api";
 
 export default function BottomBar() {
   const pathname = usePathname();
   const [role, setRole] = useState<string | null>(null);
   const [notificationCount, setNotificationCount] = useState<number>(0);
-  const [reseauCount, setReseauCount] = useState<number>(0); // Nouveau state Réseau
+  const [reseauCount, setReseauCount] = useState<number>(0);
 
   const [loadingNotifs, setLoadingNotifs] = useState(true);
-  const [loadingReseau, setLoadingReseau] = useState(true); // Loading pour réseau
+  const [loadingReseau, setLoadingReseau] = useState(true);
 
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -24,17 +24,14 @@ export default function BottomBar() {
       const authData = JSON.parse(authItem);
       setRole(authData.user?.statut || "guest");
 
-      // 1. Notifications classiques
       apiFetch("/notifications/nonlues", { method: "GET" })
         .then((res) => {
           if (res?.statut === 200) setNotificationCount(res.unread_count);
         })
         .finally(() => setLoadingNotifs(false));
 
-      // 2. Notifications Réseau (Collaborations reçues non lues)
       apiFetch("/reseau/notifications/count", { method: "GET" })
         .then((res) => {
-          // Note : on utilise res.nombre car c'est ce que ton backend renvoie
           if (res?.statut === 200) setReseauCount(res.nombre);
         })
         .finally(() => setLoadingReseau(false));
@@ -78,11 +75,13 @@ export default function BottomBar() {
       Icon: Users,
     },
     {
-      href: "/reseau", // Nouveau lien
+      href: "/reseau",
       label: "Réseau",
-      Icon: Network, // Icône de partage/réseau
+      Icon: Network,
       badge: reseauCount,
       isLoading: loadingReseau,
+      // On définit les routes secondaires qui activent cet onglet
+      activeOn: ["/reseau", "/collaborateurs"],
     },
   ];
 
@@ -94,8 +93,11 @@ export default function BottomBar() {
     >
       <div className="flex justify-around items-center h-16 max-w-lg mx-auto">
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
-          // Condition pour afficher le badge : existant, chargé, et supérieur à 0
+          // --- LOGIQUE DE L'ÉTAT ACTIF MODIFIÉE ---
+          const isActive = item.activeOn
+            ? item.activeOn.includes(pathname)
+            : pathname === item.href;
+
           const showBadge =
             item.badge !== undefined && !item.isLoading && item.badge > 0;
 
@@ -111,7 +113,7 @@ export default function BottomBar() {
             >
               <div className="relative">
                 <item.Icon
-                  className={`w-6 h-6 ${isActive ? "text-orange-700" : "text-gray-500"}`}
+                  className={`w-6 h-6 transition-colors ${isActive ? "text-orange-700" : "text-gray-500"}`}
                 />
 
                 {showBadge && (
@@ -121,7 +123,7 @@ export default function BottomBar() {
                 )}
               </div>
               <span
-                className={`text-[10px] mt-1 font-medium ${isActive ? "text-orange-700" : "text-gray-600"}`}
+                className={`text-[10px] mt-1 font-medium transition-colors ${isActive ? "text-orange-700" : "text-gray-600"}`}
               >
                 {item.label}
               </span>

@@ -22,6 +22,7 @@ import toast, { Toaster } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import BackButton from "../components/BackButton";
+import BackToTop from "../components/BackToTop";
 
 const CAMEROON_GEO: any = {
   Adamaoua: ["Ngaoundéré", "Tignère", "Meiganga", "Banyo", "Tibati"],
@@ -311,6 +312,7 @@ export default function SearchCollaborators() {
           )}
         </div>
       </div>
+      <BackToTop />
     </div>
   );
 }
