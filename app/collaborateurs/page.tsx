@@ -271,7 +271,7 @@ export default function SearchCollaborators() {
                     query: "",
                   })
                 }
-                className="ml-4 text-slate-300 hover:text-red-500 transition-colors"
+                className="ml-4 text-[8px] text-slate-400 border border-slate-400 p-1 rounded-lg hover:text-red-500 transition-colors"
               >
                 Effacer
               </button>
