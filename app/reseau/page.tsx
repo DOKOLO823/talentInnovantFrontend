@@ -131,6 +131,7 @@ const formatDateFr = (dateString: string) => {
 };
 
 export default function ReseauPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("collaboration");
   const [subTab, setSubTab] = useState("actives");
   const [loading, setLoading] = useState(true);
@@ -331,12 +332,12 @@ export default function ReseauPage() {
               compétences complètent votre projet.
             </p>
 
-            <Link
-              href="/collaborateurs"
-              className="w-full md:w-1/2 lg:w-1/3 py-4 text-sm md:text-md bg-white text-orange-700 rounded-2xl font-bold flex items-center justify-center gap-2 mb-6 border border-orange-700"
+            <div
+              onClick={() => router.push("/collaborateurs")}
+              className="w-full cursor-pointer md:w-1/2 lg:w-1/3 py-4 text-sm md:text-md bg-white text-orange-700 rounded-2xl font-bold flex items-center justify-center gap-2 mb-6 border border-orange-700"
             >
               <Search size={20} /> Trouver de nouveaux collaborateurs
-            </Link>
+            </div>
 
             <div className="flex gap-3 overflow-x-auto no-scrollbar scrollbar-hide pb-4 mb-4">
               {[

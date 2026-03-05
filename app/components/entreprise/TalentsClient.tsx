@@ -36,9 +36,9 @@ export default function TalentsClient() {
     const fetchInnovators = async () => {
       try {
         setLoading(true);
-        const res = await apiFetch("/talents/top", { method: "GET" });
+        const res = await apiFetch("/talents/tous", { method: "GET" });
         if (res?.statut === 200) {
-          const mappedTalents = res.top100.map((t: any) => ({
+          const mappedTalents = res?.tous?.map((t: any) => ({
             id: t.user_id,
             name: `${t.nom} ${t.prenom || ""}`,
             email: t.user?.email || "",
@@ -136,7 +136,7 @@ function TalentCard({ innovator, index, onContact }: any) {
       {innovator?.nombre_projets > 0 && (
         <div className="absolute top-4 right-4">
           <span className="bg-orange-50 text-orange-700 text-[10px] font-bold px-2.5 py-1 rounded-full border border-orange-100">
-            {innovator.nombre_projets} Projets
+            {innovator.nombre_projets} Projet(s)
           </span>
         </div>
       )}

@@ -136,6 +136,14 @@ export default function SearchCollaborators() {
     return parts;
   }, [filters]);
 
+  // Ajoutez cette fonction à l'intérieur de SearchCollaborators
+  const addSentRequest = (talentId: number) => {
+    setUserRelations((prev) => ({
+      ...prev,
+      envoyees: [...prev.envoyees, talentId],
+    }));
+  };
+
   return (
     <div className="min-h-screen bg-white pb-20">
       <Toaster position="top-center" />
@@ -153,7 +161,7 @@ export default function SearchCollaborators() {
         {/* Sélecteurs */}
         <span className="text-[12px] pl-3 text-slate-500">Filtre :</span>
         <div className="flex gap-3 overflow-x-auto no-scrollbar scrollbar-hide pb-2">
-          <div className="w-2/3 flex-shrink-0">
+          <div className="w-2/3 md:w-auto flex-shrink-0">
             <select
               className="w-full p-3 bg-slate-50 rounded-2xl border border-slate-300 text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-orange-500 appearance-none"
               value={filters.domaine}
@@ -207,7 +215,7 @@ export default function SearchCollaborators() {
           </div>
         </div>
         {/* Barre de recherche */}
-        <div className="bg-white border border-slate-100 p-5 rounded-[2.5rem] shadow-sm ">
+        <div className="bg-white w-full md:w-1/2 border border-slate-100 p-5 rounded-[2.5rem] shadow-sm ">
           <div className="flex flex-col gap-3">
             <div className="relative">
               <input
@@ -289,6 +297,7 @@ export default function SearchCollaborators() {
                   key={talent.id}
                   talent={talent}
                   relations={userRelations}
+                  onSuccess={addSentRequest}
                 />
               ))}
             </div>
@@ -320,14 +329,17 @@ export default function SearchCollaborators() {
 function TalentPropositionCard({
   talent,
   relations,
+  onSuccess,
 }: {
   talent: any;
   relations: any;
+  onSuccess?: (talentId: number) => void;
 }) {
   const [showBioModal, setShowBioModal] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [isRequestSent, setIsRequestSent] = useState(false);
 
   const isEnAttente = relations.envoyees.includes(talent.id);
   const isRecu = relations.recues.includes(talent.id);
@@ -357,6 +369,7 @@ function TalentPropositionCard({
         toast.success("Demande envoyée !");
         setShowRequestModal(false);
         setMessage("");
+        setIsRequestSent(true);
       } else {
         toast.error(res.message || "Erreur");
       }
@@ -374,7 +387,7 @@ function TalentPropositionCard({
           <CheckCircle2 size={16} /> Déjà collaborateur
         </div>
       );
-    if (isEnAttente)
+    if (isEnAttente || isRequestSent)
       return (
         <div className="w-full mt-6 py-3 rounded-2xl font-bold bg-orange-50 text-orange-700 flex items-center justify-center gap-2 border border-orange-100 text-sm">
           <Clock size={16} /> En attente
