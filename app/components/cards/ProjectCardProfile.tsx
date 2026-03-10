@@ -106,7 +106,7 @@ export default function ProjectCardProfile({ project, challenge }: any) {
     project?.challenge?.resultatdisponible === 0;
   const displayValue = isVoteType ? project?.score : project?.notefinale;
   const labelBadge = isVoteType ? "Score final" : "Note finale";
-  const commentJury = project?.commentairejury?.[0]?.commentairejury || "";
+  const commentJury = project?.commentairejury?.[0]?.commentaire || "";
 
   const router = useRouter();
   const params = useParams();
@@ -370,7 +370,12 @@ export default function ProjectCardProfile({ project, challenge }: any) {
                     Rang final
                   </span>
                   <span className="text-gray-900 leading-none text-[12px]">
-                    {project?.rank || "-"}
+                    {project?.rank || "-"}{" "}
+                    {project?.nombreposts > 0 && project?.nombreposts != 0 && (
+                      <span className="text-[9px] font-normal">
+                        {"/" + project?.nombreposts || ""} projet(s)
+                      </span>
+                    )}
                   </span>
                 </div>
               </div>
@@ -471,7 +476,7 @@ export default function ProjectCardProfile({ project, challenge }: any) {
       <ScoreDetailModal
         isOpen={showScoreDetail}
         onClose={() => setShowScoreDetail(false)}
-        isNoteFinale={!isVoteType}
+        isNoteFinale={project.notefinale ? true : false}
         commentJury={commentJury}
         data={{
           value: displayValue || 0,

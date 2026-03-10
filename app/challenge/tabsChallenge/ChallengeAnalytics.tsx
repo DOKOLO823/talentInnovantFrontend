@@ -174,8 +174,8 @@ export default function ChallengeAnalytics({
           </div>
           <p className="text-[11px] text-slate-400 mt-2 font-medium">
             {data.summary.total_participants_actifs} talents ont rejoint sur{" "}
-            {data.summary.total_talents_domaine} talents identifiés dans les
-            domaines de ce challenge
+            {data.summary.total_talents_domaine} talents (lors de la création du
+            challenge) identifiés dans les domaines de ce challenge
           </p>
         </div>
       </div>

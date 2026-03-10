@@ -12,6 +12,8 @@ import TabChallenges from "./TabChallenges";
 import TabOpportunites from "./TabOpportunites";
 import apifile from "@/app/lib/apifile";
 import { CheckCircle2 } from "lucide-react";
+import LoginRequiredCard from "@/app/components/cards/LoginRequiredCard";
+import path from "path/win32";
 
 export default function EntrepriseProfileClient({ id }: { id: string }) {
   const [activeTab, setActiveTab] = useState("about");
@@ -21,16 +23,87 @@ export default function EntrepriseProfileClient({ id }: { id: string }) {
   const [isToggling, setIsToggling] = useState(false);
 
   useEffect(() => {
-    // Récupération de l'utilisateur connecté
+    // 1. On récupère l'utilisateur
     const storedAuth = localStorage.getItem("auth");
-    if (storedAuth) setCurrentUser(JSON.parse(storedAuth).user);
+    const user = storedAuth ? JSON.parse(storedAuth).user : null;
+    setCurrentUser(user);
 
-    // Récupération du profil entreprise
-    apiFetch(`/entreprise/profil/${id}`).then((res) => {
-      if (res.statut === 200) setData(res.data);
-      setLoading(false);
-    });
+    // 2. On lance l'API systématiquement
+    // On passe l'id pour récupérer les infos publiques de l'entreprise
+    apiFetch(`/entreprise/profil/${id}`, { method: "GET" })
+      .then((res) => {
+        if (res.statut === 200) {
+          setData(res.data);
+        }
+      })
+      .catch((err) => console.error(err))
+      .finally(() => {
+        // QUOI QU'IL ARRIVE, on arrête le spinner
+        setLoading(false);
+      });
   }, [id]);
+
+  // --- LOGIQUE D'AFFICHAGE ---
+
+  // 1. Pendant le chargement
+  if (loading) {
+    return (
+      <div className="w-full h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-700 mr-3"></div>
+        <div className="animate-pulse text-orange-700 font-bold">
+          Chargement...
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Si non connecté : On affiche la Card au lieu du profil
+  if (!currentUser) {
+    return (
+      <div className="w-full">
+        <LoginRequiredCard />
+      </div>
+    );
+  }
+
+  // 3. Si connecté mais erreur data
+  if (!data) {
+    return (
+      <div className="p-10 text-center mt-24 flex flex-col items-center justify-center gap-6">
+        <div className="space-y-2">
+          <h3 className="text-xl font-bold text-slate-800">
+            Entreprise introuvable
+          </h3>
+          <p className="text-slate-500">
+            Nous n'avons pas pu charger les informations de cette entreprise.
+          </p>
+        </div>
+
+        <button
+          onClick={() => window.location.reload()}
+          className="flex items-center gap-2 px-6 py-3 bg-orange-700 hover:bg-orange-800 text-white font-bold rounded-2xl transition-all shadow-lg shadow-orange-100 active:scale-95"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+            <path d="M21 3v5h-5" />
+            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+            <path d="M3 21v-5h5" />
+          </svg>
+          Actualiser la page
+        </button>
+      </div>
+    );
+  }
 
   // Vérification de propriété (user_id du profil vs id du user connecté)
   const isOwner = currentUser?.id == data?.entreprise?.user_id;
@@ -174,7 +247,7 @@ export default function EntrepriseProfileClient({ id }: { id: string }) {
       </div>
 
       <div className="px-4 md:px-8 mt-6 border-b flex gap-6 bg-white sticky top-0 z-30 pt-4 overflow-x-auto whitespace-nowrap scrollbar-hide">
-        {["about", "challenges", "opportunites"].map((t) => (
+        {["about", "challenges"].map((t) => (
           <button
             key={t}
             onClick={() => setActiveTab(t)}
@@ -188,7 +261,7 @@ export default function EntrepriseProfileClient({ id }: { id: string }) {
               ? "À propos"
               : t === "challenges"
                 ? "Challenges"
-                : "Offres d’opportunités"}
+                : ""}
           </button>
         ))}
       </div>
@@ -200,7 +273,7 @@ export default function EntrepriseProfileClient({ id }: { id: string }) {
         {activeTab === "challenges" && (
           <TabChallenges id={id} isOwner={isOwner} />
         )}
-        {activeTab === "opportunites" && <TabOpportunites id={id} />}
+        {/* {activeTab === "opportunites" && <TabOpportunites id={id} />} */}
       </div>
     </div>
   );

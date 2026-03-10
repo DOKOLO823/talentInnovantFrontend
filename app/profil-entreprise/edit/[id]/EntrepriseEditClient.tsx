@@ -103,6 +103,8 @@ export default function EntrepriseEditClient({ id }: { id: string }) {
         body: data,
       });
 
+      // console.log(res);
+
       if (res.statut == 200) {
         // 1. Préparation du profil entreprise
         const updatedProfile = {
@@ -283,7 +285,9 @@ export default function EntrepriseEditClient({ id }: { id: string }) {
               <div>
                 <label className="text-sm font-medium">Téléphone</label>
                 <input
+                  type="number"
                   className="mt-1 w-full border border-gray-300 rounded px-3 py-2 outline-none focus:border-orange-700"
+                  placeholder="Ex : 655624169"
                   value={formData.telephone}
                   onChange={(e) =>
                     setFormData({ ...formData, telephone: e.target.value })

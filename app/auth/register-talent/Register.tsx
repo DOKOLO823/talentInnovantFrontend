@@ -278,7 +278,8 @@ export default function Register() {
                       Téléphone (Whatsapp de préférence)
                     </label>
                     <input
-                      type="text"
+                      type="number"
+                      placeholder="Ex: 655624169"
                       className="w-full mt-1 p-3 border rounded-lg"
                       value={form.telephone}
                       onChange={(e) =>

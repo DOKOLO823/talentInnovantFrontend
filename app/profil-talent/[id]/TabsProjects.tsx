@@ -28,6 +28,8 @@ export default function TabsProjects({
               (post: any) => ({
                 id: post.id,
                 rank: post.rang,
+                nombreposts: post.nombreposts,
+                commentairejury: post.commentairejury,
                 author: {
                   id: post.user?.id,
                   name: post.user?.name,

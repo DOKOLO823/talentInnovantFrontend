@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import StatCard from "./StatCard";
 import ChallengeCard from "../ChallengeCard";
-import { Plus, Loader2, ShieldCheck } from "lucide-react";
+import { Plus, Loader2, ShieldCheck, PlusCircle } from "lucide-react";
 import { apiFetch } from "@/app/lib/api";
 import apifile from "@/app/lib/apifile";
 import { useRouter } from "next/navigation";
@@ -13,6 +13,7 @@ import { AnimatePresence } from "framer-motion";
 import CreateOpportunityModal from "./CreateOpportunityModal";
 import domainesJSON from "@/domaines.json";
 import CertificationModal from "../modals/CertificationModal";
+import ChallengeTypeModal from "./modals/ChallengeTypeModal";
 
 export default function HomeClient() {
   // Chargements séparés
@@ -23,9 +24,11 @@ export default function HomeClient() {
   const [challengesEnCours, setChallengesEnCours] = useState([]);
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpenChallenge, setIsModalOpenChallenge] = useState(false);
   const [opportunites, setOpportunites] = useState<any[]>([]);
   const [certifie, setCertifie] = useState(1);
   const [openCertifModal, setOpenCertifModal] = useState(false);
+  const [soldeEntreprise, setSoldeEntreprise] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -48,7 +51,8 @@ export default function HomeClient() {
       apiFetch(`/entreprise/stats-globales`, { method: "GET" })
         .then((res) => {
           if (res?.statut === 200) setStats(res.data);
-          setCertifie(res.data.entreprise.user.certifie);
+          setCertifie(res?.data?.entreprise?.user?.certifie);
+          setSoldeEntreprise(res.data?.entreprise?.solde);
         })
         .finally(() => setLoadingStats(false));
 
@@ -100,13 +104,14 @@ export default function HomeClient() {
   }, []);
 
   const displayStats = {
-    challenges: stats?.challenges_total || 0,
-    enCours: stats?.challenges_en_cours || 0,
-    avenir: stats?.challenges_avenir || 0,
-    termines: stats?.challenges_termines || 0,
-    abonnes: stats?.entreprise?.abonnees_count || 0,
-    points: stats?.entreprise?.point || 0,
+    challenges: stats?.challenges_total || "-",
+    enCours: stats?.challenges_en_cours || "-",
+    avenir: stats?.challenges_avenir || "-",
+    termines: stats?.challenges_termines || "-",
+    abonnes: stats?.entreprise?.abonnees_count || "-",
+    points: stats?.entreprise?.point || "-",
     rang: stats?.entreprise?.rang || "-",
+    solde: stats?.entreprise?.solde || "-",
   };
 
   return (
@@ -145,7 +150,7 @@ export default function HomeClient() {
       {/* SECTION STATS AVEC SKELETON */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {loadingStats ? (
-          Array(7)
+          Array(8)
             .fill(0)
             .map((_, i) => <StatSkeleton key={i} />)
         ) : (
@@ -160,6 +165,10 @@ export default function HomeClient() {
             <StatCard label="Abonnés" value={displayStats.abonnes} />
             <StatCard label="Points" value={displayStats.points} />
             <StatCard label="Rang" value={displayStats.rang} />
+            <StatCard
+              label="Solde en FCFA"
+              value={displayStats?.solde?.toLocaleString()}
+            />
           </>
         )}
       </div>
@@ -228,14 +237,19 @@ export default function HomeClient() {
           />
         </div>
 
-        <Link
-          href="/challenge/create"
-          className="inline-flex items-center gap-2 bg-orange-700 text-white px-5 py-3 rounded-lg hover:bg-orange-800 transition-colors"
-        >
-          <Plus /> Organiser un challenge
-        </Link>
+        {!loadingStats && (
+          <>
+            {/* Bouton d'action principal déporté à droite pour l'équilibre visuel */}
+            <button
+              onClick={() => setIsModalOpenChallenge(true)}
+              className="bg-orange-700 text-white px-8 py-3.5 rounded-xl flex items-center justify-center gap-3 hover:bg-orange-800 transition-all shadow-lg shadow-orange-100 active:scale-95 font-bold text-lg"
+            >
+              <PlusCircle size={22} /> Organiser ou publier un challenge
+            </button>
+          </>
+        )}
 
-        <p className="text-xl font-semibold mt-4">
+        {/* <p className="text-xl font-semibold mt-4">
           Comment publier une opportunité ?
         </p>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
@@ -259,14 +273,14 @@ export default function HomeClient() {
             title="Contacter les retenus"
             desc="Entrez en contact et embauchez."
           />
-        </div>
+        </div> */}
 
-        <div
+        {/* <div
           onClick={() => setIsModalOpen(true)}
           className="inline-flex cursor-pointer items-center gap-2 border border-orange-700 text-orange-700 px-5 py-3 mt-2 rounded-lg hover:bg-orange-50 transition-colors"
         >
           <Plus /> Publier une opportunité
-        </div>
+        </div> */}
       </div>
 
       <AnimatePresence>
@@ -285,6 +299,13 @@ export default function HomeClient() {
       <CertificationModal
         isOpen={openCertifModal}
         onClose={() => setOpenCertifModal(false)}
+      />
+
+      {/* Modal réutilisable appelé ici */}
+      <ChallengeTypeModal
+        isOpen={isModalOpenChallenge}
+        onClose={() => setIsModalOpenChallenge(false)}
+        solde={soldeEntreprise}
       />
     </div>
   );

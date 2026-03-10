@@ -317,16 +317,18 @@ export default function ChallengeCard({ challenge }: { challenge: Challenge }) {
                 Début du challenge : {formatDate(challenge.startDate)}
               </span>
             </p>
-            <p className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-orange-400" />
-              <span className="text-white">
-                Fin du challenge : {formatDate(challenge.endDate)}
-              </span>
-            </p>
+
             <p className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-orange-400" />
               <span className="text-white">
                 Fin des inscriptions : {formatDate(challenge.endInscription)}
+              </span>
+            </p>
+
+            <p className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-orange-400" />
+              <span className="text-white">
+                Fin du challenge : {formatDate(challenge.endDate)}
               </span>
             </p>
           </div>

@@ -185,15 +185,7 @@ export default function HomePage() {
             challengesAvenir: challengesAvenirCount,
           });
 
-          if (mesChallenges?.length > 0) {
-            setActiveTab("Mes Challenges");
-            setMesChallengesSubTab("en_cours");
-          } else if (challengesMoment?.length > 0) {
-            setActiveTab("Challenges en cours");
-          } else {
-            setActiveTab("Mes Challenges");
-            setMesChallengesSubTab("en_cours");
-          }
+          // setActiveTab("Challenges en cours");
 
           setInitialLoadComplete(true);
         }
@@ -210,6 +202,11 @@ export default function HomePage() {
   useEffect(() => {
     const fetchChallengesByTab = async () => {
       if (!token || !initialLoadComplete) return;
+
+      if (activeTab === "Challenges en cours" && challengesEnCours.length > 0) {
+        setLoadingChallenges(false);
+        return;
+      }
 
       setLoadingChallenges(true);
 

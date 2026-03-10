@@ -37,7 +37,7 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
         router.push("/auth/login");
         return;
       }
-      console.log(userStr);
+      // console.log(userStr);
       setNomEntreprise(authData.user?.entreprise?.nom || "Mon Entreprise");
       setPpEntreprise(authData?.user?.pp || null);
       setEntrepriseId(authData?.user?.id);
@@ -49,11 +49,11 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
     { href: "/home-entreprise", label: "Accueil", Icon: Home },
     { href: "/home-entreprise/Challenges", label: "Challenges", Icon: Flag },
     { href: "/home-entreprise/Talents", label: "Les talents", Icon: Users },
-    {
-      href: "/home-entreprise/Opportunites",
-      label: "Opportunités",
-      Icon: Briefcase,
-    },
+    // {
+    //   href: "/home-entreprise/Opportunites",
+    //   label: "Opportunités",
+    //   Icon: Briefcase,
+    // },
     {
       href: "/home-entreprise/Entreprises",
       label: "Les entreprises",
