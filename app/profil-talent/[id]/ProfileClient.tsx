@@ -300,15 +300,15 @@ export default function ProfileClient() {
             currenUser={currentUser}
           />
         )}
+        {activeTab === "cv" && (
+          <TabsCV userId={userId} currentUser={currentUser} />
+        )}
         {activeTab === "portfolio" && (
           <TabsPortfolio
             userId={userId}
             userData={userData}
             currentUser={currentUser}
           />
-        )}
-        {activeTab === "cv" && (
-          <TabsCV userId={userId} currentUser={currentUser} />
         )}
       </div>
 
