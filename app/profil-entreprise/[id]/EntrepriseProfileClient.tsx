@@ -14,6 +14,7 @@ import apifile from "@/app/lib/apifile";
 import { CheckCircle2 } from "lucide-react";
 import LoginRequiredCard from "@/app/components/cards/LoginRequiredCard";
 import path from "path/win32";
+import TabAnnonces from "./TabAnnonces";
 
 export default function EntrepriseProfileClient({ id }: { id: string }) {
   const [activeTab, setActiveTab] = useState("about");
@@ -247,23 +248,27 @@ export default function EntrepriseProfileClient({ id }: { id: string }) {
       </div>
 
       <div className="px-4 md:px-8 mt-6 border-b flex gap-6 bg-white sticky top-0 z-30 pt-4 overflow-x-auto whitespace-nowrap scrollbar-hide">
-        {["about", "challenges"].map((t) => (
-          <button
-            key={t}
-            onClick={() => setActiveTab(t)}
-            className={`pb-3 border-b-2 shrink-0 ${
-              activeTab === t
-                ? "border-orange-700 text-orange-700 font-semibold"
-                : "border-transparent text-gray-600"
-            }`}
-          >
-            {t === "about"
-              ? "À propos"
-              : t === "challenges"
-                ? "Challenges"
-                : ""}
-          </button>
-        ))}
+        {["about", "challenges", "annonces"].map(
+          (
+            t, // Ajout de "annonces"
+          ) => (
+            <button
+              key={t}
+              onClick={() => setActiveTab(t)}
+              className={`pb-3 border-b-2 shrink-0 capitalize ${
+                activeTab === t
+                  ? "border-orange-700 text-orange-700 font-semibold"
+                  : "border-transparent text-gray-600"
+              }`}
+            >
+              {t === "about"
+                ? "À propos"
+                : t === "challenges"
+                  ? "Challenges"
+                  : "Annonces"}
+            </button>
+          ),
+        )}
       </div>
 
       <div className="px-4 md:px-8 mt-6 pb-14">
@@ -273,7 +278,10 @@ export default function EntrepriseProfileClient({ id }: { id: string }) {
         {activeTab === "challenges" && (
           <TabChallenges id={id} isOwner={isOwner} />
         )}
-        {/* {activeTab === "opportunites" && <TabOpportunites id={id} />} */}
+        {/* Nouveau Tab Annonces */}
+        {activeTab === "annonces" && (
+          <TabAnnonces userId={data.entreprise.user_id} />
+        )}
       </div>
     </div>
   );

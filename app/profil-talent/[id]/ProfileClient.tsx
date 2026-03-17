@@ -270,7 +270,7 @@ export default function ProfileClient() {
         ref={tabsRef}
         className="px-4 md:px-8 mt-6 border-b flex gap-6 bg-white sticky top-0 z-40 pt-4 overflow-x-auto no-scrollbar"
       >
-        {["about", "projets", "portfolio", "cv"].map((tab) => (
+        {["about", "projets", "cv", "portfolio"].map((tab) => (
           <button
             key={tab}
             onClick={() => handleTabChange(tab)}

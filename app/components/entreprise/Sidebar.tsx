@@ -13,6 +13,7 @@ import {
   Mail,
   ChevronDown,
   X,
+  Megaphone,
 } from "lucide-react";
 import apifile from "@/app/lib/apifile";
 
@@ -48,6 +49,7 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
   const menu = [
     { href: "/home-entreprise", label: "Accueil", Icon: Home },
     { href: "/home-entreprise/Challenges", label: "Challenges", Icon: Flag },
+    { href: "/home-entreprise/Annonces", label: "Annonces", Icon: Megaphone },
     { href: "/home-entreprise/Talents", label: "Les talents", Icon: Users },
     // {
     //   href: "/home-entreprise/Opportunites",
@@ -108,10 +110,13 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
             </span>
             <p className="text-xs text-gray-500">Tableau</p>
           </div>
-          <button className="ml-auto md:hidden" onClick={() => setOpen(false)}>
-            <X />
-          </button>
         </Link>
+        <button
+          className="ml-auto md:hidden pt-1 mr-3"
+          onClick={() => setOpen(false)}
+        >
+          <X />
+        </button>
 
         {/* Menu */}
         <nav className="flex-1 overflow-y-auto p-4 space-y-1">
