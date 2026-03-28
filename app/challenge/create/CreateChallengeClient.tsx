@@ -23,14 +23,16 @@ interface CreateChallengeClientProps {
   jurys: Array<{ id: number; name: string }>;
 }
 
-export default function CreateChallengeClient({ jurys }: CreateChallengeClientProps) {
+export default function CreateChallengeClient({
+  jurys,
+}: CreateChallengeClientProps) {
   const router = useRouter();
-  
+
   const [mainStep, setMainStep] = useState(1);
   const [subStep, setSubStep] = useState(1);
   const [formSubStep, setFormSubStep] = useState<"select" | "form">("select");
   const [direction, setDirection] = useState<"forward" | "backward">("forward");
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
 
@@ -39,7 +41,7 @@ export default function CreateChallengeClient({ jurys }: CreateChallengeClientPr
     typeevaluation: "Jury",
     nombregagnant: [""],
     limite_soumissions: 1,
-    portee_id: 1, 
+    portee_id: 1,
     is_official: false,
     domaines: [],
     // Initialisation des tableaux pour éviter les erreurs de mapping
@@ -50,7 +52,7 @@ export default function CreateChallengeClient({ jurys }: CreateChallengeClientPr
   });
 
   const [fields, setFields] = useState<any[]>([]);
-  
+
   // Correction ici : la condition doit matcher la valeur de l'input site
   const isInternal = challenge.site?.toLowerCase() === "talent innovant";
   const totalSubSteps = 5;
@@ -64,7 +66,7 @@ export default function CreateChallengeClient({ jurys }: CreateChallengeClientPr
   };
 
   // ==================== NAVIGATION ====================
-  
+
   const goToNextSubStep = () => {
     if (subStep < totalSubSteps) {
       setDirection("forward");
@@ -95,7 +97,7 @@ export default function CreateChallengeClient({ jurys }: CreateChallengeClientPr
   };
 
   // ==================== SOUMISSION (API) ====================
-  
+
   const handleSubmit = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -113,7 +115,10 @@ export default function CreateChallengeClient({ jurys }: CreateChallengeClientPr
       formData.append("site", challenge.site || "talent innovant");
       formData.append("is_official", challenge.is_official ? "1" : "0");
       formData.append("jury_id", challenge.jury_id?.toString() || "");
-      formData.append("typeevaluation_id", getTypeEvaluationId(challenge.typeevaluation));
+      formData.append(
+        "typeevaluation_id",
+        getTypeEvaluationId(challenge.typeevaluation),
+      );
       formData.append("portee_id", challenge.portee_id?.toString() || "1");
       formData.append("objectif", challenge.objectif || "");
       formData.append("nombrecontribution", challenge.nombrecontribution || 1);
@@ -129,9 +134,19 @@ export default function CreateChallengeClient({ jurys }: CreateChallengeClientPr
       // 2. Tableaux (Format attendu par votre backend Laravel)
       const appendArray = (key: string, data: any[]) => {
         if (data && Array.isArray(data)) {
-          data.forEach((item, index) => {
-            if (item) formData.append(`${key}[${index}]`, item);
-          });
+          // On ne garde que les items qui ne sont pas vides après un trim()
+          const cleanData = data.filter(
+            (item) => item && String(item).trim() !== "",
+          );
+
+          if (cleanData.length > 0) {
+            cleanData.forEach((item, index) => {
+              formData.append(`${key}[${index}]`, item);
+            });
+          } else {
+            // Optionnel : Si le tableau est vide, on peut envoyer une valeur spécifique
+            // ou simplement ne pas l'append pour que le backend garde l'ancienne valeur
+          }
         }
       };
 
@@ -142,24 +157,31 @@ export default function CreateChallengeClient({ jurys }: CreateChallengeClientPr
       appendArray("publiccible", challenge.publiccible);
       appendArray("domaines", challenge.domaines);
 
-     // 3. Formulaire Dynamique (Step 2) - Nettoyé des champs vides
-if (isInternal) {
-  const cleanedFields = fields.filter(f => f.label && f.label.trim() !== "");
-  
-  cleanedFields.forEach((field, index) => {
-    formData.append(`fields[${index}][label]`, field.label);
-    formData.append(`fields[${index}][type]`, field.type);
-    formData.append(`fields[${index}][is_required]`, field.is_required ? "1" : "0");
-    
-    if (field.options && field.options.length > 0) {
-      // Nettoyage des options vides aussi
-      const cleanedOptions = field.options.filter((opt: string) => opt && opt.trim() !== "");
-      cleanedOptions.forEach((opt: string, optIdx: number) => {
-        formData.append(`fields[${index}][options][${optIdx}]`, opt);
-      });
-    }
-  });
-}
+      // 3. Formulaire Dynamique (Step 2) - Nettoyé des champs vides
+      if (isInternal) {
+        const cleanedFields = fields.filter(
+          (f) => f.label && f.label.trim() !== "",
+        );
+
+        cleanedFields.forEach((field, index) => {
+          formData.append(`fields[${index}][label]`, field.label);
+          formData.append(`fields[${index}][type]`, field.type);
+          formData.append(
+            `fields[${index}][is_required]`,
+            field.is_required ? "1" : "0",
+          );
+
+          if (field.options && field.options.length > 0) {
+            // Nettoyage des options vides aussi
+            const cleanedOptions = field.options.filter(
+              (opt: string) => opt && opt.trim() !== "",
+            );
+            cleanedOptions.forEach((opt: string, optIdx: number) => {
+              formData.append(`fields[${index}][options][${optIdx}]`, opt);
+            });
+          }
+        });
+      }
 
       const response = await apiFetch("/challenges", {
         method: "POST",
@@ -180,7 +202,11 @@ if (isInternal) {
   };
 
   const getTypeEvaluationId = (type: string): string => {
-    const mapping: Record<string, string> = { Jury: "1", Vote: "2", Hybride: "3" };
+    const mapping: Record<string, string> = {
+      Jury: "1",
+      Vote: "2",
+      Hybride: "3",
+    };
     return mapping[type] || "1";
   };
 
@@ -189,9 +215,9 @@ if (isInternal) {
       <Toaster position="top-right" />
       <div className="max-w-6xl mx-auto px-4 py-10">
         <div className="mb-6 flex items-center justify-between">
-            <BackButton />
-            {/* Affichage du Badge Mode */}
-            {/* <span className={`text-[10px] font-bold uppercase px-3 py-1 rounded-full border ${isInternal ? 'bg-orange-50 border-orange-200 text-orange-700' : 'bg-slate-100 border-slate-200 text-slate-600'}`}>
+          <BackButton />
+          {/* Affichage du Badge Mode */}
+          {/* <span className={`text-[10px] font-bold uppercase px-3 py-1 rounded-full border ${isInternal ? 'bg-orange-50 border-orange-200 text-orange-700' : 'bg-slate-100 border-slate-200 text-slate-600'}`}>
                 Mode: {isInternal ? 'Interne (Formulaire Talent)' : 'Externe'}
             </span> */}
         </div>
@@ -200,11 +226,12 @@ if (isInternal) {
           currentStep={mainStep}
           currentSubStep={mainStep === 1 ? subStep : undefined}
           totalSubSteps={totalSubSteps}
-          mainStepTitle={mainStep === 1 ? subStepTitles[subStep] : "Configuration Formulaire"}
+          mainStepTitle={
+            mainStep === 1 ? subStepTitles[subStep] : "Configuration Formulaire"
+          }
         />
 
         <div className="bg-white border border-slate-200 rounded-md shadow-sm p-8 md:p-12 animate-fadeIn">
-          
           {/* STEP 1 : LE TUNNEL D'INFOS (5 SOUS-ETAPES) */}
           {mainStep === 1 && (
             <>
@@ -214,7 +241,11 @@ if (isInternal) {
                   onChange={setChallenge}
                   photoFile={photoFile}
                   setPhotoFile={setPhotoFile}
-                  onNext={() => (challenge.titre && challenge.description) ? goToNextSubStep() : toast.error("Titre et Description requis")}
+                  onNext={() =>
+                    challenge.titre && challenge.description
+                      ? goToNextSubStep()
+                      : toast.error("Titre et Description requis")
+                  }
                 />
               )}
 

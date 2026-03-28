@@ -67,7 +67,7 @@ export default function StepOrganisation({
         update("site", "talent innovant");
       } else if (lieuParam === "externe") {
         // On met un espace ou une valeur vide pour forcer l'affichage de l'input URL
-        update("site", " ");
+        update("site", "");
       }
     }
   }, [lieuParam, isModification]);
@@ -240,7 +240,7 @@ export default function StepOrganisation({
                   const val = e.target.value;
                   update(
                     "site",
-                    val === "talent innovant" ? "talent innovant" : " ",
+                    val === "talent innovant" ? "talent innovant" : "",
                   );
                 }}
               >
@@ -275,7 +275,7 @@ export default function StepOrganisation({
                     type="url"
                     placeholder="https://exemple.com/formulaire"
                     className={`${inputStyle} pl-9`}
-                    value={data.site === " " ? "" : data.site}
+                    value={data.site === "talent innovant" ? "" : data.site}
                     onChange={(e) => update("site", e.target.value)}
                     // autoFocus
                   />
