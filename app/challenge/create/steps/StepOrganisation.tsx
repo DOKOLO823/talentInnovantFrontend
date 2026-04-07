@@ -62,6 +62,7 @@ interface StepOrganisationProps {
   onChange: (data: any) => void;
   onNext: () => void;
   onBack: () => void;
+  jurys?: any[];
 }
 
 // ── Styles communs ──
@@ -80,6 +81,7 @@ export default function StepOrganisation({
   onChange,
   onNext,
   onBack,
+  jurys,
 }: StepOrganisationProps) {
   const [users, setUsers] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
