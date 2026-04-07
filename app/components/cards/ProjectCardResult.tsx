@@ -5,9 +5,7 @@ import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import {
   MoreVertical,
-  Edit,
   Trash2,
-  Flag,
   MessageCircle,
   Maximize2,
   Trophy,
@@ -19,7 +17,6 @@ import {
   Mail,
   Phone,
   FileText,
-  FileSpreadsheet,
   File,
   PencilLine,
   Loader2,
@@ -28,10 +25,7 @@ import {
   Copy,
   ExternalLink,
   Share2,
-  Presentation,
   Download,
-  EyeOff,
-  FileSearch,
   Info,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -41,9 +35,7 @@ import { API_BASE_URL } from "@/app/lib/api";
 import { formatKMMD } from "@/app/utils/formatters";
 import ScoreDetailModal from "../modals/ScoreDetailModal";
 
-/* ================= COMPOSANTS AUXILIAIRES ================= */
-
-// Modal de confirmation de suppression
+/* ─── DeleteModal ─── */
 function DeleteModal({ isOpen, onClose, onConfirm, loading }: any) {
   if (!isOpen) return null;
   return (
@@ -61,8 +53,7 @@ function DeleteModal({ isOpen, onClose, onConfirm, loading }: any) {
             Supprimer le post ?
           </h3>
           <p className="text-gray-500 text-sm mb-6">
-            Cette action est irréversible et supprimera définitivement cette
-            participation.
+            Cette action est irréversible.
           </p>
           <div className="flex w-full gap-3">
             <button
@@ -75,7 +66,7 @@ function DeleteModal({ isOpen, onClose, onConfirm, loading }: any) {
             <button
               onClick={onConfirm}
               disabled={loading}
-              className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 shadow-lg shadow-red-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {loading ? (
                 <Loader2 className="animate-spin" size={18} />
@@ -90,6 +81,7 @@ function DeleteModal({ isOpen, onClose, onConfirm, loading }: any) {
   );
 }
 
+/* ─── ScoreModal (owner — ancien système note globale) ─── */
 function ScoreModal({
   isOpen,
   onClose,
@@ -103,7 +95,6 @@ function ScoreModal({
   const [note, setNote] = useState(currentNote || "");
   const [comment, setComment] = useState(currentCommentJury || "");
   const [loading, setLoading] = useState(false);
-
   if (!isOpen) return null;
 
   const handleSubmit = async () => {
@@ -111,50 +102,31 @@ function ScoreModal({
       toast.error("Veuillez saisir une note valide");
       return;
     }
-
     setLoading(true);
-    const loadingToast = toast.loading("Modification de la note...");
-
+    const t = toast.loading("Modification...");
     try {
-      const storedAuth = localStorage.getItem("auth");
-      const token = storedAuth ? JSON.parse(storedAuth).token : null;
-      const apiUrl = API_BASE_URL;
-
-      const response = await fetch(`${apiUrl}/post/addnote`, {
+      const auth = localStorage.getItem("auth");
+      const token = auth ? JSON.parse(auth).token : null;
+      const res = await fetch(`${API_BASE_URL}/post/addnote`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          postId: postId,
-          note: note,
-          commentairejury: comment,
-        }),
+        body: JSON.stringify({ postId, note, commentairejury: comment }),
       });
-
-      const contentType = response.headers.get("content-type");
-      if (
-        !response.ok ||
-        !contentType ||
-        !contentType.includes("application/json")
-      ) {
-        throw new Error("Le serveur a renvoyé une erreur");
-      }
-
-      const data = await response.json();
-
+      const data = await res.json();
       if (data.statut === 200) {
-        toast.success(data.message || "Note Modifiée !", { id: loadingToast });
+        toast.success(data.message || "Note modifiée !", { id: t });
         onUpdate(data.moyenne_finale);
         onUpdateCommentJury(data.votre_commentaire);
         onClose();
       } else {
-        toast.error(data.message || "Erreur", { id: loadingToast });
+        toast.error(data.message || "Erreur", { id: t });
       }
-    } catch (error) {
-      toast.error("Erreur de connexion", { id: loadingToast });
+    } catch {
+      toast.error("Erreur de connexion", { id: t });
     } finally {
       setLoading(false);
     }
@@ -177,86 +149,67 @@ function ScoreModal({
               className="rounded-full aspect-square object-cover border"
             />
             <div className="overflow-hidden">
-              <p className="font-bold text-xs truncate uppercase leading-tight line-clamp-1">
-                {user?.talent?.nom?.length > 20
-                  ? user?.talent?.nom?.slice(0, 20) + "..."
-                  : user?.talent?.nom || "Participant"}
+              <p className="font-bold text-xs truncate uppercase leading-tight">
+                {user?.talent?.nom?.slice(0, 20) || "Participant"}
               </p>
-              <p className="text-[10px] text-gray-500 font-medium truncate">
-                {user?.talent?.profession?.length > 30
-                  ? user?.talent?.profession?.slice(0, 30) + "..."
-                  : user?.talent?.profession || "Participant"}
+              <p className="text-[10px] text-gray-500 truncate">
+                {user?.talent?.profession?.slice(0, 30) || "Participant"}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-200 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-200 rounded-full"
           >
             <X size={18} />
           </button>
         </div>
-        <div className="p-6 space-y-5">
-          <h3 className="font-black text-lg text-gray-900 tracking-tight">
-            Modifier la note
-          </h3>
-          <div className="space-y-4">
-            <div>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
-                Note du jury
-              </label>
-              <input
-                type="number"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                className="w-full mt-1 p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-orange-500 focus:bg-white outline-none font-black text-2xl"
-                placeholder="00"
-                min="0"
-                max="20"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
-                Commentaire
-              </label>
-              <textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                className="w-full mt-1 p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-orange-500 focus:bg-white outline-none text-sm h-28 resize-none"
-                placeholder="Avis..."
-              />
-            </div>
-            <button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="w-full py-4 bg-orange-600 text-white rounded-2xl font-black shadow-lg shadow-orange-200 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:bg-gray-300"
-            >
-              {loading ? (
-                <Loader2 className="animate-spin" size={20} />
-              ) : (
-                "VALIDER LA NOTE"
-              )}
-            </button>
-          </div>
+        <div className="p-6 space-y-4">
+          <h3 className="font-black text-lg text-gray-900">Modifier la note</h3>
+          <input
+            type="number"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            min="0"
+            max="20"
+            className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-orange-500 outline-none font-black text-2xl"
+            placeholder="00"
+          />
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            rows={3}
+            className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-orange-500 outline-none text-sm resize-none"
+            placeholder="Avis..."
+          />
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="w-full py-4 bg-orange-700 text-white rounded-2xl font-black flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {loading ? (
+              <Loader2 className="animate-spin" size={20} />
+            ) : (
+              "VALIDER LA NOTE"
+            )}
+          </button>
         </div>
       </motion.div>
     </div>
   );
 }
 
+/* ─── ContactModal ─── */
 function ContactModal({ isOpen, onClose, user }: any) {
   const router = useRouter();
   const [copied, setCopied] = useState<string | null>(null);
-
   if (!isOpen || !user) return null;
-
   const handleCopy = (text: string, type: string) => {
     navigator.clipboard.writeText(text);
     setCopied(type);
     toast.success(`${type} copié !`);
     setTimeout(() => setCopied(null), 2000);
   };
-
   return (
     <div
       className="fixed inset-0 bg-slate-900/60 z-[200] flex items-center justify-center p-4 backdrop-blur-md"
@@ -265,112 +218,93 @@ function ContactModal({ isOpen, onClose, user }: any) {
       <motion.div
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="bg-white rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl relative overflow-hidden"
+        className="bg-white rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="flex justify-between items-center mb-8">
-          <h3 className="font-extrabold text-xl text-slate-800 tracking-tight">
-            Contact
-          </h3>
+          <h3 className="font-extrabold text-xl text-slate-800">Contact</h3>
           <button
             onClick={onClose}
-            className="p-2.5 bg-slate-100 hover:bg-red-50 hover:text-red-500 rounded-full transition-all duration-300"
+            className="p-2.5 bg-slate-100 hover:bg-red-50 hover:text-red-500 rounded-full"
           >
-            <X size={20} strokeWidth={2.5} />
+            <X size={20} />
           </button>
         </div>
-
-        <div className="space-y-6">
-          {/* Profile Card Action */}
-          <div
-            onClick={() => {
-              router.push(`/profil-talent/${user?.id}`);
-              onClose();
-            }}
-            className="group flex items-center gap-4 p-4 bg-slate-50 rounded-[2rem] border border-transparent hover:border-orange-200 hover:bg-orange-50/50 transition-all duration-300 cursor-pointer"
-          >
-            <div className="relative">
-              <Image
-                src={apifile + "/" + user?.pp}
-                width={64}
-                height={64}
-                alt="pp"
-                className="rounded-full aspect-square object-cover border-4 border-white shadow-md group-hover:scale-105 transition-transform duration-500"
-              />
-              <div className="absolute -bottom-1 -right-1 bg-orange-500 text-white p-1 rounded-full border-2 border-white">
-                <ExternalLink size={12} />
-              </div>
-            </div>
-            <div className="overflow-hidden">
-              <p className="font-black text-slate-800 truncate group-hover:text-orange-600 transition-colors">
-                {user?.talent?.nom || user?.name}
-              </p>
-              <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">
-                {user?.talent?.profession?.length > 25
-                  ? user?.talent?.profession?.substring(0, 25) + "..."
-                  : user?.talent?.profession || "Talent"}
-              </p>
+        <div
+          onClick={() => {
+            router.push(`/profil-talent/${user?.id}`);
+            onClose();
+          }}
+          className="flex items-center gap-4 p-4 bg-slate-50 rounded-[2rem] border border-transparent hover:border-orange-200 hover:bg-orange-50/50 transition-all cursor-pointer mb-6"
+        >
+          <div className="relative">
+            <Image
+              src={apifile + "/" + user?.pp}
+              width={56}
+              height={56}
+              alt="pp"
+              className="rounded-full aspect-square object-cover border-4 border-white shadow-md"
+            />
+            <div className="absolute -bottom-1 -right-1 bg-orange-500 text-white p-1 rounded-full border-2 border-white">
+              <ExternalLink size={12} />
             </div>
           </div>
-
-          <div className="space-y-3">
-            {/* Email Field */}
-            <div className="relative group">
+          <div>
+            <p className="font-black text-slate-800">
+              {user?.talent?.nom || user?.name}
+            </p>
+            <p className="text-xs text-slate-500 uppercase tracking-wider">
+              {user?.talent?.profession || "Talent"}
+            </p>
+          </div>
+        </div>
+        <div className="space-y-3">
+          {[
+            {
+              href: `mailto:${user?.email}`,
+              icon: <Mail size={20} />,
+              label: "E-mail",
+              value: user?.email,
+              color: "bg-blue-50 text-blue-600",
+              key: "Email",
+            },
+            {
+              href: `tel:${user?.telephone}`,
+              icon: <Phone size={20} />,
+              label: "Téléphone",
+              value: user?.telephone || "Non renseigné",
+              color: "bg-green-50 text-green-600",
+              key: "Téléphone",
+            },
+          ].map((item) => (
+            <div key={item.key} className="relative">
               <a
-                href={`mailto:${user?.email}`}
-                className="flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-2xl hover:shadow-lg hover:shadow-slate-100 transition-all duration-300"
+                href={item.href}
+                className="flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-2xl hover:shadow-md transition-all"
               >
-                <div className="p-3 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
-                  <Mail size={22} />
+                <div className={`p-3 ${item.color} rounded-xl`}>
+                  {item.icon}
                 </div>
-                <div className="flex-1 overflow-hidden text-left">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">
-                    E-mail
+                <div className="flex-1 overflow-hidden">
+                  <p className="text-[10px] font-black text-slate-400 uppercase">
+                    {item.label}
                   </p>
                   <p className="text-sm font-bold text-slate-700 truncate">
-                    {user?.email}
+                    {item.value}
                   </p>
                 </div>
               </a>
-              <button
-                onClick={() => handleCopy(user?.email, "Email")}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-300 hover:text-slate-600 transition-colors"
-              >
-                {copied === "Email" ? (
-                  <Check size={18} className="text-green-500" />
-                ) : (
-                  <Copy size={18} />
-                )}
-              </button>
-            </div>
-
-            {/* Phone Field */}
-            <div className="relative group">
-              <a
-                href={`tel:${user?.telephone}`}
-                className="flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-2xl hover:shadow-lg hover:shadow-slate-100 transition-all duration-300"
-              >
-                <div className="p-3 bg-green-50 text-green-600 rounded-xl group-hover:bg-green-600 group-hover:text-white transition-colors duration-300">
-                  <Phone size={22} />
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">
-                    Téléphone
-                  </p>
-                  <p className="text-sm font-bold text-slate-700">
-                    {user?.telephone || "Non renseigné"}
-                  </p>
-                </div>
-              </a>
-              {user?.telephone && (
+              {user?.[item.key === "Email" ? "email" : "telephone"] && (
                 <button
-                  onClick={() => handleCopy(user?.telephone, "Téléphone")}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-300 hover:text-slate-600 transition-colors"
+                  onClick={() =>
+                    handleCopy(
+                      user[item.key === "Email" ? "email" : "telephone"],
+                      item.key,
+                    )
+                  }
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-300 hover:text-slate-600"
                 >
-                  {copied === "Téléphone" ? (
+                  {copied === item.key ? (
                     <Check size={18} className="text-green-500" />
                   ) : (
                     <Copy size={18} />
@@ -378,40 +312,33 @@ function ContactModal({ isOpen, onClose, user }: any) {
                 </button>
               )}
             </div>
-          </div>
+          ))}
         </div>
-
-        {/* Footer Info */}
-        <p className="mt-8 text-center text-[10px] text-slate-400 font-medium">
-          Cliquez sur un champ pour contacter directement le talent
-        </p>
       </motion.div>
     </div>
   );
 }
 
+/* ─── Sous-composants contenu ─── */
 function ReadMore({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
   const limit = 150;
   if (!text) return null;
   return (
     <div className="text-gray-700 text-[15px] leading-relaxed whitespace-pre-wrap">
-            {open || text.length <= limit ? text : text.slice(0, limit) + "..."}
-           {" "}
+      {open || text.length <= limit ? text : text.slice(0, limit) + "..."}
       {text.length > limit && (
         <button
           onClick={() => setOpen(!open)}
           className="ml-1 text-orange-600 font-bold hover:underline lowercase"
         >
-                    {open ? "voir moins" : "voir plus"}       {" "}
+          {open ? "voir moins" : "voir plus"}
         </button>
       )}
-         {" "}
     </div>
   );
 }
 
-// --- Sous-composants ---
 function ExpandableText({
   text,
   limit = 250,
@@ -421,18 +348,15 @@ function ExpandableText({
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   if (!text) return null;
-
-  // Correction ici : Forçage de la taille à 15px comme demandé
   if (text.length <= limit)
     return <p className="text-gray-700 text-[15px] leading-relaxed">{text}</p>;
-
   return (
     <div className="text-gray-700 text-[15px] leading-relaxed">
       <p>
         {isExpanded ? text : `${text.substring(0, limit)}...`}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="ml-2 text-orange-700 font-bold hover:underline focus:outline-none text-xs md:text-sm"
+          className="ml-2 text-orange-700 font-bold hover:underline focus:outline-none text-xs"
         >
           {isExpanded ? "Voir moins" : "Voir plus"}
         </button>
@@ -454,36 +378,20 @@ function FileRenderer({
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    // 1. Arrêter la vidéo si elle sort de l'écran (Scroll)
     const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting && videoRef.current) {
-            videoRef.current.pause();
-          }
+        entries.forEach((e) => {
+          if (!e.isIntersecting && videoRef.current) videoRef.current.pause();
         });
       },
-      { threshold: 0.1 }, // S'active dès que la vidéo est presque hors vue
+      { threshold: 0.1 },
     );
-
     if (videoRef.current) observer.observe(videoRef.current);
     return () => observer.disconnect();
   }, []);
 
-  const handlePlay = (e: React.SyntheticEvent<HTMLVideoElement>) => {
-    // 2. Empêcher plusieurs lectures simultanées
-    const allVideos = document.querySelectorAll("video");
-    allVideos.forEach((vid) => {
-      if (vid !== e.currentTarget) {
-        vid.pause();
-      }
-    });
-  };
-
   if (!value) return null;
-
   const fullUrl = value.startsWith("http") ? value : `${apifile}/${value}`;
-
   const isImage =
     value.match(/\.(jpg|jpeg|png|webp|gif)$/i) || type === "image";
   const isVideo = value.match(/\.(mp4|mov|webm)$/i) || type === "video";
@@ -491,28 +399,30 @@ function FileRenderer({
   const isDoc = /\.(docx|doc|pptx|ppt|xlsx|xls)$/i.test(value);
   const isPreviewable = isPDF || isDoc;
 
-  if (["text", "textarea", "option", "select"].includes(type)) {
+  if (["text", "textarea", "option", "select"].includes(type))
     return <ExpandableText text={value} />;
-  }
 
-  if (isVideo) {
+  if (isVideo)
     return (
       <div className="mb-4">
         <video
           ref={videoRef}
           controls
-          onPlay={handlePlay}
-          controlsList="nodownload" // Enlève le menu téléchargement
-          onContextMenu={(e) => e.preventDefault()} // Bloque le clic droit
+          controlsList="nodownload"
+          onContextMenu={(e) => e.preventDefault()}
+          onPlay={(e) => {
+            document.querySelectorAll("video").forEach((v) => {
+              if (v !== e.currentTarget) v.pause();
+            });
+          }}
           className="rounded-2xl w-full h-[185px] aspect-video bg-black shadow-lg object-contain border border-slate-100"
         >
           <source src={fullUrl} />
         </video>
       </div>
     );
-  }
 
-  if (isImage) {
+  if (isImage)
     return (
       <div className="mb-4">
         <img
@@ -522,9 +432,8 @@ function FileRenderer({
         />
       </div>
     );
-  }
 
-  if (isPreviewable) {
+  if (isPreviewable)
     return (
       <div className="flex flex-col gap-2 mb-4">
         <div className="flex items-center justify-between px-1">
@@ -532,18 +441,16 @@ function FileRenderer({
             <div className="p-1.5 bg-orange-100 text-orange-600 rounded-lg">
               {isPDF ? <FileText size={14} /> : <File size={14} />}
             </div>
-            <span className="text-[10px] font-bold text-slate-600 truncate max-w-[180px] relative -left-1">
+            <span className="text-[10px] font-bold text-slate-600">
               Aperçu Document
             </span>
           </div>
-
           <div className="flex items-center gap-1">
             <button
               onClick={() => setIsFullscreen(true)}
-              className="p-1.5 hover:bg-orange-50 text-orange-600 rounded-md transition-all flex items-center gap-1"
-              title="Voir en grand"
+              className="p-1.5 hover:bg-orange-50 text-orange-600 rounded-md flex items-center gap-1"
             >
-              <Maximize2 size={16} />
+              <Maximize2 size={14} />
               <span className="text-[10px] font-bold uppercase">
                 Plein écran
               </span>
@@ -553,12 +460,11 @@ function FileRenderer({
               download
               className="p-1.5 hover:bg-slate-100 text-slate-400 rounded-md"
             >
-              <Download size={16} />
+              <Download size={14} />
             </a>
           </div>
         </div>
-
-        <div className="relative w-full h-[380px] bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm group">
+        <div className="w-full h-[300px] bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
           <iframe
             src={
               isPDF
@@ -568,9 +474,7 @@ function FileRenderer({
             className="w-full h-full border-none"
             title={label}
           />
-          <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/5 pointer-events-none transition-all" />
         </div>
-
         <AnimatePresence>
           {isFullscreen && (
             <div className="fixed inset-0 z-[600] flex items-center justify-center p-0 md:p-4">
@@ -593,7 +497,7 @@ function FileRenderer({
                   </span>
                   <button
                     onClick={() => setIsFullscreen(false)}
-                    className="p-2 bg-slate-100 rounded-full hover:bg-red-50 hover:text-red-500 transition-all"
+                    className="p-2 bg-slate-100 rounded-full hover:bg-red-50 hover:text-red-500"
                   >
                     <X size={20} />
                   </button>
@@ -612,7 +516,6 @@ function FileRenderer({
         </AnimatePresence>
       </div>
     );
-  }
 
   return (
     <div className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-2xl mb-4 shadow-sm">
@@ -635,9 +538,17 @@ function FileRenderer({
   );
 }
 
-/* ================= COMPOSANT PRINCIPAL ================= */
-
-export default function ProjectCardResult({ project, challenge }: any) {
+/* ═══════════════════════════════════════════════════════════════
+   COMPOSANT PRINCIPAL — ProjectCardResult
+   Props ajoutées : onEditNotes (callback), isJury (boolean)
+   ✅ Mise à jour immédiate : localNote + localNotefinale + localRang
+   ═══════════════════════════════════════════════════════════════ */
+export default function ProjectCardResult({
+  project,
+  challenge,
+  onEditNotes,
+  isJury,
+}: any) {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [openMenu, setOpenMenu] = useState(false);
   const [showAllFields, setShowAllFields] = useState(false);
@@ -646,84 +557,72 @@ export default function ProjectCardResult({ project, challenge }: any) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRemoved, setIsRemoved] = useState(false);
-  const [localNote, setLocalNote] = useState(
-    challenge?.typeevaluation?.type == "vote"
-      ? project?.score
-      : project?.notefinale,
-  );
+
+  // ── État local pour mise à jour immédiate ──
+  const isVoteType = challenge?.typeevaluation?.type === "vote";
+  const initialNote = isVoteType ? project?.score : project?.notefinale;
+  const [localNote, setLocalNote] = useState(initialNote);
   const [localCommentJury, setLocalCommentJury] = useState(
-    project?.commentairejury[0]?.commentairejury
-      ? project?.commentairejury[0]?.commentairejury
-      : "",
+    project?.commentairejury?.[0]?.commentairejury ?? "",
   );
+  const [localRang, setLocalRang] = useState(project?.rang ?? "-");
 
-  // Déterminer le type de valeur à afficher
-  const isVoteType =
-    challenge?.typeevaluation?.type === "vote" ||
-    challenge?.resultatdisponible === 0;
-  const displayValue = isVoteType ? project?.score : project?.notefinale;
-
-  const labelBadge = isVoteType ? "Score final" : "Note finale";
-  const commentJury = project?.commentairejury?.[0]?.commentairejury || "";
-
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const displayValue = localNote;
+  const commentJury = localCommentJury;
 
   const [showScoreDetail, setShowScoreDetail] = useState(false);
-
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const params = useParams();
   const idchallenge = params.id;
 
   useEffect(() => {
-    const storedAuth = localStorage.getItem("auth");
-    if (storedAuth) {
+    const auth = localStorage.getItem("auth");
+    if (auth) {
       try {
-        const authData = JSON.parse(storedAuth);
-        setCurrentUser(authData.user);
-      } catch (e) {
-        console.error(e);
-      }
+        setCurrentUser(JSON.parse(auth).user);
+      } catch {}
     }
-
-    const handleClickOutside = (event: MouseEvent) => {
+    const handler = (e: MouseEvent) => {
       if (
         dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+        !dropdownRef.current.contains(e.target as Node)
+      )
         setOpenMenu(false);
-      }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
   if (!project || isRemoved) return null;
 
   const isOwner = currentUser?.id == challenge?.user_id;
 
+  // ── Affichage du bouton crayon ──
   const shouldShowEditButton = () => {
-    if (!isOwner) return false;
-    const isVoteType = challenge?.typeevaluation?.type == "vote";
-    if (isVoteType) {
-      const now = new Date();
-      const dateFin = new Date(challenge?.datefin);
-      return now < dateFin;
-    } else {
+    if (isOwner) {
+      return isVoteType
+        ? new Date() < new Date(challenge?.datefin)
+        : challenge?.resultatdisponible == 0;
+    }
+    if (
+      isJury &&
+      Array.isArray(project?.mes_notes_criteres) &&
+      project.mes_notes_criteres.length > 0
+    ) {
       return challenge?.resultatdisponible == 0;
     }
+    return false;
   };
 
   const handleDelete = async () => {
     setIsDeleting(true);
-    const deletingToast = toast.loading("Suppression en cours...");
-
+    const t = toast.loading("Suppression...");
     try {
-      const storedAuth = localStorage.getItem("auth");
-      const token = storedAuth ? JSON.parse(storedAuth).token : null;
-      const apiUrl = API_BASE_URL;
-
-      const response = await fetch(
-        `${apiUrl}/challenge/post/delete/${project.id}`,
+      const auth = localStorage.getItem("auth");
+      const token = auth ? JSON.parse(auth).token : null;
+      const res = await fetch(
+        `${API_BASE_URL}/challenge/post/delete/${project.id}`,
         {
           method: "GET",
           headers: {
@@ -732,51 +631,73 @@ export default function ProjectCardResult({ project, challenge }: any) {
           },
         },
       );
-
-      const data = await response.json();
-
+      const data = await res.json();
       if (data.statut === 200) {
-        toast.success("Post supprimé avec succès", { id: deletingToast });
-        setIsRemoved(true); // Cache le composant du frontend
+        toast.success("Post supprimé", { id: t });
+        setIsRemoved(true);
         setShowDeleteConfirm(false);
       } else {
-        toast.error(data.message || "Impossible de supprimer le post", {
-          id: deletingToast,
-        });
+        toast.error(data.message || "Erreur", { id: t });
       }
-    } catch (error) {
-      toast.error("Erreur de connexion lors de la suppression", {
-        id: deletingToast,
-      });
+    } catch {
+      toast.error("Erreur réseau", { id: t });
     } finally {
       setIsDeleting(false);
     }
   };
 
-  const handleUpdateNote = (newMoyenne: number) => {
-    setLocalNote(newMoyenne);
-  };
-  const handleUpdateCommentJury = (newComment: string) => {
-    setLocalCommentJury(newComment);
+  const handleNavigateToReel = () => {
+    router.push(`/challenge/${idchallenge}/reel?project=${project?.id}`);
   };
 
-  const handleNavigateToReel = () => {
-    const query = new URLSearchParams({
-      project: project?.id?.toString() || "",
-      // titre: challenge?.title || "Challenge",
-      // typeevaluation: challenge?.typeevaluation?.type || "vote",
-      // resultatdisponible: challenge?.resultatdisponible?.toString() || "0"
-    }).toString();
-    router.push(`/challenge/${idchallenge}/reel?${query}`);
+  // ✅ Mise à jour immédiate après modification de note (owner — ancien système)
+  const handleUpdateNote = (newMoyenne: number) => {
+    setLocalNote(newMoyenne);
+    // On ne recalcule pas le rang localement car il dépend des autres projets
+  };
+
+  // ✅ Mise à jour immédiate après modification des critères (jury)
+  const handleNotesSaved = (
+    notefinale: number,
+    updatedCriteres?: any[],
+    newCommentGlobal?: string,
+  ) => {
+    // 1. Mettre à jour l'affichage de la carte
+    setLocalNote(notefinale);
+
+    // 2. Mettre à jour l'objet project en mémoire pour que le modal reçoive les nouvelles notes au prochain clic
+    if (project) {
+      project.notefinale = notefinale;
+
+      // Si on a les nouveaux critères, on les injecte dans l'objet
+      if (updatedCriteres) {
+        project.mes_notes_criteres = updatedCriteres;
+      }
+
+      // Mise à jour du commentaire global localement
+      if (newCommentGlobal !== undefined) {
+        setLocalCommentJury(newCommentGlobal);
+        if (!project.commentairejury) project.commentairejury = [{}];
+        project.commentairejury[0].commentairejury = newCommentGlobal;
+      }
+    }
   };
 
   const responses = project?.responses || [];
+
+  // mettre a jour les valeurs lors du update des notes
+  useEffect(() => {
+    const isVoteType = challenge?.typeevaluation?.type === "vote";
+    setLocalNote(isVoteType ? project?.score : project?.notefinale);
+    setLocalRang(project?.rang ?? "-");
+    setLocalCommentJury(project?.commentairejury?.[0]?.commentairejury ?? "");
+  }, [project, challenge]);
 
   return (
     <div className="relative bg-white rounded-2xl shadow-sm border w-full max-w-xl mx-auto flex flex-col mb-6 overflow-hidden transition-all">
       <Toaster position="top-center" reverseOrder={false} />
 
-      {/* HEADER */}
+      {/* ── HEADER ── */}
       <div className="flex justify-between items-center p-4 flex-shrink-0">
         <div
           className="flex items-center gap-3 cursor-pointer"
@@ -816,8 +737,6 @@ export default function ProjectCardResult({ project, challenge }: any) {
               <UserRound size={19} />
             </button>
           )}
-
-          {/* Bouton 3 points (Dropdown) uniquement pour le propriétaire */}
           {isOwner && (
             <>
               <button
@@ -826,7 +745,6 @@ export default function ProjectCardResult({ project, challenge }: any) {
               >
                 <MoreVertical size={20} />
               </button>
-
               <AnimatePresence>
                 {openMenu && (
                   <motion.div
@@ -840,10 +758,9 @@ export default function ProjectCardResult({ project, challenge }: any) {
                         setOpenMenu(false);
                         setShowDeleteConfirm(true);
                       }}
-                      className="w-full flex items-center gap-3 px-4 py-3.5 text-sm font-bold text-red-600 hover:bg-red-50 transition-colors"
+                      className="w-full flex items-center gap-3 px-4 py-3.5 text-sm font-bold text-red-600 hover:bg-red-50"
                     >
-                      <Trash2 size={18} />
-                      Supprimer le post
+                      <Trash2 size={18} /> Supprimer le post
                     </button>
                   </motion.div>
                 )}
@@ -853,11 +770,10 @@ export default function ProjectCardResult({ project, challenge }: any) {
         </div>
       </div>
 
-      {/* RANG / SCORE */}
+      {/* ── RANG / NOTE ── */}
       <div className="px-4">
-        {/* Grille de badges pour les résultats finaux */}
         <div className="grid grid-cols-2 gap-2 text-[11px] font-bold">
-          {/* Badge Rang Final */}
+          {/* Rang */}
           <div className="flex items-center gap-2 bg-white border border-gray-100 p-1.5 rounded-xl shadow-sm whitespace-nowrap">
             <div className="bg-yellow-50 p-1.5 rounded-lg shrink-0">
               <Trophy size={14} className="text-yellow-600" />
@@ -867,12 +783,12 @@ export default function ProjectCardResult({ project, challenge }: any) {
                 Rang final
               </span>
               <span className="text-gray-900 leading-none truncate text-[12px]">
-                {project?.rang || "-"}
+                {localRang || project?.rang || "-"}
               </span>
             </div>
           </div>
 
-          {/* Badge Note Finale + Edition */}
+          {/* Note / Score */}
           <div className="flex items-center justify-between bg-white border border-gray-100 p-1.5 rounded-xl shadow-sm whitespace-nowrap">
             <div className="flex items-center gap-2">
               <div className="bg-orange-50 p-1.5 rounded-lg shrink-0">
@@ -880,27 +796,21 @@ export default function ProjectCardResult({ project, challenge }: any) {
               </div>
               <div className="flex flex-col">
                 <span className="text-[9px] text-gray-500 font-medium leading-none mb-1">
-                  {challenge.typeevaluation["type"] == "vote"
-                    ? "Score"
-                    : "Note"}{" "}
-                  finale
+                  {isVoteType ? "Score" : "Note"} finale
                 </span>
                 <div className="flex items-center gap-1.5">
+                  {/* ✅ Affichage immédiat via localNote */}
                   <span className="text-gray-900 leading-none text-[12px] font-black">
-                    {formatKMMD(
-                      localNote || 0,
-                      challenge.typeevaluation["type"] !== "vote",
-                    )}
+                    {formatKMMD(localNote || 0, !isVoteType)}
                     <span className="text-[9px] ml-0.5">
-                      {challenge.typeevaluation["type"] == "vote" ? "" : "/20"}
+                      {!isVoteType ? "/20" : ""}
                     </span>
                   </span>
-                  {/* Bouton Info pour voir le détail */}
                   <button
                     onClick={() => setShowScoreDetail(true)}
                     className="text-gray-400 hover:text-orange-600 transition-colors"
                   >
-                    <Info size={13} className="text-gray-500" />
+                    <Info size={13} />
                   </button>
                 </div>
               </div>
@@ -908,8 +818,15 @@ export default function ProjectCardResult({ project, challenge }: any) {
 
             {shouldShowEditButton() && (
               <button
-                onClick={() => setShowEditScore(true)}
-                className="ml-2 p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all border-l border-gray-50 pl-2"
+                onClick={() => {
+                  if (isJury && project?.mes_notes_criteres?.length > 0) {
+                    // ✅ Jury → ouvre EditMesNotesModal avec callback de mise à jour immédiate
+                    onEditNotes?.(project, handleNotesSaved);
+                  } else {
+                    setShowEditScore(true);
+                  }
+                }}
+                className="ml-2 p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all border-l border-gray-100 pl-2"
               >
                 <PencilLine size={13} />
               </button>
@@ -918,18 +835,18 @@ export default function ProjectCardResult({ project, challenge }: any) {
         </div>
       </div>
 
-      {/* ZONE DE CONTENU */}
-      <div className="px-4 mt-5 space-y-6 overflow-y-auto max-h-[200px] scrollbar-thin scrollbar-thumb-gray-200 transition-all duration-300 pb-2">
+      {/* ── CONTENU ── */}
+      <div className="px-4 mt-5 space-y-4 overflow-y-auto max-h-[200px] scrollbar-thin scrollbar-thumb-gray-200 pb-2">
         {responses.map((r: any, idx: number) => (
           <div
             key={r?.id}
-            className={`group ${!showAllFields && idx > 1 ? "hidden" : "block"}`}
+            className={!showAllFields && idx > 1 ? "hidden" : "block"}
           >
             <p className="font-bold text-sm text-gray-950 mb-1.5 first-letter:uppercase">
               {r?.challenge_field?.label || "Information"}
             </p>
             <div className="text-gray-800">
-              {r?.challenge_field?.type == "text" ||
+              {r?.challenge_field?.type === "text" ||
               r?.challenge_field?.type === "option" ? (
                 <ReadMore text={r?.value} />
               ) : (
@@ -944,11 +861,10 @@ export default function ProjectCardResult({ project, challenge }: any) {
         ))}
       </div>
 
-      {/* VOIR PLUS */}
       {responses.length > 2 && (
         <button
           onClick={() => setShowAllFields(!showAllFields)}
-          className="flex-shrink-0 text-orange-600 text-[10px] font-black tracking-widest flex items-center justify-center gap-2 py-3 border-t border-gray-50 hover:bg-orange-50/30 transition-all first-letter:uppercase"
+          className="flex-shrink-0 text-orange-600 text-[10px] font-black tracking-widest flex items-center justify-center gap-2 py-3 border-t border-gray-50 hover:bg-orange-50/30"
         >
           {showAllFields ? (
             <>
@@ -956,27 +872,24 @@ export default function ProjectCardResult({ project, challenge }: any) {
             </>
           ) : (
             <>
-              <ChevronDown size={16} /> Voir les {responses.length - 2} autres
+              <ChevronDown size={16} /> Voir {responses.length - 2} autres
               champs
             </>
           )}
         </button>
       )}
 
-      {/* FOOTER */}
+      {/* ── FOOTER ── */}
       <div className="px-5 py-3.5 flex items-center justify-between bg-gray-50/50 border-t flex-shrink-0">
-        <div className="flex items-center gap-6">
-          {/* Votes */}
-          <div className="flex flex-col items-center justify-center text-center">
+        <div className="flex items-center gap-5">
+          <div className="flex flex-col items-center text-center">
             <span className="text-sm font-black text-gray-900 leading-none">
               {project?.like}
             </span>
-            <span className="text-[9px] font-bold text-gray-400 first-letter:uppercase tracking-tight mt-0.5">
+            <span className="text-[9px] font-bold text-gray-400 tracking-tight mt-0.5">
               Vote(s)
             </span>
           </div>
-
-          {/* Avis / Commentaires */}
           <button
             onClick={handleNavigateToReel}
             className="flex items-center gap-1 text-gray-600 hover:text-orange-700 transition group"
@@ -985,42 +898,39 @@ export default function ProjectCardResult({ project, challenge }: any) {
               size={19}
               className="text-gray-400 group-hover:text-orange-600"
             />
-            <div className="flex flex-col items-center justify-center text-center">
+            <div className="flex flex-col items-center text-center">
               <span className="text-sm font-black leading-none text-gray-900">
                 {project?.commentaires_count}
               </span>
-              <span className="text-[9px] font-bold text-gray-400 first-letter:uppercase tracking-tight mt-0.5">
+              <span className="text-[9px] font-bold text-gray-400 tracking-tight mt-0.5">
                 Avis
               </span>
             </div>
           </button>
-
-          {/* Partages - AJOUTÉ ICI */}
           <button className="flex items-center gap-1 text-gray-600 hover:text-orange-700 transition group">
             <Share2
               size={19}
               className="text-gray-400 group-hover:text-orange-600"
             />
-            <div className="flex flex-col items-center justify-center text-center">
+            <div className="flex flex-col items-center text-center">
               <span className="text-sm font-black leading-none text-gray-900">
                 {project?.partage}
               </span>
-              <span className="text-[9px] font-bold text-gray-400 first-letter:uppercase tracking-tight mt-0.5">
+              <span className="text-[9px] font-bold text-gray-400 tracking-tight mt-0.5">
                 Partage(s)
               </span>
             </div>
           </button>
         </div>
-
-        {/* Bouton Voir / Agrandir */}
         <button
           onClick={handleNavigateToReel}
-          className="p-3 bg-orange-700 cursor-pointer hover:bg-orange-600 hover:scale-105 text-white rounded-2xl shadow-lg shadow-orange-700/20 active:scale-95 transition-all flex items-center justify-center"
+          className="p-3 bg-orange-700 cursor-pointer hover:bg-orange-600 hover:scale-105 text-white rounded-2xl shadow-lg shadow-orange-700/20 active:scale-95 transition-all"
         >
           <Maximize2 size={18} />
         </button>
       </div>
 
+      {/* ── MODALS ── */}
       <AnimatePresence>
         {showContact && (
           <ContactModal
@@ -1035,26 +945,25 @@ export default function ProjectCardResult({ project, challenge }: any) {
             onClose={() => setShowEditScore(false)}
             postId={project?.id}
             currentNote={localNote}
-            onUpdate={handleUpdateNote}
-            onUpdateCommentJury={handleUpdateCommentJury}
+            onUpdate={handleUpdateNote} // ✅ mise à jour immédiate
+            onUpdateCommentJury={setLocalCommentJury}
             currentCommentJury={localCommentJury}
             user={project?.user}
           />
         )}
-
         <ScoreDetailModal
+          postId={project?.id}
           isOpen={showScoreDetail}
           onClose={() => setShowScoreDetail(false)}
-          isNoteFinale={project.notefinale ? true : false}
+          isNoteFinale={!!project.notefinale}
           commentJury={commentJury}
           data={{
             value: displayValue || 0,
-            votes: project?.like || 0, // Vérifie si c'est 'vote' ou 'like' dans cet objet
+            votes: project?.like || 0,
             shares: project?.partage || 0,
             comments: project?.commentaires_count || 0,
           }}
         />
-
         {showDeleteConfirm && (
           <DeleteModal
             isOpen={showDeleteConfirm}

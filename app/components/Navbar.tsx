@@ -15,6 +15,7 @@ import {
 import Link from "next/link";
 import { apiFetch } from "@/app/lib/api";
 import apifile from "@/app/lib/apifile";
+import LocationModal from "./LocationModal";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -93,6 +94,7 @@ export default function Navbar() {
     const authItem = localStorage.getItem("auth");
     if (authItem) {
       const authData = JSON.parse(authItem);
+      // console.log(authData);
       if (authData.user?.pp) {
         setUserPP(authData.user.pp);
       }
@@ -172,8 +174,9 @@ export default function Navbar() {
   ];
   const pcTalentLinks = [
     { href: "/home-talent", label: "Accueil" },
+    { href: "/mes-challenges", label: "Mes challenges" },
     { href: "/communaute", label: "Communauté" },
-    { href: "/opportunite", label: "Opportunités" },
+    { href: "/reseau", label: "Réseau" },
   ];
 
   const pcEntrepriseLinks = [{ href: "/home-entreprise", label: "Accueil" }];
@@ -200,11 +203,11 @@ export default function Navbar() {
           <div className="flex flex-row items-center justify-start flex-shrink-0">
             <button
               onClick={() => setMenuOpen(true)}
-              className={`p-2 rounded-md hover:bg-gray-100 transition md:hidden ${isLoggedIn && "mr-2"}`}
+              className={`p-2 rounded-md hover:bg-gray-100 transition md:hidden ${isLoggedIn && "mr-0"}`}
             >
               <Menu className="h-6 w-6 text-orange-700" />
             </button>
-            <span className="text-sm sm:text-md md:text-lg font-bold tracking-tight whitespace-nowrap">
+            <span className="text-[13px] sm:text-sm md:text-md font-bold tracking-tight whitespace-nowrap">
               TALENT <span className="text-orange-700">INNOVANT</span>
             </span>
           </div>
@@ -225,18 +228,18 @@ export default function Navbar() {
 
             {!isCheckingAuth &&
               (isLoggedIn ? (
-                <div className="flex items-center space-x-4 sm:space-x-5">
+                <div className="flex items-center space-x-4">
                   <Link
                     href={"/notification"}
                     onClick={() => setNotificationCount(0)}
-                    className="hidden md:block relative cursor-pointer"
+                    className="relative cursor-pointer flex items-center justify-center p-1"
                   >
                     <Bell
                       className={`h-6 w-6 transition ${pathname === "/notification" ? "text-orange-700" : "text-gray-700 hover:text-orange-600"}`}
                     />
                     {notificationCount > 0 && (
-                      <span className="absolute -top-2 -right-2 bg-orange-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                        {notificationCount}
+                      <span className="absolute top-0 right-0.5 bg-orange-700 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center border border-white p-2">
+                        {notificationCount > 9 ? "9+" : notificationCount}
                       </span>
                     )}
                   </Link>
@@ -245,7 +248,9 @@ export default function Navbar() {
                     href={profileLink}
                     className="flex flex-col items-center group"
                   >
-                    <div className="relative w-8 h-8 sm:w-9 sm:h-9 overflow-hidden rounded-full border border-gray-200 transition group-hover:border-orange-500">
+                    <div
+                      className={`relative w-8 h-8 sm:w-9 sm:h-9 overflow-hidden rounded-full border-1 ${pathname.includes("/profil-talent") ? "border-orange-700" : "border-gray-200"} transition group-hover:border-orange-500`}
+                    >
                       <img
                         key={imgKey} // Ajoutez la key directement ici aussi
                         src={
@@ -274,7 +279,9 @@ export default function Navbar() {
                         }}
                       />
                     </div>
-                    <span className="text-[10px] sm:text-[11px] font-medium text-gray-500 group-hover:text-orange-700 transition leading-tight mt-0.5">
+                    <span
+                      className={`text-[10px] sm:text-[11px] font-medium ${pathname.includes("/profil-talent") ? "text-orange-700" : "text-gray-500"} group-hover:text-orange-700 transition leading-tight mt-0.5`}
+                    >
                       Mon profil
                     </span>
                   </Link>
@@ -395,6 +402,8 @@ export default function Navbar() {
           </div>
         </div>
       </div>
+
+      {isLoggedIn && role === "talent" && <LocationModal />}
     </>
   );
 

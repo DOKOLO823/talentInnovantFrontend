@@ -1,236 +1,315 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Trash2, Loader2, AlertCircle, Gavel, Trophy, BarChart3, Users2 } from "lucide-react";
-import { toast } from "react-hot-toast";
+// steps/StepInfo.tsx  (aussi nommé StepDetailsChallenge)
+// ── Règles, Récompenses, Objectifs, Profils recherchés ──
+// Critères d'évaluation ont été déplacés dans StepOrganisation
 
-interface StepDetailsChallengeProps {
+import { useState } from "react";
+import {
+  Plus,
+  Trash2,
+  Info,
+  AlertCircle,
+  Loader2,
+  ListOrdered,
+  Trophy,
+  Target,
+  UserSearch,
+} from "lucide-react";
+import toast from "react-hot-toast";
+import { useSearchParams } from "next/navigation";
+
+interface StepInfoProps {
   data: any;
   onChange: (data: any) => void;
-  onNext: () => void;
+  onNext: () => void; // "continuer" (si internal → step formulaire, sinon submit)
+  onSubmit: () => void; // submit direct (challenge externe)
   onBack: () => void;
   isSubmitting: boolean;
-  onSubmit: () => void;
-  forCreate : Boolean;
+  forCreate?: boolean;
 }
 
-export default function StepDetailsChallenge({
+// ── Styles ──
+const labelStyle =
+  "block text-[11px] font-black uppercase tracking-wider text-slate-900 mb-2";
+const inputStyle =
+  "w-full bg-white border border-slate-300 rounded-md p-2.5 text-sm focus:border-orange-700 focus:ring-1 focus:ring-orange-700 outline-none transition-all";
+const cardStyle =
+  "bg-white border border-slate-200 rounded-md p-6 shadow-sm space-y-4";
+const sectionTitle =
+  "text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3 mb-4";
+const errStyle =
+  "flex items-center gap-1 text-red-600 text-[10px] font-bold mt-1";
+
+// ── Composant liste dynamique réutilisable ──
+function DynamicList({
+  label,
+  icon,
+  items,
+  onChange,
+  placeholder,
+  maxLength = 500,
+  error,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  items: string[];
+  onChange: (items: string[]) => void;
+  placeholder: string;
+  maxLength?: number;
+  error?: string;
+}) {
+  const updateItem = (idx: number, val: string) => {
+    const copy = [...items];
+    copy[idx] = val;
+    onChange(copy);
+  };
+
+  const addItem = () => onChange([...items, ""]);
+
+  const removeItem = (idx: number) =>
+    onChange(items.filter((_, i) => i !== idx));
+
+  return (
+    <div className={cardStyle}>
+      <h3 className={sectionTitle}>
+        {icon} {label}
+      </h3>
+      <div className="space-y-3">
+        {items.map((item, idx) => (
+          <div key={idx} className="flex items-start gap-2">
+            <span className="text-[10px] font-black text-slate-400 mt-3 w-5 shrink-0">
+              {idx + 1}.
+            </span>
+            <textarea
+              rows={2}
+              maxLength={maxLength}
+              className={`${inputStyle} resize-none flex-1 ${error ? "border-red-300" : ""}`}
+              placeholder={placeholder}
+              value={item}
+              onChange={(e) => updateItem(idx, e.target.value)}
+            />
+            {items.length > 1 && (
+              <button
+                type="button"
+                onClick={() => removeItem(idx)}
+                className="mt-1 p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all shrink-0"
+              >
+                <Trash2 size={16} />
+              </button>
+            )}
+          </div>
+        ))}
+
+        <button
+          type="button"
+          onClick={addItem}
+          className="w-full py-2.5 border-2 border-dashed border-slate-200 hover:border-orange-400 text-slate-500 hover:text-orange-700 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
+        >
+          <Plus size={16} /> Ajouter
+        </button>
+      </div>
+      {error && (
+        <p className={errStyle}>
+          <AlertCircle size={10} />
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────
+export default function StepInfo({
   data,
   onChange,
   onNext,
+  onSubmit,
   onBack,
   isSubmitting,
-  onSubmit,
-  forCreate
-}: StepDetailsChallengeProps) {
+  forCreate,
+}: StepInfoProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const isInterne = data.site?.toLowerCase() === "talent innovant";
+
   const update = (key: string, value: any) => {
-    if (errors[key]) {
-      setErrors((prev) => {
-        const newErrs = { ...prev };
-        delete newErrs[key];
-        return newErrs;
+    if (errors[key])
+      setErrors((p) => {
+        const n = { ...p };
+        delete n[key];
+        return n;
       });
-    }
     onChange({ ...data, [key]: value });
   };
 
-  const updateArrayItem = (key: string, index: number, value: string) => {
-    const currentArray = Array.isArray(data[key]) ? [...data[key]] : [""];
-    currentArray[index] = value;
-    update(key, currentArray);
-  };
+  // Listes dynamiques — initialisation avec au moins 1 élément vide
+  const regles = data.regles?.length ? data.regles : [""];
+  const recompenses = data.recompenses?.length ? data.recompenses : [""];
+  const objectifs = data.objectifs?.length ? data.objectifs : [""];
+  const profils = data.profils?.length ? data.profils : [""];
+  const searchParams = useSearchParams();
+  const lieuParam = searchParams.get("lieu");
 
-  const addArrayItem = (key: string) => {
-    const currentArray = Array.isArray(data[key]) ? [...data[key]] : [""];
-    update(key, [...currentArray, ""]);
-  };
-
-  const removeArrayItem = (key: string, index: number) => {
-    const currentArray = Array.isArray(data[key]) ? [...data[key]] : [""];
-    const filtered = currentArray.filter((_: any, i: number) => i !== index);
-    update(key, filtered.length > 0 ? filtered : [""]);
-  };
-
-  const validateStep = () => {
+  // ── Validation ──
+  const handleContinue = () => {
     const newErrors: Record<string, string> = {};
 
-    // Validation RECOMPENSE : Obligatoire (au moins un item non vide)
-    const rewards = data.recompense || [];
-    const hasValidReward = rewards.some((r: string) => r.trim() !== "");
-
-    if (!hasValidReward) {
-      newErrors.recompense = "Au moins une récompense est obligatoire pour continuer";
+    // Au moins une règle renseignée
+    const reglesFilled = (data.regles ?? []).filter((r: string) => r.trim());
+    if (reglesFilled.length === 0 && lieuParam != "externe") {
+      newErrors.regles = "Veuillez renseigner au moins une règle.";
     }
+
+    // Au moins une récompense
+    const recompFilled = (data.recompenses ?? []).filter((r: string) =>
+      r.trim(),
+    );
+    if (recompFilled.length === 0) {
+      newErrors.recompenses = "Veuillez renseigner au moins une récompense.";
+    }
+
+    // Longueurs max
+    const tooLongRegle = (data.regles ?? []).find(
+      (r: string) => r.length > 500,
+    );
+    if (tooLongRegle) newErrors.regles = "Une règle dépasse 500 caractères.";
+
+    const tooLongRecomp = (data.recompenses ?? []).find(
+      (r: string) => r.length > 500,
+    );
+    if (tooLongRecomp)
+      newErrors.recompenses = "Une récompense dépasse 500 caractères.";
+
+    const tooLongObjectif = (data.objectifs ?? []).find(
+      (o: string) => o.length > 500,
+    );
+    if (tooLongObjectif)
+      newErrors.objectifs = "Un objectif dépasse 500 caractères.";
+
+    const tooLongProfil = (data.profils ?? []).find(
+      (p: string) => p.length > 300,
+    );
+    if (tooLongProfil) newErrors.profils = "Un profil dépasse 300 caractères.";
 
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) {
-      toast.error(newErrors.recompense, {
-        style: { fontSize: '15px', fontWeight: 'bold', color:'red' }
-      });
-      return false;
+      toast.error(Object.values(newErrors)[0]);
+      return;
     }
-    return true;
-  };
 
-  const handleNext = () => {
-    if (validateStep()) {
+    // Si interne → formulaire dynamique (step 2) ; si externe → soumettre
+    if (isInterne) {
       onNext();
+    } else {
+      onSubmit();
     }
   };
-
-  const sections = [
-    {
-      key: "principe",
-      title: "Règles du challenge",
-      icon: <Gavel size={16} className="text-slate-400" />,
-      placeholder: "Ex: Équipes de 2 à 5 personnes maximum",
-      description: "Cadre réglementaire et contraintes logistiques.",
-      required: false
-    },
-    {
-      key: "recompense",
-      title: "Récompenses & Dotations",
-      icon: <Trophy size={16} className="text-slate-400" />,
-      placeholder: "Ex: 2 000 000 FCFA + accompagnement",
-      description: "Détaillez les prix par rang ou catégorie de gagnant.",
-      required: true
-    },
-    {
-      key: "critereevaluation",
-      title: "Critères d'évaluation",
-      icon: <BarChart3 size={16} className="text-slate-400" />,
-      placeholder: "Ex: Viabilité économique du projet (30%)",
-      description: "Précisez les indicateurs clés de performance (KPI).",
-      required: false
-    },
-    {
-      key: "publiccible",
-      title: "Profils recherchés",
-      icon: <Users2 size={16} className="text-slate-400" />,
-      placeholder: "Ex: Étudiants, Startups ou Entreprises",
-      description: "Définissez l'audience cible autorisée à postuler.",
-      required: false
-    },
-  ];
-
-  const isInternal = data.site === "talent innovant";
-  const inputStyle = "w-full bg-white border border-slate-300 rounded-md p-2.5 text-sm focus:border-orange-700 focus:ring-1 focus:ring-orange-700 outline-none transition-all placeholder:text-slate-400";
-  const errorInputStyle = "border-red-500 bg-red-50/30 focus:border-red-500 focus:ring-red-500";
-  const cardStyle = "bg-white border border-slate-200 rounded-md p-6 shadow-sm transition-all";
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 py-4">
+    <div className="max-w-3xl mx-auto space-y-8 py-4">
+      {/* ── En-tête ── */}
       <div className="border-b border-slate-200 pb-6">
         <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-          Détails structurels & Clauses
+          <Info size={20} className="text-slate-400" /> Détails du challenge
         </h2>
         <p className="text-sm text-slate-500 mt-1">
-          Finalisez les modalités précises pour informer vos futurs participants.
+          Règles, récompenses, objectifs et profils recherchés.
         </p>
       </div>
 
-      <div className="space-y-6">
-        {sections.map((section) => (
-          <div key={section.key} className={`${cardStyle} ${errors[section.key] ? 'border-red-200 ring-1 ring-red-100' : ''}`}>
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2">
-                {section.icon}
-                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-tight">
-                  {section.title} {section.required && <span className="text-orange-700 ml-1">*</span>}
-                </h3>
-              </div>
-              {errors[section.key] && (
-                <span className="text-red-600 text-[10px] font-black uppercase flex items-center gap-1">
-                  <AlertCircle size={12} /> Obligatoire
-                </span>
-              )}
-            </div>
-            <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mb-4 border-b border-slate-50 pb-2">
-              {section.description}
-            </p>
+      {/* ── RÈGLES ── */}
+      <DynamicList
+        label="Règles du challenge"
+        icon={<ListOrdered size={16} className="text-orange-700" />}
+        items={regles}
+        onChange={(items) => update("regles", items)}
+        placeholder="Ex: Le projet doit être inédit et non commercialisé..."
+        maxLength={500}
+        error={errors.regles}
+      />
 
-            <div className="space-y-3">
-              {(Array.isArray(data[section.key]) ? data[section.key] : [""]).map((item: string, index: number) => (
-                <div key={index} className="flex gap-2 items-center group">
-                  <div className="flex-1">
-                    <input
-                      className={`${inputStyle} ${errors[section.key] && !item.trim() ? errorInputStyle : ""}`}
-                      placeholder={section.placeholder}
-                      value={item}
-                      onChange={(e) => updateArrayItem(section.key, index, e.target.value)}
-                    />
-                  </div>
-                  {(data[section.key] || [""]).length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeArrayItem(section.key, index)}
-                      className="p-2 text-slate-300 hover:text-red-700 transition-colors"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
+      {/* ── RÉCOMPENSES ── */}
+      <DynamicList
+        label="Récompenses"
+        icon={<Trophy size={16} className="text-orange-700" />}
+        items={recompenses}
+        onChange={(items) => update("recompenses", items)}
+        placeholder="Ex: 1er prix : 500 000 FCFA + Trophée..."
+        maxLength={500}
+        error={errors.recompenses}
+      />
 
-            <button
-              type="button"
-              onClick={() => addArrayItem(section.key)}
-              className="mt-4 flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.1em] text-orange-700 hover:text-orange-800 transition-colors"
-            >
-              <Plus size={14} strokeWidth={3} />
-              Ajouter une clause
-            </button>
-          </div>
-        ))}
-      </div>
+      {/* ── OBJECTIFS ── */}
+      <DynamicList
+        label="Objectifs du challenge"
+        icon={<Target size={16} className="text-orange-700" />}
+        items={objectifs}
+        onChange={(items) => update("objectifs", items)}
+        placeholder="Ex: Identifier les meilleurs talents en intelligence artificielle..."
+        maxLength={500}
+        error={errors.objectifs}
+      />
 
-      {/* INFO BOX */}
-      <div className="bg-slate-900 rounded-md p-5 text-white shadow-lg border-l-4 border-orange-700">
-        <div className="flex gap-4 items-center">
-          <AlertCircle className="text-orange-500 shrink-0" size={20} />
-          <div className="text-[11px] font-bold uppercase tracking-wider leading-relaxed">
-            <span className="text-orange-500 mr-2">[INFO SYSTÈME]</span>
-            {isInternal
-              ? "L'étape suivante permettra la configuration dynamique du formulaire de réponse participant."
-              : "La validation entraînera la publication immédiate du challenge sur le réseau Talent Innovant."}
-          </div>
+      {/* ── PROFILS RECHERCHÉS ── */}
+      <DynamicList
+        label="Profils recherchés"
+        icon={<UserSearch size={16} className="text-orange-700" />}
+        items={profils}
+        onChange={(items) => update("profils", items)}
+        placeholder="Ex: Étudiants en informatique, Développeurs freelance..."
+        maxLength={300}
+        error={errors.profils}
+      />
+
+      {/* ── DÉTAILS SUPPLÉMENTAIRES ── */}
+      <div className={cardStyle}>
+        <div>
+          <label className={labelStyle}>
+            Détails supplémentaires (optionnel)
+          </label>
+          <textarea
+            rows={3}
+            maxLength={1000}
+            className={`${inputStyle} resize-none`}
+            placeholder="Informations complémentaires, ressources utiles, contacts..."
+            value={data.details || ""}
+            onChange={(e) => update("details", e.target.value)}
+          />
+          <p className="text-[10px] text-slate-400 mt-1 text-right">
+            {(data.details || "").length}/1000
+          </p>
         </div>
       </div>
 
-      {/* FOOTER ACTIONS */}
-      <div className="flex justify-between items-center pt-8 border-t border-slate-200">
+      {/* ── FOOTER ── */}
+      <div className="flex justify-between items-center pt-6 border-t border-slate-200">
         <button
           type="button"
           onClick={onBack}
-          className="text-[12px] font-bold text-slate-400 hover:text-slate-900 uppercase tracking-widest transition-colors disabled:opacity-30"
-          disabled={isSubmitting}
+          className="text-[12px] font-bold text-slate-400 hover:text-slate-900 uppercase tracking-widest transition-colors"
         >
-          Précédent
+          ← Précédent
         </button>
-        
-       {forCreate &&  <button
+
+        <button
           type="button"
-          onClick={handleNext}
-          className={`min-w-[200px] flex items-center justify-center gap-3 px-8 py-2.5 rounded-md text-sm font-bold transition-all shadow-md active:scale-[0.98] ${
-            isInternal ? "bg-slate-900 hover:bg-slate-800" : "bg-orange-700 hover:bg-orange-800"
-          } text-white disabled:opacity-50`}
+          onClick={handleContinue}
           disabled={isSubmitting}
+          className="bg-orange-700 text-white px-8 py-2.5 rounded-md text-sm font-bold hover:bg-orange-800 transition-all shadow-md active:scale-[0.98] flex items-center gap-2 disabled:opacity-60"
         >
           {isSubmitting ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin text-orange-500" />
-              Finalisation en cours...
+              <Loader2 className="animate-spin" size={16} />
+              Publication...
             </>
-          ) : isInternal ? (
-            <>Configurer le formulaire <span className="text-orange-500">→</span></>
+          ) : isInterne ? (
+            "Configurer le formulaire →"
           ) : (
-            <>Publier le challenge <span className="text-orange-400 font-normal">🚀</span></>
+            "Publier le challenge →"
           )}
-        </button>}
+        </button>
       </div>
     </div>
   );

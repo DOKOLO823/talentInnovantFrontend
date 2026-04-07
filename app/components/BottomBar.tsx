@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Home, Bell, Users, Network } from "lucide-react";
+import { Home, Bell, Users, Network, Activity, Trophy } from "lucide-react";
 import { apiFetch } from "@/app/lib/api";
 
 export default function BottomBar() {
@@ -24,11 +24,11 @@ export default function BottomBar() {
       const authData = JSON.parse(authItem);
       setRole(authData.user?.statut || "guest");
 
-      apiFetch("/notifications/nonlues", { method: "GET" })
-        .then((res) => {
-          if (res?.statut === 200) setNotificationCount(res.unread_count);
-        })
-        .finally(() => setLoadingNotifs(false));
+      // apiFetch("/notifications/nonlues", { method: "GET" })
+      //   .then((res) => {
+      //     if (res?.statut === 200) setNotificationCount(res.unread_count);
+      //   })
+      //   .finally(() => setLoadingNotifs(false));
 
       apiFetch("/reseau/notifications/count", { method: "GET" })
         .then((res) => {
@@ -62,12 +62,17 @@ export default function BottomBar() {
       label: "Accueil",
       Icon: Home,
     },
+    // {
+    //   href: "/notification",
+    //   label: "Notifications",
+    //   Icon: Bell,
+    //   badge: notificationCount,
+    //   isLoading: loadingNotifs,
+    // },
     {
-      href: "/notification",
-      label: "Notifications",
-      Icon: Bell,
-      badge: notificationCount,
-      isLoading: loadingNotifs,
+      href: "/mes-challenges",
+      label: "Mes challenges",
+      Icon: Trophy, // ou une autre icône de votre choix
     },
     {
       href: "/communaute",
@@ -109,7 +114,7 @@ export default function BottomBar() {
                 if (item.label === "Notifications") setNotificationCount(0);
                 if (item.label === "Réseau") setReseauCount(0);
               }}
-              className="flex flex-col items-center justify-center p-2 pt-1.5 w-full h-full hover:bg-gray-50 transition-colors"
+              className="flex flex-col items-center justify-center py-2 px-1 pt-1.5 w-full h-full hover:bg-gray-50 transition-colors"
             >
               <div className="relative">
                 <item.Icon
@@ -123,7 +128,7 @@ export default function BottomBar() {
                 )}
               </div>
               <span
-                className={`text-[10px] mt-1 font-medium transition-colors ${isActive ? "text-orange-700" : "text-gray-600"}`}
+                className={`text-[10px] mt-1 font-medium text-center transition-colors ${isActive ? "text-orange-700" : "text-gray-600"}`}
               >
                 {item.label}
               </span>

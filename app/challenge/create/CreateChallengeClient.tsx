@@ -35,6 +35,7 @@ export default function CreateChallengeClient({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
   const [challenge, setChallenge] = useState<any>({
     site: "talent innovant", // Garder cette valeur exacte
@@ -105,7 +106,7 @@ export default function CreateChallengeClient({
     try {
       const formData = new FormData();
 
-      // 1. Champs de base
+      // ── Champs de base ──
       formData.append("titre", challenge.titre || "");
       formData.append("theme", challenge.theme || "");
       formData.append("description", challenge.description || "");
@@ -114,16 +115,20 @@ export default function CreateChallengeClient({
       formData.append("datefin", challenge.datefin || "");
       formData.append("site", challenge.site || "talent innovant");
       formData.append("is_official", challenge.is_official ? "1" : "0");
-      formData.append("jury_id", challenge.jury_id?.toString() || "");
       formData.append(
         "typeevaluation_id",
         getTypeEvaluationId(challenge.typeevaluation),
       );
-      formData.append("portee_id", challenge.portee_id?.toString() || "1");
-      formData.append("objectif", challenge.objectif || "");
-      formData.append("nombrecontribution", challenge.nombrecontribution || 1);
+      formData.append("portee_id", (challenge.portee_id ?? 1).toString());
+      formData.append(
+        "nombrecontribution",
+        (challenge.nombrecontribution || 1).toString(),
+      );
       formData.append("details", challenge.details || "");
 
+      if (challenge.pack) formData.append("pack", challenge.pack);
+      if (challenge.jury_id)
+        formData.append("jury_id", challenge.jury_id.toString());
       if (challenge.lieu) formData.append("lieu", challenge.lieu);
       if (challenge.region) formData.append("region", challenge.region);
       if (challenge.ville) formData.append("ville", challenge.ville);
@@ -131,38 +136,85 @@ export default function CreateChallengeClient({
 
       if (photoFile) formData.append("photo", photoFile);
 
-      // 2. Tableaux (Format attendu par votre backend Laravel)
+      // ── Helper pour tableaux ──
       const appendArray = (key: string, data: any[]) => {
-        if (data && Array.isArray(data)) {
-          // On ne garde que les items qui ne sont pas vides après un trim()
-          const cleanData = data.filter(
-            (item) => item && String(item).trim() !== "",
-          );
-
-          if (cleanData.length > 0) {
-            cleanData.forEach((item, index) => {
-              formData.append(`${key}[${index}]`, item);
-            });
-          } else {
-            // Optionnel : Si le tableau est vide, on peut envoyer une valeur spécifique
-            // ou simplement ne pas l'append pour que le backend garde l'ancienne valeur
-          }
-        }
+        if (!data || !Array.isArray(data)) return;
+        const clean = data.filter((item) => item && String(item).trim() !== "");
+        clean.forEach((item, idx) =>
+          formData.append(`${key}[${idx}]`, String(item)),
+        );
       };
 
+      // ── Tableaux simples ──
       appendArray("nombregagnant", challenge.nombregagnant);
-      appendArray("principe", challenge.principe);
-      appendArray("recompense", challenge.recompense);
-      appendArray("critereevaluation", challenge.critereevaluation);
-      appendArray("publiccible", challenge.publiccible);
       appendArray("domaines", challenge.domaines);
 
-      // 3. Formulaire Dynamique (Step 2) - Nettoyé des champs vides
+      // ── NOUVELLES TABLES ──
+
+      // Jurys (multi)
+      if (challenge.jurys && Array.isArray(challenge.jurys)) {
+        challenge.jurys.forEach((juryId: number, idx: number) => {
+          formData.append(`jurys[${idx}]`, String(juryId));
+        });
+      }
+
+      // Régions
+      if (challenge.regions && Array.isArray(challenge.regions)) {
+        challenge.regions.forEach((region: string, idx: number) => {
+          if (region.trim()) formData.append(`regions[${idx}]`, region);
+        });
+      }
+
+      // Règles
+      const reglesClean = (challenge.regles ?? []).filter(
+        (r: string) => r && r.trim(),
+      );
+      reglesClean.forEach((regle: string, idx: number) => {
+        formData.append(`regles[${idx}]`, regle);
+      });
+
+      // Récompenses
+      const recompClean = (challenge.recompenses ?? []).filter(
+        (r: string) => r && r.trim(),
+      );
+      recompClean.forEach((r: string, idx: number) => {
+        formData.append(`recompenses[${idx}]`, r);
+      });
+
+      // Objectifs
+      const objectifsClean = (challenge.objectifs ?? []).filter(
+        (o: string) => o && o.trim(),
+      );
+      objectifsClean.forEach((o: string, idx: number) => {
+        formData.append(`objectifs[${idx}]`, o);
+      });
+
+      // Profils recherchés
+      const profilsClean = (challenge.profils ?? []).filter(
+        (p: string) => p && p.trim(),
+      );
+      profilsClean.forEach((p: string, idx: number) => {
+        formData.append(`profils[${idx}]`, p);
+      });
+
+      // Critères avec coefficients
+      if (challenge.criteres && Array.isArray(challenge.criteres)) {
+        challenge.criteres
+          .filter((c: any) => c.libelle && c.libelle.trim())
+          .forEach((critere: any, idx: number) => {
+            formData.append(`criteres[${idx}][libelle]`, critere.libelle);
+            formData.append(
+              `criteres[${idx}][coefficient]`,
+              String(critere.coefficient ?? 1),
+            );
+          });
+      }
+
+      // ── Formulaire dynamique (Step 2) ──
       if (isInternal) {
         const cleanedFields = fields.filter(
           (f) => f.label && f.label.trim() !== "",
         );
-
         cleanedFields.forEach((field, index) => {
           formData.append(`fields[${index}][label]`, field.label);
           formData.append(`fields[${index}][type]`, field.type);
@@ -170,13 +222,11 @@ export default function CreateChallengeClient({
             `fields[${index}][is_required]`,
             field.is_required ? "1" : "0",
           );
-
-          if (field.options && field.options.length > 0) {
-            // Nettoyage des options vides aussi
-            const cleanedOptions = field.options.filter(
-              (opt: string) => opt && opt.trim() !== "",
+          if (field.options?.length) {
+            const cleanOpts = field.options.filter(
+              (o: string) => o && o.trim(),
             );
-            cleanedOptions.forEach((opt: string, optIdx: number) => {
+            cleanOpts.forEach((opt: string, optIdx: number) => {
               formData.append(`fields[${index}][options][${optIdx}]`, opt);
             });
           }
@@ -203,11 +253,11 @@ export default function CreateChallengeClient({
 
   const getTypeEvaluationId = (type: string): string => {
     const mapping: Record<string, string> = {
-      Jury: "1",
-      Vote: "2",
+      Jury: "2",
+      Vote: "1",
       Hybride: "3",
     };
-    return mapping[type] || "1";
+    return mapping[type] || "2";
   };
 
   return (
@@ -241,6 +291,8 @@ export default function CreateChallengeClient({
                   onChange={setChallenge}
                   photoFile={photoFile}
                   setPhotoFile={setPhotoFile}
+                  photoPreview={photoPreview}
+                  setPhotoPreview={setPhotoPreview}
                   onNext={() =>
                     challenge.titre && challenge.description
                       ? goToNextSubStep()
@@ -262,7 +314,7 @@ export default function CreateChallengeClient({
                 <StepOrganisation
                   data={challenge}
                   onChange={setChallenge}
-                  jurys={jurys}
+                  // jurys={jurys}
                   onNext={goToNextSubStep}
                   onBack={goToPreviousSubStep}
                 />

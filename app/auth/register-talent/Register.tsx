@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiFetch } from "@/app/lib/api";
 import domaines from "@/domaines.json";
@@ -14,12 +14,42 @@ export default function Register() {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showRegions, setShowRegions] = useState(false);
+
+  const CAMEROON_GEO = {
+    Adamaoua: ["Ngaoundéré", "Tignère", "Meiganga", "Banyo", "Tibati"],
+    Centre: ["Yaoundé", "Obala", "Mfou", "Mbalmayo", "Akonolinga", "Eseka"],
+    Est: ["Bertoua", "Batouri", "Garoua-Boulaï", "Abong-Mbang"],
+    "Extrême-Nord": ["Maroua", "Kousseri", "Mokolo", "Mora", "Yagoua"],
+    Littoral: ["Douala", "Nkongsamba", "Edea", "Manjo", "Loum"],
+    Nord: ["Garoua", "Guider", "Poli", "Figuil"],
+    "Nord-Ouest": ["Bamenda", "Kumbo", "Ndop", "Wum"],
+    Ouest: ["Bafoussam", "Dschang", "Foumban", "Bangangté", "Mbouda", "Baham"],
+    Sud: ["Ebolowa", "Kribi", "Ambam", "Sangmelima"],
+    "Sud-Ouest": ["Buea", "Limbe", "Kumba", "Mamfe", "Tiko"],
+  };
+
+  useEffect(() => {
+    const handleClickOutside = () => setShowRegions(false);
+    if (showRegions) {
+      window.addEventListener("click", handleClickOutside);
+    }
+    return () => window.removeEventListener("click", handleClickOutside);
+  }, [showRegions]);
+
+  const regions = Object.keys(CAMEROON_GEO);
+  const filteredRegions = regions.filter((r) =>
+    r.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+
   const [form, setForm] = useState({
     nom: "",
     email: "",
     password: "",
     confirm: "",
     telephone: "",
+    region: "",
     domaine_principal: "",
     domaines_secondaires: [] as string[],
   });
@@ -86,6 +116,7 @@ export default function Register() {
         email: form.email,
         password: form.password,
         telephone: form.telephone || null,
+        region: form.region || null,
         domaine_principal: parseInt(form.domaine_principal),
         domaines_secondaires: form.domaines_secondaires.map((id) =>
           parseInt(id),
@@ -293,6 +324,66 @@ export default function Register() {
                     )}
                   </div>
 
+                  {/* CHAMP REGION AVEC RECHERCHE */}
+                  {/* <div className="relative">
+                    <label className="block text-sm">Région de résidence</label>
+                    <div
+                      className="w-full mt-1 p-3 border rounded-lg cursor-pointer flex justify-between items-center bg-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowRegions(!showRegions);
+                      }}
+                    >
+                      <span
+                        className={
+                          form.region ? "text-gray-900" : "text-gray-400"
+                        }
+                      >
+                        {form.region || "Sélectionnez votre région"}
+                      </span>
+                      <span className="text-gray-400">▼</span>
+                    </div>
+
+                    {showRegions && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-xl max-h-60 overflow-hidden flex flex-col">
+                        <input
+                          type="text"
+                          placeholder="Rechercher une région..."
+                          className="p-3 border-b outline-none focus:border-orange-700"
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          autoFocus
+                        />
+                        <div className="overflow-y-auto">
+                          {filteredRegions.length > 0 ? (
+                            filteredRegions.map((region) => (
+                              <div
+                                key={region}
+                                className="p-3 hover:bg-orange-50 cursor-pointer transition-colors"
+                                onClick={() => {
+                                  handleChange("region", region);
+                                  setShowRegions(false);
+                                  setSearchTerm("");
+                                }}
+                              >
+                                {region}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="p-3 text-gray-500 text-sm">
+                              Aucune région trouvée
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {errors.region && (
+                      <span className="text-red-500 text-sm">
+                        {errors.region}
+                      </span>
+                    )}
+                  </div> */}
+
                   <button
                     onClick={goNext}
                     className="w-full bg-orange-700 text-white py-3 rounded-lg mt-4 hover:bg-orange-600 transition"
@@ -400,9 +491,16 @@ export default function Register() {
                     <button
                       onClick={handleSubmit}
                       disabled={loading}
-                      className="text-md w-2/3 md:text-xl py-2 px-2 md:px-5 md:py-3 bg-orange-700 text-white rounded-lg hover:bg-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="text-md w-2/3 md:text-xl py-2 px-2 md:px-5 md:py-3 bg-orange-700 text-white rounded-lg hover:bg-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
                     >
-                      {loading ? "Création..." : "Créer mon compte"}
+                      {loading ? (
+                        <>
+                          <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                          <span>Création...</span>
+                        </>
+                      ) : (
+                        "Créer mon compte"
+                      )}
                     </button>
                   </div>
                 </div>

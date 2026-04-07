@@ -682,6 +682,7 @@ export default function ProjectCardToEvaluate({
       </div>
 
       <ScoreDetailModal
+        postId={project?.id}
         isOpen={showScoreDetail}
         onClose={() => setShowScoreDetail(false)}
         isNoteFinale={false}

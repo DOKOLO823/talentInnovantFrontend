@@ -34,6 +34,9 @@ import {
   Eye,
   ExternalLink,
   ArrowRight,
+  Save,
+  AlertCircle,
+  Scale,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -53,6 +56,7 @@ import apifile from "@/app/lib/apifile";
 import BackToTop from "@/app/components/BackToTop";
 import ProjectFormPreviewModal from "@/app/components/modals/ProjectFormPreviewModal";
 import ChallengeAnalytics from "../tabsChallenge/ChallengeAnalytics";
+import ChallengeMoreOptions from "./components/ChallengeMoreOptions";
 
 // --- MODALS DE BASE ---
 
@@ -347,6 +351,7 @@ export default function ChallengeClient() {
   const [loaderLikeChallenge, setLoaderLikeChallenge] = useState(false);
   const [challengeBestFormat, setChallengeBestFormat] = useState<any>({});
   const [likeursIds, setLikeursIds] = useState<number[]>([]);
+  const [suiveurIds, setSuiveurIds] = useState<number[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   const [activeTab, setActiveTab] = useState("overview");
@@ -416,15 +421,30 @@ export default function ChallengeClient() {
     try {
       const response = await apiFetch(`/challenge/details/${challengeId}`);
       if (response.statut == 200) {
-        setChallenge(response?.data?.challenge);
+        const challengeData = response?.data?.challenge;
+
+        // ✅ Fusionner les données nouvelles tables + données challenge
+        const enrichedChallenge = {
+          ...challengeData,
+          regles: response.data.regles ?? [],
+          recompenses: response.data.recompenses ?? [],
+          objectifs: response.data.objectifs ?? [],
+          profils: response.data.profils ?? [],
+          criteres: response.data.criteres ?? [],
+          regions: response.data.regions ?? [],
+          jurys: response.data.jurys ?? [],
+        };
+
+        setChallenge(enrichedChallenge);
         setChallengeBestFormat({
-          id: response?.data?.challenge.id,
-          title: response?.data?.challenge.titre,
-          image: response?.data?.challenge.photo
-            ? `${apifile}/${response?.data?.challenge.photo}`
+          id: challengeData.id,
+          title: challengeData.titre,
+          image: challengeData.photo
+            ? `${apifile}/${challengeData.photo}`
             : "/assets/images/innov.jpg",
         });
         setLikeursIds(response.data.likeurs_ids || []);
+        setSuiveurIds(response.data.suiveurs_ids || []);
       }
     } catch (error) {
       toast.error("Erreur de chargement");
@@ -434,7 +454,11 @@ export default function ChallengeClient() {
   };
 
   const isOwner = currentUser?.id === challenge?.user_id;
-  const isJury = currentUser?.id === challenge?.jury_id;
+  const isJury = currentUser
+    ? currentUser.id === challenge?.jury_id ||
+      (Array.isArray(challenge?.jurys) &&
+        challenge.jurys.some((j: any) => j.id === currentUser.id))
+    : false;
   const hasLiked = currentUser ? likeursIds.includes(currentUser.id) : false;
 
   // on choisit le tab actif par defaut en fonction du role du user qui navigue sur TI
@@ -653,13 +677,16 @@ export default function ChallengeClient() {
           <span className="font-bold">{likeursIds?.length}</span>
         </button>
 
-        <button
-          onClick={() => setShowShareModal(true)}
-          className="bg-white border px-4 py-2 rounded-lg flex items-center gap-2 text-gray-700 hover:bg-gray-100 transition-all active:scale-95"
-        >
-          <Share2 size={18} /> Partager
-        </button>
-
+        <ChallengeMoreOptions
+          challenge={challenge}
+          currentUser={currentUser}
+          challengeId={challengeId}
+          suiveurs_ids={suiveurIds}
+          onShare={() => setShowShareModal(true)}
+          userName={currentUser?.talent?.nom || "Talent"}
+          userDomain={""}
+          userCompetences={""}
+        />
         {isOwner && (
           <div className="ml-auto flex gap-3">
             <Link
@@ -702,7 +729,7 @@ export default function ChallengeClient() {
             <ChallengeAnalytics challengeId={challenge?.id} />
           )}
           {activeTab === "evaluate" && (
-            <EvaluateProjectsSection challenge={challenge} />
+            <EvaluateProjectsSection challenge={challenge} isJury={isJury} />
           )}
           {activeTab === "overview" && (
             <OverviewSection challenge={challenge} />
@@ -717,17 +744,28 @@ export default function ChallengeClient() {
           {activeTab === "rules" && (
             <ListSection
               title="Règles du challenge"
-              data={challenge?.principe}
+              data={
+                challenge?.regles?.length
+                  ? challenge.regles
+                  : challenge?.principe
+              }
             />
           )}
           {activeTab === "criteria" && (
-            <ListSection
-              title="Critères d'évaluation"
-              data={challenge?.critereevaluation}
+            <CriteresSection
+              criteres={challenge?.criteres}
+              ancienData={challenge?.critereevaluation}
             />
           )}
           {activeTab === "rewards" && (
-            <ListSection title="Récompenses" data={challenge?.recompense} />
+            <ListSection
+              title="Récompenses"
+              data={
+                challenge?.recompenses?.length
+                  ? challenge.recompenses
+                  : challenge?.recompense
+              }
+            />
           )}
           {activeTab === "participants" && (
             <ParticipantsSection
@@ -830,18 +868,440 @@ export default function ChallengeClient() {
 }
 // --- SOUS-SECTIONS ---
 
-function EvaluateProjectsSection({ challenge }: any) {
+function CriteresSection({
+  criteres,
+  ancienData,
+}: {
+  criteres: any[];
+  ancienData?: any;
+}) {
+  // Nouveau système : critères avec coefficients
+  if (criteres && criteres.length > 0) {
+    return (
+      <div className="w-full py-4">
+        <div className="flex items-center gap-2 mb-6 px-1 text-gray-800">
+          <h4 className="text-lg font-bold">Critères d'évaluation</h4>
+        </div>
+        <div className="divide-y divide-gray-100 border-t border-b border-gray-100 bg-white">
+          {criteres.map((c: any, i: number) => (
+            <div key={i} className="flex gap-4 p-4 items-center">
+              <span className="flex-shrink-0 font-mono text-xs text-gray-400 w-6">
+                {(i + 1).toString().padStart(2, "0")}
+              </span>
+              <p className="text-gray-700 text-sm leading-relaxed flex-1">
+                {c.libelle ?? c}
+              </p>
+              {c.coefficient != null && (
+                <span className="text-[10px] font-black text-orange-700 bg-orange-50 border border-orange-100 px-2 py-1 rounded-full whitespace-nowrap shrink-0">
+                  Coef. {c.coefficient}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+        {criteres.some((c: any) => c.coefficient != null) && (
+          <div className="mt-3 p-3 bg-white border border-orange-700 rounded-xl text-xs text-orange-700 font-bold text-center">
+            📊 Σ(Note × Coefficient) / Σ(Coefficients) par jury → moyenne
+            inter-jurys = note finale /20
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Ancien système — fallback sur critereevaluation JSON
+  return <ListSection title="Critères d'évaluation" data={ancienData} />;
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Modal confirmation publication
+// ──────────────────────────────────────────────────────────────────
+function PublishConfirmModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  isPublishing,
+}: any) {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 16 }}
+        className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-100"
+      >
+        <div className="px-8 pt-8 pb-4 text-center">
+          <div className="w-16 h-16 bg-orange-50 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-orange-100">
+            <Send className="text-orange-700" size={28} />
+          </div>
+          <h3 className="text-xl font-black text-slate-900 tracking-tight mb-2">
+            Publier les résultats définitifs
+          </h3>
+          <p className="text-slate-600 text-sm leading-relaxed max-w-xs mx-auto">
+            Cette action rendra les résultats visibles par{" "}
+            <span className="font-bold text-slate-700">
+              tous les participants{" "}
+            </span>
+            et ils seront notifiés . Elle est{" "}
+            <span className="font-bold">irréversible</span>.
+          </p>
+        </div>
+        <div className="mx-8 mb-6 p-4 bg-white border border-orange-700 rounded-2xl">
+          <p className="text-[10px] font-black text-orange-700 uppercase tracking-wider mb-3">
+            ⚠️ Avant de confirmer, vérifiez que :
+          </p>
+          <div className="space-y-2.5">
+            {[
+              "Tous les projets éligibles ont été évalués",
+              "Les notes attribuées sont définitives",
+              "Le classement correspond à vos attentes",
+            ].map((item, i) => (
+              <div key={i} className="flex items-start gap-2.5">
+                <div className="w-5 h-5 rounded-full bg-amber-200 flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="text-[9px] font-black text-amber-800">
+                    {i + 1}
+                  </span>
+                </div>
+                <span className="text-xs text-black font-medium leading-snug">
+                  {item}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="px-8 pb-8 flex gap-3">
+          <button
+            onClick={onClose}
+            disabled={isPublishing}
+            className="flex-1 py-3.5 border-2 border-slate-200 text-slate-600 font-bold rounded-2xl hover:bg-slate-50 transition-colors text-sm disabled:opacity-50"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isPublishing}
+            className="flex-1 py-3.5 bg-orange-700 hover:bg-orange-800 text-white font-bold rounded-2xl transition-all text-sm flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-orange-200 active:scale-[0.98]"
+          >
+            {isPublishing ? (
+              <>
+                <Loader2 className="animate-spin" size={16} /> Publication...
+              </>
+            ) : (
+              <>
+                <Send size={16} /> Confirmer
+              </>
+            )}
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Modal édition des notes par critères — pour le jury connecté
+// ✅ onSaved(notefinale) déclenche la mise à jour immédiate dans ProjectCardResult
+// ──────────────────────────────────────────────────────────────────
+function EditMesNotesModal({
+  isOpen,
+  onClose,
+  postId,
+  project,
+  mesNotesCriteres,
+  commentaireGlobal,
+  onSaved,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  postId: number;
+  project: any;
+  mesNotesCriteres: any[];
+  commentaireGlobal: string;
+  onSaved: (
+    notefinale: number,
+    updatedCriteres: any[],
+    newComment: string,
+  ) => void;
+}) {
+  const [notes, setNotes] = useState<
+    Record<number, { note: string; commentaire: string }>
+  >({});
+  const [commentGlobal, setCommentGlobal] = useState(commentaireGlobal ?? "");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const init: Record<number, { note: string; commentaire: string }> = {};
+    mesNotesCriteres.forEach((c: any) => {
+      init[c.critere_id] = {
+        note: String(c.note ?? ""),
+        commentaire: c.commentaire ?? "",
+      };
+    });
+    setNotes(init);
+    setCommentGlobal(commentaireGlobal ?? "");
+  }, [isOpen, mesNotesCriteres, commentaireGlobal]);
+
+  if (!isOpen) return null;
+
+  const apercu = (): number | null => {
+    let sommePond = 0,
+      sommeCoef = 0;
+    for (const c of mesNotesCriteres) {
+      const note = parseFloat(notes[c.critere_id]?.note ?? "");
+      if (isNaN(note)) return null;
+      const coef = c.coefficient ?? 1;
+      sommePond += note * coef;
+      sommeCoef += coef;
+    }
+    return sommeCoef > 0 ? Math.round((sommePond / sommeCoef) * 100) / 100 : 0;
+  };
+
+  const handleSave = async () => {
+    for (const c of mesNotesCriteres) {
+      const note = parseFloat(notes[c.critere_id]?.note ?? "");
+      if (isNaN(note) || note < 0) {
+        toast.error(`Note manquante : ${c.libelle}`);
+        return;
+      }
+      if (note > 20) {
+        toast.error(`"${c.libelle}" : max 20`);
+        return;
+      }
+    }
+
+    setLoading(true);
+    const t = toast.loading("Enregistrement...");
+    try {
+      const res = await apiFetch("/challenge/modifier-mes-notes-de-post", {
+        method: "POST",
+        body: JSON.stringify({
+          post_id: postId,
+          notes: mesNotesCriteres.map((c: any) => ({
+            critere_id: c.critere_id,
+            note: parseFloat(notes[c.critere_id]?.note ?? "0"),
+            commentaire: notes[c.critere_id]?.commentaire ?? "",
+          })),
+          commentaire_global: commentGlobal,
+        }),
+      });
+
+      if (res?.statut === 200) {
+        toast.success(
+          `Notes mises à jour — Nouvelle note finale : ${res.note_finale}/20`,
+          { id: t },
+        );
+
+        const freshCriteres = mesNotesCriteres.map((c: any) => ({
+          ...c,
+          note: parseFloat(notes[c.critere_id]?.note ?? "0"),
+          commentaire: notes[c.critere_id]?.commentaire ?? "",
+        }));
+
+        // ✅ Appeler onSaved avec TOUTES les infos
+        // @ts-ignore (si tu n'as pas encore mis à jour les types)
+        onSaved(res.note_finale, freshCriteres, commentGlobal);
+        onClose();
+      } else {
+        toast.error(res?.message || "Erreur", { id: t });
+      }
+    } catch {
+      toast.error("Erreur réseau", { id: t });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const ap = apercu();
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/70 z-[300] flex items-center justify-center p-4 backdrop-blur-md">
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden max-h-[92vh] flex flex-col"
+      >
+        {/* Header */}
+        <div className="bg-slate-50 px-6 py-4 border-b flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <Scale size={18} className="text-orange-700" />
+            <div>
+              <h3 className="font-black text-slate-800 text-sm leading-tight">
+                Modifier mes notes
+              </h3>
+              <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">
+                {project?.user?.talent?.nom ??
+                  project?.user?.name ??
+                  "Participant"}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 bg-slate-100 hover:bg-red-50 hover:text-red-500 rounded-full transition"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Corps */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          {mesNotesCriteres.length === 0 ? (
+            <div className="flex items-start gap-2 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+              <AlertCircle
+                size={16}
+                className="text-amber-600 mt-0.5 shrink-0"
+              />
+              <p className="text-sm text-amber-700 font-medium">
+                Vous n'avez pas encore noté ce projet. Utilisez "Évaluer" pour
+                une première notation.
+              </p>
+            </div>
+          ) : (
+            <>
+              {mesNotesCriteres.map((c: any) => (
+                <div
+                  key={c.critere_id}
+                  className="border border-slate-100 rounded-2xl p-4 bg-slate-50 space-y-2"
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-bold text-slate-800 flex-1 pr-2">
+                      {c.libelle}
+                    </p>
+                    <span className="text-[10px] font-black text-orange-700 bg-orange-50 border border-orange-100 px-2 py-1 rounded-full shrink-0">
+                      Coef. {c.coefficient ?? 1}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      max={20}
+                      step={0.5}
+                      placeholder="/20"
+                      value={notes[c.critere_id]?.note ?? ""}
+                      onChange={(e) =>
+                        setNotes((prev) => ({
+                          ...prev,
+                          [c.critere_id]: {
+                            ...prev[c.critere_id],
+                            note: e.target.value,
+                          },
+                        }))
+                      }
+                      className="w-20 border border-slate-200 rounded-xl p-2 text-sm text-center font-bold focus:border-orange-700 focus:ring-1 focus:ring-orange-200 outline-none"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Commentaire (optionnel)"
+                      value={notes[c.critere_id]?.commentaire ?? ""}
+                      onChange={(e) =>
+                        setNotes((prev) => ({
+                          ...prev,
+                          [c.critere_id]: {
+                            ...prev[c.critere_id],
+                            commentaire: e.target.value,
+                          },
+                        }))
+                      }
+                      className="flex-1 border border-slate-200 rounded-xl p-2 text-xs outline-none focus:border-orange-700"
+                    />
+                  </div>
+                </div>
+              ))}
+
+              {/* Aperçu moyenne */}
+              {ap !== null && (
+                <div className="p-3 bg-orange-50 border border-orange-200 rounded-2xl text-center">
+                  <p className="text-[10px] font-bold text-orange-600 uppercase tracking-widest">
+                    Ma nouvelle moyenne pondérée
+                  </p>
+                  <p className="text-2xl font-black text-orange-700">
+                    {ap}
+                    <span className="text-sm font-normal">/20</span>
+                  </p>
+                </div>
+              )}
+
+              {/* Commentaire global */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  Mon avis global
+                </label>
+                <textarea
+                  rows={3}
+                  value={commentGlobal}
+                  onChange={(e) => setCommentGlobal(e.target.value)}
+                  className="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200 focus:border-orange-400 outline-none text-sm resize-none"
+                  placeholder="Avis général sur ce projet..."
+                />
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Footer */}
+        {mesNotesCriteres.length > 0 && (
+          <div className="px-6 pb-6 shrink-0">
+            <button
+              onClick={handleSave}
+              disabled={loading}
+              className="w-full py-4 bg-orange-700 hover:bg-orange-800 text-white rounded-2xl font-black text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-50 shadow-lg shadow-orange-200"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="animate-spin" size={18} />{" "}
+                  Enregistrement...
+                </>
+              ) : (
+                <>
+                  <Save size={18} /> Enregistrer mes modifications
+                </>
+              )}
+            </button>
+          </div>
+        )}
+      </motion.div>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────
+// COMPOSANT PRINCIPAL
+// ──────────────────────────────────────────────────────────────────
+function EvaluateProjectsSection({ challenge, isJury }: any) {
   const [activeSubTab, setActiveSubTab] = useState(
-    challenge?.typeevaluation?.type?.toLowerCase() != "vote"
+    challenge?.typeevaluation?.type?.toLowerCase() !== "vote"
       ? "a_evaluer"
       : "provisoire",
   );
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [showPublishConfirm, setShowPublishConfirm] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(
     null,
   );
+  const [resultatDisponible, setResultatDisponible] = useState(
+    challenge?.resultatdisponible,
+  );
+
+  // ── État du modal d'édition des notes ──
+  const [editModal, setEditModal] = useState<{
+    open: boolean;
+    project: any;
+    mesNotesCriteres: any[];
+    commentaireGlobal: string;
+    onSaved: (n: number, criteres: any[], comment: string) => void;
+  }>({
+    open: false,
+    project: null,
+    mesNotesCriteres: [],
+    commentaireGlobal: "",
+    onSaved: () => {},
+  });
 
   const dateFin = new Date(challenge?.datefin).getTime();
   const maintenant = new Date().getTime();
@@ -849,27 +1309,23 @@ function EvaluateProjectsSection({ challenge }: any) {
   const fetchEvalData = async () => {
     setLoading(true);
     try {
-      // Correction de l'endpoint selon l'onglet
-      const endpoint =
-        activeSubTab === "a_evaluer"
-          ? `/challenge/posts/${challenge?.id}`
-          : `/posts/listepostsnotes/${challenge?.id}`;
-
-      const res = await apiFetch(endpoint);
-      let data = res.top_posts || res.data || [];
-
       if (activeSubTab === "a_evaluer") {
-        const toEvaluate = data
-          ?.filter((item: any) => item?.notefinale == null)
-          .sort((a: any, b: any) => b?.score - a?.score);
-        setProjects(toEvaluate);
-      } else {
-        const evaluated = data?.filter((item: any) => item?.notefinale != null);
-        setProjects(
-          evaluated?.sort((a: any, b: any) => b?.notefinale - a?.notefinale),
+        const res = await apiFetch(
+          `/challenge/posts-a-evaluer/${challenge?.id}`,
         );
+        // ✅ Utiliser posts_a_evaluer (filtré par jury côté backend)
+        const data = res.posts_a_evaluer ?? res.top_posts ?? [];
+        setProjects(data.sort((a: any, b: any) => b?.score - a?.score));
+      } else {
+        const res = await apiFetch(
+          `/posts/listeposts-evalues/${challenge?.id}`,
+        );
+        const data = (res.data ?? [])
+          .filter((p: any) => p?.notefinale != null)
+          .sort((a: any, b: any) => b?.notefinale - a?.notefinale);
+        setProjects(data);
       }
-    } catch (e) {
+    } catch {
       toast.error("Erreur de chargement");
     } finally {
       setLoading(false);
@@ -883,13 +1339,11 @@ function EvaluateProjectsSection({ challenge }: any) {
   const handlePublishResults = async () => {
     if (!challenge?.id) return;
     setIsPublishing(true);
-    const publishToast = toast.loading("Publication des résultats...");
-
+    const t = toast.loading("Publication...");
     try {
-      const storedAuth = localStorage.getItem("auth");
-      const token = storedAuth ? JSON.parse(storedAuth).token : null;
-
-      const response = await fetch(
+      const auth = localStorage.getItem("auth");
+      const token = auth ? JSON.parse(auth).token : null;
+      const res = await fetch(
         `${API_BASE_URL}/challenge/publier-resultats/${challenge?.id}`,
         {
           method: "GET",
@@ -899,71 +1353,43 @@ function EvaluateProjectsSection({ challenge }: any) {
           },
         },
       );
-
-      const data = await response.json();
-
+      const data = await res.json();
       if (data.statut === 200) {
-        toast.success(data.message, { id: publishToast, duration: 6000 });
-        // setTimeout(() => window.location.reload(), 1000);
+        toast.success(data.message, { id: t, duration: 6000 });
+        setResultatDisponible(1);
+        setShowPublishConfirm(false);
       } else {
-        toast.error(data.message || "Erreur", { id: publishToast });
+        toast.error(data.message || "Erreur", { id: t });
       }
-    } catch (error) {
-      toast.error("Erreur de connexion", { id: publishToast });
+    } catch {
+      toast.error("Erreur de connexion", { id: t });
     } finally {
       setIsPublishing(false);
     }
   };
 
-  const renderNombreAEvaluer = () => {
-    try {
-      // 1. Transformer le string en véritable tableau JS
-      const data =
-        typeof challenge?.nombregagnant === "string"
-          ? JSON.parse(challenge.nombregagnant)
-          : challenge?.nombregagnant;
+  const canPublish =
+    resultatDisponible != 1 &&
+    !(
+      dateFin > maintenant &&
+      challenge?.typeevaluation?.type?.toLowerCase() === "vote"
+    );
 
-      // Vérifier si c'est un tableau valide
-      if (!Array.isArray(data) || data?.length === 0) return "";
-
-      return (
-        <span className="text-gray-700 text-sm">
-          <span>
-            Le jury procédera à l'évaluation des{" "}
-            <span className="font-bold">{data[0]}</span> premiers projets
-            (uniquement) figurant sur cette liste.
-          </span>
-        </span>
-      );
-    } catch (e) {
-      // En cas d'erreur de parsing ou format inattendu
-      return (
-        <span className="text-gray-700 text-sm">
-          {challenge?.nombregagnant || ""}
-        </span>
-      );
-    }
-  };
-
-  // date de debut de notation de projet
-  const formatDate = (dateString: any) => {
-    const date = new Date(dateString);
-
-    return new Intl.DateTimeFormat("fr-FR", {
+  const formatDate = (d: any) =>
+    new Intl.DateTimeFormat("fr-FR", {
       day: "numeric",
       month: "long",
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-    }).format(date);
-  };
+    }).format(new Date(d));
 
   return (
     <div className="space-y-6">
-      {/* ONGLETS ET BOUTON PUBLIER */}
+      {/* Onglets + bouton publier */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex gap-2 p-1 bg-gray-200 rounded-xl w-fit">
-          {challenge?.typeevaluation?.type != "vote" && (
+          {challenge?.typeevaluation?.type !== "vote" && (
             <button
               onClick={() => setActiveSubTab("a_evaluer")}
               className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeSubTab === "a_evaluer" ? "bg-white text-orange-700 shadow" : "text-gray-500"}`}
@@ -981,108 +1407,303 @@ function EvaluateProjectsSection({ challenge }: any) {
 
         {activeSubTab === "provisoire" && (
           <button
-            onClick={handlePublishResults}
-            disabled={
-              isPublishing ||
-              challenge?.resultatdisponible == 1 ||
-              (dateFin > maintenant &&
-                challenge?.typeevaluation?.type?.toLowerCase() == "vote")
-            }
+            onClick={() => {
+              if (canPublish) setShowPublishConfirm(true);
+            }}
+            disabled={!canPublish || isPublishing}
             className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-xs transition-all ${
-              challenge?.resultatdisponible == 1 ||
-              ((challenge?.typeevaluation?.type?.toLowerCase() == "hybride" ||
-                challenge?.typeevaluation?.type?.toLowerCase() == "vote") &&
-                dateFin > maintenant)
-                ? "bg-gray-100 text-gray-400 border border-gray-200"
-                : "bg-orange-700 text-white hover:bg-orange-600 shadow-lg shadow-blue-100"
+              challenge?.resultatdisponible == 1
+                ? "bg-green-50 text-green-700 border border-green-200 cursor-default"
+                : !canPublish
+                  ? "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed"
+                  : "bg-orange-700 text-white hover:bg-orange-800 shadow-lg active:scale-[0.98]"
             }`}
           >
-            {isPublishing ? (
-              <Loader2 className="animate-spin" size={16} />
-            ) : challenge?.resultatdisponible == 1 ? (
-              <CheckCircle size={16} />
+            {resultatDisponible == 1 ? (
+              <>
+                <CheckCircle size={16} /> RÉSULTATS PUBLIÉS
+              </>
             ) : (
-              <Send size={16} />
+              <>
+                <Send size={16} /> PUBLIER LES RÉSULTATS
+              </>
             )}
-            {challenge?.resultatdisponible == 1
-              ? "RÉSULTATS DÉJÀ PUBLIÉS"
-              : "PUBLIER LES RÉSULTATS"}
           </button>
         )}
       </div>
 
-      {challenge?.typeevaluation?.type?.toLowerCase() == "hybride" &&
+      {/* Messages contextuels hybride */}
+      {challenge?.typeevaluation?.type?.toLowerCase() === "hybride" &&
         dateFin > maintenant &&
         activeSubTab === "a_evaluer" && (
-          <span className=" text-sm">
-            {" "}
-            NB: Les notations des projets commencent le{" "}
-            <span className="font-bold">
-              {formatDate(challenge?.datefin)}
-            </span>{" "}
-            (date de fin des votes de projets){" "}
-          </span>
+          <p className="text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded-xl p-3">
+            NB : Les notations commencent le{" "}
+            <span className="font-bold">{formatDate(challenge?.datefin)}</span>{" "}
+            (fin des votes).
+          </p>
         )}
 
-      {challenge?.typeevaluation?.type?.toLowerCase() == "hybride" &&
-        dateFin < maintenant &&
-        activeSubTab === "a_evaluer" && (
-          <div className=" mt-3"> {renderNombreAEvaluer()} </div>
-        )}
+      {/* Message aucun projet à évaluer */}
+      {!loading && projects.length === 0 && activeSubTab === "a_evaluer" && (
+        <div className="py-16 text-center border-2 border-dashed border-green-100 rounded-3xl bg-green-50/30">
+          <CheckCircle className="text-green-500 mx-auto mb-3" size={36} />
+          <p className="font-bold text-green-700 text-sm">
+            Vous avez évalué tous les projets !
+          </p>
+          <p className="text-green-600 text-xs mt-1">
+            Consultez les résultats provisoires ci-dessus.
+          </p>
+        </div>
+      )}
 
-      {/* GRILLE DE PROJETS */}
+      {/* Grille */}
       {loading ? (
         <div className="py-20 flex justify-center">
           <Loader2 className="animate-spin text-orange-700" size={40} />
         </div>
-      ) : (
+      ) : projects.length > 0 ? (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-3">
-          {projects?.length > 0 ? (
-            projects?.map((p) =>
-              activeSubTab === "a_evaluer" ? (
-                <ProjectCardToEvaluate
-                  key={p.id}
-                  project={p}
-                  allProjects={projects}
-                  challenge={challenge}
-                  // onProjectEvaluated={(id: number) => {
-                  //   setProjects(prev => prev.filter(item => item.id !== id));
-                  // }}
-                  onEvaluate={() => setSelectedProjectId(p.id)}
-                />
-              ) : (
-                <ProjectCardResult
-                  key={p.id}
-                  project={p}
-                  challenge={challenge}
-                />
-              ),
-            )
-          ) : (
-            <div className="col-span-full py-20 text-center text-gray-400 font-bold border-2 border-dashed border-gray-100 rounded-3xl">
-              Aucun projet dans cette catégorie.
-            </div>
+          {projects.map((p) =>
+            activeSubTab === "a_evaluer" ? (
+              <ProjectCardToEvaluate
+                key={p.id}
+                project={p}
+                allProjects={projects}
+                challenge={challenge}
+                onEvaluate={() => setSelectedProjectId(p.id)}
+              />
+            ) : (
+              <ProjectCardResult
+                key={p.id}
+                project={p}
+                challenge={challenge}
+                isJury={isJury}
+                // ✅ Ouvre EditMesNotesModal avec callback de mise à jour immédiate
+                onEditNotes={(
+                  proj: any,
+                  onSavedCardCallback: (n: number) => void,
+                ) => {
+                  setEditModal({
+                    open: true,
+                    project: proj,
+                    mesNotesCriteres: proj.mes_notes_criteres ?? [],
+                    commentaireGlobal:
+                      proj.commentairejury?.[0]?.commentairejury ?? "", // Correction ici pour matcher ton objet
+                    onSaved: (
+                      newNote: number,
+                      updatedCriteres: any[],
+                      newComment: string,
+                    ) => {
+                      // 1. Mettre à jour la source de vérité (le tableau projects)
+                      setProjects((prev) =>
+                        prev.map((item) =>
+                          item.id === proj.id
+                            ? {
+                                ...item,
+                                notefinale: newNote,
+                                mes_notes_criteres: updatedCriteres,
+                                commentairejury: [
+                                  { commentairejury: newComment },
+                                ],
+                              }
+                            : item,
+                        ),
+                      );
+
+                      // 2. Mettre à jour l'UI de la carte (le callback local de ProjectCardResult)
+                      // On vérifie si la carte accepte les nouveaux paramètres
+                      onSavedCardCallback(newNote);
+                    },
+                  });
+                }}
+              />
+            ),
           )}
         </div>
-      )}
+      ) : null}
 
-      {/* MODAL D'ÉVALUATION */}
+      {/* Modal évaluation */}
       {selectedProjectId !== null && activeSubTab === "a_evaluer" && (
         <EvaluateProjectModal
+          challenge={challenge}
           initialProjectId={selectedProjectId}
           projectsList={projects}
           onClose={() => setSelectedProjectId(null)}
-          onProjectEvaluated={(id: number) => {
-            // Le filtrage se fait ici
-            setProjects((prev) => prev.filter((item) => item.id !== id));
-          }}
+          onProjectEvaluated={(id: number) =>
+            setProjects((prev) => prev.filter((item) => item.id !== id))
+          }
         />
       )}
+
+      {/* Modal confirmation publication */}
+      <AnimatePresence>
+        {showPublishConfirm && (
+          <PublishConfirmModal
+            isOpen={showPublishConfirm}
+            onClose={() => setShowPublishConfirm(false)}
+            onConfirm={handlePublishResults}
+            isPublishing={isPublishing}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Modal édition notes critères */}
+      <AnimatePresence>
+        {editModal.open && (
+          <EditMesNotesModal
+            isOpen={editModal.open}
+            onClose={() => setEditModal((p) => ({ ...p, open: false }))}
+            postId={editModal.project?.id}
+            project={editModal.project}
+            mesNotesCriteres={editModal.mesNotesCriteres}
+            commentaireGlobal={editModal.commentaireGlobal}
+            onSaved={editModal.onSaved} // ✅ callback transmis directement depuis ProjectCardResult
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
 function OverviewSection({ challenge }: any) {
+  // OverviewSection — Jury, Objectifs, Profils avec fallback
+  // ── Rendu du/des jury(s) ──
+  const renderJury = (challenge: any) => {
+    console.log(challenge.jurys);
+    // Nouveau système : tableau jurys
+    if (
+      challenge?.jurys &&
+      Array.isArray(challenge.jurys) &&
+      challenge.jurys.length > 0
+    ) {
+      return (
+        <div className="flex flex-wrap gap-4">
+          {challenge.jurys.map((jury: any) => {
+            const nom =
+              jury.statut === "talent"
+                ? (jury.nom ?? jury.email)
+                : (jury.nom ?? jury.email);
+            return (
+              <Link
+                href={
+                  jury?.statut === "talent"
+                    ? `/profil-talent/${jury.id}`
+                    : `/profil-entreprise/${jury.id}`
+                }
+                key={jury.id}
+                className="flex items-center gap-2 px-3 py-2 bg-orange-50 border border-orange-100 rounded-xl"
+              >
+                {jury.pp && (
+                  <img
+                    src={
+                      String(jury.pp).startsWith("http")
+                        ? jury.pp
+                        : `${apifile}/${jury.pp}`
+                    }
+                    className="w-6 h-6 rounded-full object-cover border border-orange-200"
+                    alt={nom}
+                  />
+                )}
+                <span className="text-sm font-bold text-slate-800">{nom}</span>
+              </Link>
+            );
+          })}
+        </div>
+      );
+    }
+
+    // Ancien système : jury_id
+    const jury = challenge?.jury;
+    if (!jury) {
+      return (
+        <p className="text-gray-500 italic text-sm">
+          Le jury sera communiqué prochainement par l'organisateur.
+        </p>
+      );
+    }
+    const nom =
+      jury.statut === "talent"
+        ? (jury.talent?.nom ?? jury.email)
+        : (jury.entreprise?.nom ?? jury.email);
+    return <p className="text-gray-700 font-bold">{nom}</p>;
+  };
+
+  // ── Rendu des objectifs (liste à puces) ──
+  const renderObjectifs = (challenge: any) => {
+    let items: string[] = [];
+
+    // Nouveau système : tableau objectifs
+    if (
+      challenge?.objectifs &&
+      Array.isArray(challenge.objectifs) &&
+      challenge.objectifs.length > 0
+    ) {
+      items = challenge.objectifs;
+    } else if (challenge?.objectif) {
+      // Ancien système — peut être séparé par " | "
+      const split = challenge.objectif
+        .split(" | ")
+        .map((s: string) => s.trim())
+        .filter(Boolean);
+      items = split.length > 1 ? split : [challenge.objectif];
+    }
+
+    if (items.length === 0) {
+      return (
+        <p className="text-gray-700 leading-relaxed">
+          Atteindre les meilleurs résultats selon les critères définis.
+        </p>
+      );
+    }
+
+    return (
+      <ul className="space-y-2">
+        {items.map((obj: string, i: number) => (
+          <li key={i} className="text-gray-700 text-sm flex items-start gap-2">
+            <div className="w-1.5 h-1.5 bg-orange-700 rounded-full mt-1.5 shrink-0" />
+            {obj}
+          </li>
+        ))}
+      </ul>
+    );
+  };
+
+  // ── Rendu des profils recherchés (liste à puces) ──
+  const renderProfils = (challenge: any) => {
+    let items: string[] = [];
+
+    if (
+      challenge?.profils &&
+      Array.isArray(challenge.profils) &&
+      challenge.profils.length > 0
+    ) {
+      items = challenge.profils;
+    } else if (challenge?.publiccible) {
+      try {
+        const parsed =
+          typeof challenge.publiccible === "string"
+            ? JSON.parse(challenge.publiccible)
+            : challenge.publiccible;
+        items = Array.isArray(parsed) ? parsed : Object.values(parsed);
+      } catch {
+        items = [challenge.publiccible];
+      }
+    }
+
+    if (!items || items.length === 0) return null;
+
+    return (
+      <ul className="space-y-1">
+        {items.map((item: string, i: number) => (
+          <li key={i} className="text-gray-700 text-sm flex items-center gap-2">
+            <div className="w-1 h-1 bg-orange-700 rounded-full shrink-0" />
+            {item}
+          </li>
+        ))}
+      </ul>
+    );
+  };
+
   // Fonction pour expliquer le type d'évaluation
   const getEvaluationDescription = (type: string) => {
     switch (type?.toLowerCase()) {
@@ -1215,10 +1836,8 @@ function OverviewSection({ challenge }: any) {
           <h3 className="text-black font-extrabold flex items-center gap-2 mb-2 first-letter:uppercase tracking-tight">
             <Trophy size={18} className="text-orange-600" /> Objectifs
           </h3>
-          <p className="text-gray-700 leading-relaxed">
-            {challenge?.objectif ||
-              "Atteindre les meilleurs résultats selon les critères définis."}
-          </p>
+
+          {renderObjectifs(challenge)}
         </div>
       </div>
 
@@ -1327,22 +1946,7 @@ function OverviewSection({ challenge }: any) {
               <span className="text-black font-bold text-sm mb-2 first-letter:uppercase">
                 Public cible
               </span>
-              <ul className="space-y-1">
-                {(Array.isArray(challenge?.publiccible)
-                  ? challenge?.publiccible
-                  : typeof challenge?.publiccible === "string"
-                    ? JSON.parse(challenge?.publiccible)
-                    : []
-                )?.map((item: string, index: number) => (
-                  <li
-                    key={index}
-                    className="text-gray-700 text-sm flex items-center gap-2"
-                  >
-                    <div className="w-1 h-1 bg-orange-700 rounded-full" />{" "}
-                    {item}
-                  </li>
-                ))}
-              </ul>
+              <ul className="space-y-1">{renderProfils(challenge)}</ul>
             </div>
 
             <div className="flex flex-col">
@@ -1400,7 +2004,7 @@ function OverviewSection({ challenge }: any) {
             <h3 className="text-black font-extrabold flex items-center gap-2 mb-3 first-letter:uppercase tracking-tight">
               <UserCheck size={18} className="text-orange-600" /> Jury
             </h3>
-            <p className="text-gray-700 font-bold">{getJuryName()}</p>
+            {renderJury(challenge)}
           </div>
         </>
       )}

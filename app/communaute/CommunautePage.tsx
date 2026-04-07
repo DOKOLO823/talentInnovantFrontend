@@ -499,8 +499,10 @@ export default function CommunautePage() {
                         />
                         <h3 className="font-bold text-gray-900 mb-1 truncate text-base sm:text-lg flex items-center justify-center gap-1.5">
                           {company.nom}
-                          {company?.user?.certifie && (
+                          {company?.user?.certifie ? (
                             <CheckCircle2 className="w-4 h-4 text-orange-700 fill-orange-700/10 flex-shrink-0" />
+                          ) : (
+                            ""
                           )}
                         </h3>
                         <div className="flex items-center justify-center gap-2 mb-6">

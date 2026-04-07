@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Upload,
   X,
@@ -17,6 +17,8 @@ interface StepGeneralInfoProps {
   data: any;
   onChange: (data: any) => void;
   photoFile: File | null;
+  photoPreview?: string | null; // ✅ Nouveau
+  setPhotoPreview?: (url: string | null) => void; // ✅ Nouveau
   setPhotoFile: (file: File | null) => void;
   onNext: () => void;
 }
@@ -29,6 +31,7 @@ export default function StepGeneralInfo({
   onNext,
 }: StepGeneralInfoProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const update = (key: string, value: any) => {
     if (errors[key]) {
@@ -95,16 +98,35 @@ export default function StepGeneralInfo({
     }
   };
 
+  useEffect(() => {
+    let url: string | null = null;
+    if (photoFile) {
+      url = URL.createObjectURL(photoFile);
+      setPreviewUrl(url);
+    } else {
+      setPreviewUrl(null);
+    }
+
+    // 🔥 CLEANUP CRITIQUE : Révoque l'ancienne URL
+    return () => {
+      if (url && url !== previewUrl) {
+        URL.revokeObjectURL(url);
+      }
+    };
+  }, [photoFile]);
+
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
       if (!validTypes.includes(file.type)) {
-        alert("Format non supporté. Utilisez JPG, PNG ou WEBP.");
+        toast.error("Format non supporté. Utilisez JPG, PNG ou WEBP."); // Remplace alert
+        e.target.value = ""; // Reset input
         return;
       }
       if (file.size > 2 * 1024 * 1024) {
-        alert("L'image ne doit pas dépasser 2 MB.");
+        toast.error("L'image ne doit pas dépasser 2 MB.");
+        e.target.value = "";
         return;
       }
       setPhotoFile(file);
@@ -167,7 +189,7 @@ export default function StepGeneralInfo({
               />
             </div>
 
-            <div className="space-y-1 md:col-span-2">
+            {/* <div className="space-y-1 md:col-span-2">
               <label className={labelStyle}>Objectif du challenge</label>
               <input
                 className={`${inputStyle} ${errors.objectif ? errorInputStyle : ""}`}
@@ -180,7 +202,7 @@ export default function StepGeneralInfo({
                   <AlertCircle size={10} /> {errors.objectif}
                 </p>
               )}
-            </div>
+            </div> */}
           </div>
         </div>
 
@@ -198,7 +220,7 @@ export default function StepGeneralInfo({
               />
             </div>
 
-            <div className="space-y-1">
+            {/* <div className="space-y-1">
               <label className={labelStyle}>Détails complémentaires</label>
               <textarea
                 rows={2}
@@ -207,11 +229,11 @@ export default function StepGeneralInfo({
                 value={data.details || ""}
                 onChange={(e) => update("details", e.target.value)}
               />
-            </div>
+            </div> */}
           </div>
         </div>
 
-        {/* VISUEL */}
+        {/* VISUEL - VERSION ROBUSTE */}
         <div className={cardStyle}>
           <label className={labelStyle}>Identité Visuelle (Banner)</label>
           {!photoFile ? (
@@ -237,16 +259,26 @@ export default function StepGeneralInfo({
           ) : (
             <div className="flex items-center gap-5 p-3 border border-orange-700/20 bg-orange-50/30 rounded-md">
               <div className="relative w-20 h-20 rounded border border-slate-200 overflow-hidden bg-white shrink-0">
-                <img
-                  src={URL.createObjectURL(photoFile)}
-                  alt="Preview"
-                  className="w-full h-full object-cover"
-                />
+                {previewUrl ? (
+                  <img
+                    src={previewUrl}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                    onError={() => toast.error("Erreur affichage preview")}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center">
+                    <ImageIcon size={24} className="text-orange-500" />
+                  </div>
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={14} className="text-orange-700" />
-                  <p className="text-xs font-bold text-slate-900 truncate">
+                  <p
+                    className="text-xs font-bold text-slate-900 truncate"
+                    title={photoFile.name}
+                  >
                     {photoFile.name}
                   </p>
                 </div>
@@ -265,7 +297,6 @@ export default function StepGeneralInfo({
           )}
         </div>
       </div>
-
       {/* FOOTER ACTIONS */}
       <div className="flex justify-between items-center pt-6 border-t border-slate-200">
         <div className="flex items-center gap-2 text-slate-400">

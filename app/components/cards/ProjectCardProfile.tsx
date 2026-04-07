@@ -474,6 +474,7 @@ export default function ProjectCardProfile({ project, challenge }: any) {
       </div>
 
       <ScoreDetailModal
+        postId={project?.id}
         isOpen={showScoreDetail}
         onClose={() => setShowScoreDetail(false)}
         isNoteFinale={project.notefinale ? true : false}

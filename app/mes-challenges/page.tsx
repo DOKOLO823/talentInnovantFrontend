@@ -1,99 +1,71 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import ChallengeCard from "../components/ChallengeCard";
-import PartenairesAccueil from "./components/PartenairesAccueil";
 import {
-  Activity,
   ArrowUp,
   CheckCircle,
   ChevronDown,
   Loader2,
-  Orbit,
   Timer,
-  Sparkles,
-  Rocket,
-  Target,
-  Lightbulb,
-  Trophy,
-  LayoutGrid,
-  RefreshCw,
+  Heart,
+  Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
 import { apiFetch } from "@/app/lib/api";
 import apifile from "@/app/lib/apifile";
-import CoachGeneralBanner from "../components/coach/CoachGeneralBanner";
-import { CoachBannerSkeleton } from "./components/CoachBannerSkeleton";
+import BackButton from "../components/BackButton";
 
-export default function HomePage() {
-  const [activeTab, setActiveTab] = useState("Challenges en cours");
+type SubTab =
+  | "mes_en_cours"
+  | "mes_termines"
+  | "favoris_en_cours"
+  | "favoris_termines";
+
+export default function MesChallengesPage() {
+  const [activeTab, setActiveTab] = useState<SubTab>("mes_en_cours");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDomain, setSelectedDomain] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("Partout");
-  const [userProfile, setUserProfile] = useState<any>(null);
-  const [isProfileLoading, setIsProfileLoading] = useState(true);
-  const [profileError, setProfileError] = useState(false);
 
   const [showNavbar, setShowNavbar] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [showBackToTop, setShowBackToTop] = useState(false);
 
-  const [challengesEnCours, setChallengesEnCours] = useState<any[]>([]);
-  const [challengesTermines, setChallengesTermines] = useState<any[]>([]);
-  const [challengesAvenir, setChallengesAvenir] = useState<any[]>([]);
+  // Données par onglet
+  const [mesChallengesEnCours, setMesChallengesEnCours] = useState<any[]>([]);
+  const [mesChallengesTermines, setMesChallengesTermines] = useState<any[]>([]);
+  const [favorisEnCours, setFavorisEnCours] = useState<any[]>([]);
+  const [favorisTermines, setFavorisTermines] = useState<any[]>([]);
+
+  // Villes par onglet
+  const [villesMesEnCours, setVillesMesEnCours] = useState(["Partout"]);
+  const [villesMesTermines, setVillesMesTermines] = useState(["Partout"]);
+  const [villesFavorisEnCours, setVillesFavorisEnCours] = useState(["Partout"]);
+  const [villesFavorisTermines, setVillesFavorisTermines] = useState([
+    "Partout",
+  ]);
+
+  // Domaines
   const [domaines, setDomaines] = useState<any[]>([]);
 
-  const [villesEnCours, setVillesEnCours] = useState(["Partout"]);
-  const [villesAvenir, setVillesAvenir] = useState(["Partout"]);
-  const [villesTermines, setVillesTermines] = useState(["Partout"]);
-
+  // Loading states par onglet (pour ne pas recharger inutilement)
+  const [loadedTabs, setLoadedTabs] = useState<Set<SubTab>>(new Set());
   const [loadingChallenges, setLoadingChallenges] = useState<boolean>(true);
   const [initialLoadComplete, setInitialLoadComplete] =
     useState<boolean>(false);
 
   const [stats, setStats] = useState({
-    enCours: 0,
-    avenir: 0,
-    termines: 0,
-    total: 0,
+    mesEnCours: 0,
+    mesTermines: 0,
+    favorisEnCours: 0,
+    favorisTermines: 0,
   });
-
-  // --- LOGIQUE MESSAGES ANIMÉS ---
-  const welcomeMessages = [
-    {
-      text: "Prêt à relever les défis qui feront briller votre talent ?",
-      icon: <Sparkles className="text-orange-500" size={22} />,
-    },
-    {
-      text: "Propulsez vos idées et transformez-les en opportunités réelles.",
-      icon: <Rocket className="text-orange-500" size={22} />,
-    },
-    {
-      text: "Trouvez le challenge parfait pour booster votre portfolio.",
-      icon: <Target className="text-orange-500" size={22} />,
-    },
-    {
-      text: "L'innovation n'attend que vous. Exprimez votre créativité.",
-      icon: <Lightbulb className="text-orange-500" size={22} />,
-    },
-    {
-      text: "Devenez le prochain champion de l'innovation technologique.",
-      icon: <Trophy className="text-orange-500" size={22} />,
-    },
-  ];
-  const [currentMsgIndex, setCurrentMsgIndex] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentMsgIndex((prev) => (prev + 1) % welcomeMessages.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
 
   const { talent, user, loading: authLoading, token } = useAuth();
   const userName = talent?.nom || "";
@@ -123,7 +95,7 @@ export default function HomePage() {
     }
   };
 
-  const navigateToTab = (tab: string) => {
+  const navigateToTab = (tab: SubTab) => {
     setActiveTab(tab);
     setTimeout(() => {
       if (tabsSectionRef.current) {
@@ -138,139 +110,152 @@ export default function HomePage() {
     }, 100);
   };
 
-  // N'oublie pas d'ajouter useCallback dans tes imports 'react'
-  const fetchInitialData = useCallback(async () => {
-    if (!token) {
-      setIsProfileLoading(false);
-      setLoadingChallenges(false);
-      return;
-    }
-
-    // 1. ISOLATION DU CHARGEMENT DU PROFIL (COACH)
-    const loadProfile = async () => {
-      setProfileError(false);
-      setIsProfileLoading(true);
-      try {
-        const profileRes = await apiFetch(`/talent/profil/${user.id}`, {
-          method: "GET",
-        });
-        if (profileRes?.statut === 200) {
-          setUserProfile(profileRes);
-        } else {
-          setProfileError(true);
-        }
-      } catch (err) {
-        setProfileError(true);
-      } finally {
-        setIsProfileLoading(false);
+  // Extraction des domaines depuis une liste de challenges
+  const extractDomaines = (challenges: any[]) => {
+    const allDomaines = new Set<string>();
+    challenges.forEach((c: any) => {
+      if (Array.isArray(c.domaines)) {
+        c.domaines.forEach((d: any) => allDomaines.add(d.nom || d.name));
       }
-    };
+    });
+    return Array.from(allDomaines);
+  };
 
-    // 2. CHARGEMENT DES CHALLENGES ET STATS
-    const loadChallenges = async () => {
-      setLoadingChallenges(true);
+  // Extraction des villes
+  const extractVilles = (challenges: any[]): string[] => {
+    const villes = new Set<string>();
+    challenges.forEach((c: any) => {
+      if (c.lieu) {
+        const lieu = c.lieu.toLowerCase().trim();
+        if (lieu === "en ligne" || lieu === "hybride") {
+          villes.add("En ligne");
+        }
+        if (
+          ["présentiel", "en présentiel", "presentiel", "hybride"].includes(
+            lieu,
+          ) &&
+          c.ville
+        ) {
+          villes.add(
+            c.ville.charAt(0).toUpperCase() + c.ville.slice(1).toLowerCase(),
+          );
+        }
+      }
+    });
+    return ["Partout", ...Array.from(villes).sort()];
+  };
+
+  // Chargement initial : mes challenges en cours + stats
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      if (!token) return;
       try {
-        const [enCoursRes, avenirRes, terminesRes] = await Promise.all([
-          apiFetch("/challenges/en-cours", { method: "GET" }),
-          apiFetch("/challenges/avenir", { method: "GET" }),
-          apiFetch("/challenges/end", { method: "GET" }),
+        setLoadingChallenges(true);
+
+        const [
+          mesEnCoursRes,
+          mesTerminesRes,
+          nbrFavorisEnCoursRes,
+          nbrFavorisTerminesRes,
+        ] = await Promise.all([
+          apiFetch("/mes-challenges/en-cours", { method: "GET" }),
+          apiFetch("/meschallenges/termines", { method: "GET" }),
+          apiFetch("/challenges/suivis/nombre", { method: "GET" }),
+          apiFetch("/challenges/suivis/nombre-termines", { method: "GET" }),
         ]);
 
-        if (enCoursRes?.statut === 200) {
-          const challenges = enCoursRes.challenges_en_cours || [];
-          setChallengesEnCours(challenges);
-          setVillesEnCours(enCoursRes.villes || ["Partout"]);
-
-          const allDomaines = new Set<string>();
-          challenges.forEach((c: any) => {
-            if (Array.isArray(c.domaines)) {
-              c.domaines.forEach((d: any) => allDomaines.add(d.nom || d.name));
-            }
-          });
-          setDomaines(Array.from(allDomaines));
+        if (mesEnCoursRes?.statut === 200) {
+          const challenges = mesEnCoursRes.mes_challenges || [];
+          setMesChallengesEnCours(challenges);
+          setVillesMesEnCours(extractVilles(challenges));
+          setDomaines(extractDomaines(challenges));
+          setLoadedTabs((prev) => new Set(prev).add("mes_en_cours"));
         }
 
-        const avenirCount =
-          avenirRes?.statut === 200
-            ? avenirRes.challenges_avenir?.length || 0
-            : 0;
-        const terminesCount =
-          terminesRes?.statut === 200
-            ? terminesRes.challenges_termines?.length || 0
-            : 0;
-        const enCoursCount =
-          enCoursRes?.statut === 200
-            ? enCoursRes.challenges_en_cours?.length || 0
-            : 0;
+        let mesTerminesCount = 0;
+        if (mesTerminesRes?.statut === 200) {
+          const challenges = mesTerminesRes.mes_challenges_termines || [];
+          setMesChallengesTermines(challenges);
+          setVillesMesTermines(extractVilles(challenges));
+          mesTerminesCount = challenges.length;
+          setLoadedTabs((prev) => new Set(prev).add("mes_termines"));
+        }
 
         setStats({
-          enCours: enCoursCount,
-          avenir: avenirCount,
-          termines: terminesCount,
-          total: enCoursCount + avenirCount + terminesCount,
+          mesEnCours: mesEnCoursRes?.mes_challenges?.length || 0,
+          mesTermines: mesTerminesCount,
+          favorisEnCours:
+            nbrFavorisEnCoursRes?.nombre_challenges_suivis_en_cours || 0,
+          favorisTermines:
+            nbrFavorisTerminesRes?.nombre_challenges_suivis_termines || 0,
         });
 
         setInitialLoadComplete(true);
       } catch (error) {
-        console.error("Erreur challenges:", error);
+        console.error("Erreur chargement initial:", error);
       } finally {
         setLoadingChallenges(false);
       }
     };
 
-    // Lancement parallèle
-    loadProfile();
-    loadChallenges();
+    fetchInitialData();
   }, [token]);
 
+  // Chargement au changement d'onglet
   useEffect(() => {
-    fetchInitialData();
-  }, [fetchInitialData]);
-
-  // Chargement au changement de tab
-  useEffect(() => {
-    const fetchChallengesByTab = async () => {
+    const fetchTabData = async () => {
       if (!token || !initialLoadComplete) return;
-
-      if (activeTab === "Challenges en cours" && challengesEnCours.length > 0) {
-        setLoadingChallenges(false);
-        return;
-      }
-      if (activeTab === "Challenges à venir" && challengesAvenir.length > 0) {
-        setLoadingChallenges(false);
-        return;
-      }
-      if (
-        activeTab === "Challenges terminés" &&
-        challengesTermines.length > 0
-      ) {
+      if (loadedTabs.has(activeTab)) {
         setLoadingChallenges(false);
         return;
       }
 
       setLoadingChallenges(true);
       try {
-        if (activeTab === "Challenges terminés") {
-          const res = await apiFetch("/challenges/end", { method: "GET" });
+        if (activeTab === "favoris_en_cours") {
+          const res = await apiFetch("/challenges-suivis", { method: "GET" });
           if (res?.statut === 200) {
-            setChallengesTermines(res.challenges_termines || []);
-            setVillesTermines(res.villes || ["Partout"]);
+            // Filtrer les challenges suivis en cours
+            const all = res.challenges || [];
+            const enCours = all.filter((c: any) => c.statut === "En cours");
+            const termines = all.filter((c: any) => c.statut === "Terminé");
+            setFavorisEnCours(enCours);
+            setFavorisTermines(termines);
+            setVillesFavorisEnCours(extractVilles(enCours));
+            setVillesFavorisTermines(extractVilles(termines));
+            setDomaines((prev) => {
+              const newDomaines = new Set([...prev, ...extractDomaines(all)]);
+              return Array.from(newDomaines);
+            });
+            setLoadedTabs((prev) =>
+              new Set(prev).add("favoris_en_cours").add("favoris_termines"),
+            );
           }
-        } else if (activeTab === "Challenges à venir") {
-          const res = await apiFetch("/challenges/avenir", { method: "GET" });
-          if (res?.statut === 200) {
-            setChallengesAvenir(res.challenges_avenir || []);
-            setVillesAvenir(res.villes || ["Partout"]);
+        } else if (activeTab === "favoris_termines") {
+          if (!loadedTabs.has("favoris_en_cours")) {
+            const res = await apiFetch("/challenges-suivis", { method: "GET" });
+            if (res?.statut === 200) {
+              const all = res.challenges || [];
+              const enCours = all.filter((c: any) => c.statut === "En cours");
+              const termines = all.filter((c: any) => c.statut === "Terminé");
+              setFavorisEnCours(enCours);
+              setFavorisTermines(termines);
+              setVillesFavorisEnCours(extractVilles(enCours));
+              setVillesFavorisTermines(extractVilles(termines));
+              setLoadedTabs((prev) =>
+                new Set(prev).add("favoris_en_cours").add("favoris_termines"),
+              );
+            }
           }
         }
       } catch (error) {
-        console.error("Erreur chargement tab:", error);
+        console.error("Erreur chargement onglet:", error);
       } finally {
         setLoadingChallenges(false);
       }
     };
 
-    fetchChallengesByTab();
+    fetchTabData();
   }, [activeTab, token, initialLoadComplete]);
 
   useEffect(() => {
@@ -294,16 +279,18 @@ export default function HomePage() {
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
   const getCurrentChallenges = () => {
-    if (activeTab === "Challenges en cours") return challengesEnCours;
-    if (activeTab === "Challenges terminés") return challengesTermines;
-    if (activeTab === "Challenges à venir") return challengesAvenir;
+    if (activeTab === "mes_en_cours") return mesChallengesEnCours;
+    if (activeTab === "mes_termines") return mesChallengesTermines;
+    if (activeTab === "favoris_en_cours") return favorisEnCours;
+    if (activeTab === "favoris_termines") return favorisTermines;
     return [];
   };
 
   const getCurrentVilles = () => {
-    if (activeTab === "Challenges en cours") return villesEnCours;
-    if (activeTab === "Challenges à venir") return villesAvenir;
-    if (activeTab === "Challenges terminés") return villesTermines;
+    if (activeTab === "mes_en_cours") return villesMesEnCours;
+    if (activeTab === "mes_termines") return villesMesTermines;
+    if (activeTab === "favoris_en_cours") return villesFavorisEnCours;
+    if (activeTab === "favoris_termines") return villesFavorisTermines;
     return ["Partout"];
   };
 
@@ -345,16 +332,11 @@ export default function HomePage() {
     searchQuery,
     selectedDomain,
     selectedLocation,
-    challengesEnCours,
-    challengesTermines,
-    challengesAvenir,
+    mesChallengesEnCours,
+    mesChallengesTermines,
+    favorisEnCours,
+    favorisTermines,
   ]);
-
-  const tabs = [
-    "Challenges en cours",
-    "Challenges à venir",
-    "Challenges terminés",
-  ];
 
   const mapChallenge = (c: any) => ({
     id: c.id,
@@ -393,7 +375,7 @@ export default function HomePage() {
   });
 
   const renderEmptyState = () => {
-    if (activeTab === "Challenges en cours") {
+    if (activeTab === "mes_en_cours") {
       return (
         <div className="text-center w-full py-20">
           <p className="text-gray-600 text-lg font-medium mb-4">
@@ -408,21 +390,18 @@ export default function HomePage() {
           </p>
           {!searchQuery && (
             <p className="text-gray-500 text-sm mb-6">
-              Il n'y a aucun challenge en cours pour le moment
+              Vous ne participez à aucun challenge en cours
             </p>
           )}
           <Button
-            onClick={() => {
-              setActiveTab("Challenges à venir");
-              scrollToTab("Challenges à venir");
-            }}
+            onClick={() => navigateToTab("mes_termines")}
             className="bg-orange-700 hover:bg-orange-800 text-white"
           >
-            Voir les challenges à venir
+            Voir mes challenges terminés
           </Button>
         </div>
       );
-    } else if (activeTab === "Challenges terminés") {
+    } else if (activeTab === "mes_termines") {
       return (
         <div className="text-center w-full py-20">
           <p className="text-gray-600 text-lg font-medium mb-4">
@@ -437,25 +416,22 @@ export default function HomePage() {
           </p>
           {!searchQuery && (
             <p className="text-gray-500 text-sm mb-6">
-              Il n'y a aucun challenge terminé pour le moment
+              Vous n'avez participé à aucun challenge terminé
             </p>
           )}
           <Button
-            onClick={() => {
-              setActiveTab("Challenges à venir");
-              scrollToTab("Challenges à venir");
-            }}
+            onClick={() => navigateToTab("favoris_en_cours")}
             className="bg-orange-700 hover:bg-orange-800 text-white"
           >
-            Voir les challenges à venir
+            Voir mes favoris en cours
           </Button>
         </div>
       );
-    } else if (activeTab === "Challenges à venir") {
+    } else if (activeTab === "favoris_en_cours") {
       return (
         <div className="text-center w-full py-20">
           <p className="text-gray-600 text-lg font-medium mb-4">
-            Aucun challenge à venir
+            Aucun favori en cours
             {searchQuery && (
               <>
                 {" "}
@@ -466,17 +442,40 @@ export default function HomePage() {
           </p>
           {!searchQuery && (
             <p className="text-gray-500 text-sm mb-6">
-              Il n'y a aucun challenge à venir pour le moment
+              Vous ne suivez aucun challenge en cours
             </p>
           )}
           <Button
-            onClick={() => {
-              setActiveTab("Challenges en cours");
-              scrollToTab("Challenges en cours");
-            }}
+            onClick={() => navigateToTab("favoris_termines")}
             className="bg-orange-700 hover:bg-orange-800 text-white"
           >
-            Voir les challenges en cours
+            Voir mes favoris terminés
+          </Button>
+        </div>
+      );
+    } else if (activeTab === "favoris_termines") {
+      return (
+        <div className="text-center w-full py-20">
+          <p className="text-gray-600 text-lg font-medium mb-4">
+            Aucun favori terminé
+            {searchQuery && (
+              <>
+                {" "}
+                avec ce mot clé :{" "}
+                <span className="font-bold">{searchQuery}</span>
+              </>
+            )}
+          </p>
+          {!searchQuery && (
+            <p className="text-gray-500 text-sm mb-6">
+              Vous ne suivez aucun challenge terminé
+            </p>
+          )}
+          <Button
+            onClick={() => navigateToTab("mes_en_cours")}
+            className="bg-orange-700 hover:bg-orange-800 text-white"
+          >
+            Voir mes challenges en cours
           </Button>
         </div>
       );
@@ -486,18 +485,22 @@ export default function HomePage() {
 
   const tabsTopPosition = showNavbar ? "top-16" : "top-0";
 
-  // Pour l'insertion des partenaires : on insère après le 3e item (index 2) sur mobile, après la première ligne sur desktop
-  // On sépare les challenges en deux parties : avant et après les partenaires
-  const SPLIT_INDEX_MOBILE = 4; // après 3 cards sur mobile
-  const SPLIT_INDEX_DESKTOP = 4; // après 4 cards sur desktop (première ligne de 4 colonnes)
+  const tabLabels: Record<SubTab, string> = {
+    mes_en_cours: "Mes challenges en cours",
+    mes_termines: "Mes challenges terminés",
+    favoris_en_cours: "Favoris en cours",
+    favoris_termines: "Favoris terminés",
+  };
 
-  const challengesBeforePartners = filteredChallenges.slice(
-    0,
-    SPLIT_INDEX_MOBILE,
-  );
-  const challengesAfterPartners = filteredChallenges.slice(SPLIT_INDEX_MOBILE);
-  const showPartnersSection =
-    activeTab === "Challenges en cours" && !loadingChallenges;
+  const tabDescriptions: Record<SubTab, string> = {
+    mes_en_cours: "Les challenges auxquels vous participez actuellement.",
+    mes_termines:
+      "Historique des challenges auxquels vous avez participé et qui sont clos.",
+    favoris_en_cours:
+      "Les challenges que vous suivez et qui acceptent encore des participations.",
+    favoris_termines:
+      "Les challenges que vous avez mis en favoris mais qui sont désormais terminés.",
+  };
 
   return (
     <div className="pb-32">
@@ -506,6 +509,9 @@ export default function HomePage() {
         animate={{ y: showNavbar ? 0 : -100 }}
       ></motion.div>
       <div className="h-16" />
+      <div className="ml-5">
+        <BackButton m={1} />
+      </div>
 
       {/* Hero Section */}
       <section className="bg-white px-6 py-10 md:py-16 border-b border-gray-50 overflow-hidden">
@@ -513,170 +519,106 @@ export default function HomePage() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center md:text-left mb-8 min-h-[100px]"
+            className="text-center md:text-left mb-8"
           >
             <h1 className="text-xl md:text-3xl font-bold text-gray-900 tracking-tight flex items-center justify-center md:justify-start gap-2">
-              Hello{" "}
-              <span className="text-orange-700 capitalize line-clamp-1">
-                {userName}
-              </span>{" "}
-              👋
+              Mes Challenges 🏆
             </h1>
-
-            <div className="h-12 flex items-start justify-start md:justify-start">
-              <AnimatePresence mode="wait">
-                <motion.p
-                  key={currentMsgIndex}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.5, ease: "easeInOut" }}
-                  className="mt-3 text-base md:text-lg text-gray-600 leading-relaxed flex flex-row justify-center items-start gap-x-1"
-                >
-                  {welcomeMessages[currentMsgIndex].icon}
-                  {welcomeMessages[currentMsgIndex].text}
-                </motion.p>
-              </AnimatePresence>
-            </div>
+            <p className="mt-2 text-base md:text-lg text-gray-500">
+              Retrouvez tous les challenges auxquels vous participez et vos
+              favoris.
+            </p>
           </motion.div>
-
-          {/* Titre de section simple */}
-          <div className="mb-6">
-            <h2 className="text-sm  md:text-xl font-bold flex items-center gap-x-1 ">
-              Explorez les challenges disponibles{" "}
-              <span className="text-orange-700"> :</span>
-            </h2>
-            <div className="h-0.5 w-12 mt-1 bg-black" />
-          </div>
 
           {/* Statistiques */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-6">
-            {/* Challenges en cours */}
+            {/* Mes challenges en cours */}
             <div
-              onClick={() => navigateToTab("Challenges en cours")}
+              onClick={() => navigateToTab("mes_en_cours")}
               className="relative bg-white rounded-xl px-5 pt-5 pb-2 shadow-sm border-t-4 border-orange-700 text-left cursor-pointer transition-all duration-300 hover:shadow-2xl group"
             >
               <div className="text-xl md:text-3xl font-extrabold text-gray-900 leading-none">
                 {!initialLoadComplete ? (
                   <Loader2 className="w-6 h-6 animate-spin text-orange-700" />
                 ) : (
-                  stats.enCours
+                  stats.mesEnCours
                 )}
               </div>
               <p className="text-sm font-medium text-gray-500 mt-4 flex flex-col items-center gap-1">
-                Challenges en cours <ChevronDown size={14} />
+                Mes challenges en cours <ChevronDown size={14} />
               </p>
               <div className="absolute top-3 right-4 p-2 rounded-full bg-orange-100">
                 <Timer size={14} className="text-orange-700" />
               </div>
             </div>
 
-            {/* Challenges à venir */}
+            {/* Mes challenges terminés */}
             <div
-              onClick={() => navigateToTab("Challenges à venir")}
+              onClick={() => navigateToTab("mes_termines")}
               className="relative bg-white rounded-xl px-5 pt-5 pb-2 shadow-sm border-t-4 border-orange-700 text-left cursor-pointer transition-all duration-300 hover:shadow-2xl group"
             >
               <div className="text-xl md:text-3xl font-extrabold text-gray-900 leading-none">
                 {!initialLoadComplete ? (
                   <Loader2 className="w-6 h-6 animate-spin text-orange-700" />
                 ) : (
-                  stats.avenir
+                  stats.mesTermines
                 )}
               </div>
               <p className="text-sm font-medium text-gray-500 mt-4 flex flex-col items-center gap-1">
-                Challenges à venir <ChevronDown size={14} />
-              </p>
-              <div className="absolute top-3 right-4 p-2 rounded-full bg-orange-100">
-                <Orbit size={14} className="text-orange-700" />
-              </div>
-            </div>
-
-            {/* Challenges terminés */}
-            <div
-              onClick={() => navigateToTab("Challenges terminés")}
-              className="relative bg-white rounded-xl px-5 pt-5 pb-2 shadow-sm border-t-4 border-orange-700 text-left cursor-pointer transition-all duration-300 hover:shadow-2xl group"
-            >
-              <div className="text-xl md:text-3xl font-extrabold text-gray-900 leading-none">
-                {!initialLoadComplete ? (
-                  <Loader2 className="w-6 h-6 animate-spin text-orange-700" />
-                ) : (
-                  stats.termines
-                )}
-              </div>
-              <p className="text-sm font-medium text-gray-500 mt-4 flex flex-col items-center gap-1">
-                Challenges terminés <ChevronDown size={14} />
+                Mes challenges terminés <ChevronDown size={14} />
               </p>
               <div className="absolute top-3 right-4 p-2 rounded-full bg-orange-100">
                 <CheckCircle size={14} className="text-orange-700" />
               </div>
             </div>
 
-            {/* Total challenges */}
-            <div className="relative bg-white rounded-xl px-5 pt-5 pb-2 shadow-sm border-t-4 border-orange-700 text-left transition-all duration-300">
+            {/* Favoris en cours */}
+            <div
+              onClick={() => navigateToTab("favoris_en_cours")}
+              className="relative bg-white rounded-xl px-5 pt-5 pb-2 shadow-sm border-t-4 border-orange-700 text-left cursor-pointer transition-all duration-300 hover:shadow-2xl group"
+            >
               <div className="text-xl md:text-3xl font-extrabold text-gray-900 leading-none">
                 {!initialLoadComplete ? (
                   <Loader2 className="w-6 h-6 animate-spin text-orange-700" />
                 ) : (
-                  stats.total
+                  stats.favorisEnCours
                 )}
               </div>
               <p className="text-sm font-medium text-gray-500 mt-4 flex flex-col items-center gap-1">
-                Total challenges
+                Mes challenges favoris en cours <ChevronDown size={14} />
               </p>
               <div className="absolute top-3 right-4 p-2 rounded-full bg-orange-100">
-                <Activity size={14} className="text-orange-700" />
+                <Heart size={14} className="text-orange-700" />
+              </div>
+            </div>
+
+            {/* Favoris terminés */}
+            <div
+              onClick={() => navigateToTab("favoris_termines")}
+              className="relative bg-white rounded-xl px-5 pt-5 pb-2 shadow-sm border-t-4 border-orange-700 text-left cursor-pointer transition-all duration-300 hover:shadow-2xl group"
+            >
+              <div className="text-xl md:text-3xl font-extrabold text-gray-900 leading-none">
+                {!initialLoadComplete ? (
+                  <Loader2 className="w-6 h-6 animate-spin text-orange-700" />
+                ) : (
+                  stats.favorisTermines
+                )}
+              </div>
+              <p className="text-sm font-medium text-gray-500 mt-4 flex flex-col items-center gap-1">
+                Mes challenges favoris terminés <ChevronDown size={14} />
+              </p>
+              <div className="absolute top-3 right-4 p-2 rounded-full bg-orange-100">
+                <Star size={14} className="text-orange-700" />
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Section IA avec Loader, Erreur ou Banner */}
-      <div className="w-full mb-6">
-        {isProfileLoading ? (
-          <CoachBannerSkeleton />
-        ) : profileError ? (
-          /* ÉTAT ERREUR DE CONNEXION */
-          <div className="mx-5 md:mx-28 my-8 p-8 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center text-center gap-4 bg-gray-50/30 animate-in fade-in zoom-in duration-300">
-            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-400">
-              <RefreshCw
-                size={24}
-                className="animate-spin"
-                style={{ animationDuration: "3s" }}
-              />
-            </div>
-            <div className="space-y-1">
-              <h3 className="font-bold text-gray-900 text-lg">
-                Oups ! Connexion interrompue
-              </h3>
-              <p className="text-gray-500 text-sm max-w-sm">
-                Nous n'avons pas pu charger votre Coach Virtuel. Vérifiez votre
-                connexion internet et réessayez.
-              </p>
-            </div>
-            <button
-              onClick={fetchInitialData}
-              className="px-6 py-2.5 bg-orange-700 hover:bg-orange-800 text-white font-bold rounded-xl text-sm transition-all shadow-md shadow-orange-100 flex items-center gap-2 active:scale-95"
-            >
-              <RefreshCw size={16} />
-              Actualiser
-            </button>
-          </div>
-        ) : (
-          userProfile && (
-            <CoachGeneralBanner
-              userName={userName}
-              userDomain={userProfile?.domaine_principal?.nom}
-              userCompetences={userProfile?.talent?.competences}
-            />
-          )
-        )}
-      </div>
-
       {/* Tabs Sticky */}
       <div
         className={cn(
-          "sticky bg-white z-40 shadow transition-all duration-300 md:px-18 mx-auto",
+          "sticky bg-white z-40 shadow transition-all duration-300",
           tabsTopPosition,
         )}
         ref={tabsSectionRef}
@@ -685,7 +627,7 @@ export default function HomePage() {
           className="flex overflow-x-auto px-5 pt-3 gap-4 scrollbar-hide"
           ref={tabsContainerRef}
         >
-          {tabs.map((tab) => (
+          {(Object.keys(tabLabels) as SubTab[]).map((tab) => (
             <button
               key={tab}
               data-tab={tab}
@@ -700,13 +642,24 @@ export default function HomePage() {
                   : "text-gray-700 hover:text-orange-600",
               )}
             >
-              {tab}
+              {tabLabels[tab]}
             </button>
           ))}
         </div>
 
         {/* Recherche et Filtres */}
-        <div className="px-5 pt-3">
+        <div className="px-5 pt-2">
+          <div className=" py-2 mb-1">
+            <motion.p
+              key={activeTab}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="text-sm text-orange-800 bg-orange-50/50 border-l-4 border-orange-700 py-2 px-3 rounded-r-lg font-medium"
+            >
+              {tabDescriptions[activeTab]}
+            </motion.p>
+          </div>
+
           <div className="flex gap-3 items-center overflow-x-auto scrollbar-hide">
             <Input
               placeholder="Rechercher un challenge par titre..."
@@ -765,40 +718,20 @@ export default function HomePage() {
         )}
       </div>
 
-      {/* Liste des cartes avec insertion partenaires */}
-      {loadingChallenges ? (
-        <div className="flex py-20 w-full justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-orange-700" />
-        </div>
-      ) : filteredChallenges?.length > 0 ? (
-        <>
-          {/* Première partie des challenges (avant les partenaires) */}
-          <section className="px-5 mt-6 flex flex-wrap gap-6 justify-center max-w-8xl mx-auto">
-            {(showPartnersSection
-              ? challengesBeforePartners
-              : filteredChallenges
-            ).map((c: any) => (
-              <ChallengeCard key={c.id} challenge={mapChallenge(c)} />
-            ))}
-          </section>
-
-          {/* Section partenaires (uniquement dans le tab "Challenges en cours") */}
-          {showPartnersSection && <PartenairesAccueil token={token} />}
-
-          {/* Suite des challenges (après les partenaires) */}
-          {showPartnersSection && challengesAfterPartners.length > 0 && (
-            <section className="px-5 mt-2 flex flex-wrap gap-6 justify-center max-w-8xl mx-auto">
-              {challengesAfterPartners.map((c: any) => (
-                <ChallengeCard key={c.id} challenge={mapChallenge(c)} />
-              ))}
-            </section>
-          )}
-        </>
-      ) : (
-        <section className="px-5 mt-6 flex flex-wrap gap-6 justify-center md:justify-start max-w-8xl mx-auto">
-          {renderEmptyState()}
-        </section>
-      )}
+      {/* Liste des cartes */}
+      <section className="px-5 mt-6 flex flex-wrap gap-6 justify-center md:justify-start">
+        {loadingChallenges ? (
+          <div className="flex py-20 w-full justify-center">
+            <Loader2 className="w-8 h-8 animate-spin text-orange-700" />
+          </div>
+        ) : filteredChallenges?.length > 0 ? (
+          filteredChallenges.map((c: any) => (
+            <ChallengeCard key={c.id} challenge={mapChallenge(c)} />
+          ))
+        ) : (
+          renderEmptyState()
+        )}
+      </section>
 
       {showBackToTop && (
         <motion.button

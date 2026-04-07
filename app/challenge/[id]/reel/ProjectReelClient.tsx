@@ -1052,13 +1052,13 @@ export default function ProjectReelClient() {
               <div className="flex bg-gray-100 p-1 rounded-xl gap-1">
                 <button
                   onClick={() => setFilterMode("final")}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[11px] font-bold transition-all ${filterMode === "final" ? "bg-white text-orange-700 shadow-sm" : "text-gray-600 hover:text-gray-700"}`}
+                  className={`flex-1 cursor-pointer flex items-center justify-center gap-2 py-2 rounded-lg text-[11px] font-bold transition-all ${filterMode === "final" ? "bg-white text-orange-700 shadow-sm" : "text-gray-600 hover:text-gray-700"}`}
                 >
                   <Trophy size={14} /> Projets Finalistes
                 </button>
                 <button
                   onClick={() => setFilterMode("all")}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[11px] font-bold transition-all ${filterMode === "all" ? "bg-white text-orange-700 shadow-sm" : "text-gray-600 hover:text-gray-700"}`}
+                  className={`flex-1 cursor-pointer flex items-center justify-center gap-2 py-2 rounded-lg text-[11px] font-bold transition-all ${filterMode === "all" ? "bg-white text-orange-700 shadow-sm" : "text-gray-600 hover:text-gray-700"}`}
                 >
                   <Users size={14} /> Tous les projets
                 </button>
@@ -1200,16 +1200,15 @@ export default function ProjectReelClient() {
                         </div>
 
                         {/* Affichage de l'icône Info (uniquement en mode 'all') */}
-                        {filterMode === "all" &&
-                          challenge?.typeevaluation?.type != "jury" && (
-                            <button
-                              onClick={() => setShowDetailsModal(true)}
-                              className="p-1.5 hover:bg-orange-50 rounded-full transition-colors text-orange-400 hover:text-orange-600"
-                              title="Détails du score"
-                            >
-                              <Info size={18} strokeWidth={2.5} />
-                            </button>
-                          )}
+                        {challenge?.typeevaluation?.type != "jury" && (
+                          <button
+                            onClick={() => setShowDetailsModal(true)}
+                            className="p-1.5 hover:bg-orange-50 rounded-full transition-colors text-orange-400 hover:text-orange-600"
+                            title="Détails du score"
+                          >
+                            <Info size={18} strokeWidth={2.5} />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1276,7 +1275,7 @@ export default function ProjectReelClient() {
           {/* SUR MOBILE : On peut mettre un petit indicateur discret ou rien du tout car on a le modal */}
           <div className="lg:hidden w-full text-center py-1">
             <p className="text-[10px] font-black uppercase text-gray-500 tracking-tighter">
-              Faites glisser pour naviguer
+              Faites glisser horizontalement pour naviguer
             </p>
           </div>
         </div>
@@ -1406,11 +1405,15 @@ export default function ProjectReelClient() {
 
       {/* modal details de score  */}
       <ScoreDetailModal
+        postId={currentProject?.id}
         isOpen={showDetailsModal}
         onClose={() => setShowDetailsModal(false)}
-        isNoteFinale={false}
+        isNoteFinale={filterMode == "all" ? false : true}
         data={{
-          value: currentProject?.score || 0,
+          value:
+            filterMode == "all"
+              ? currentProject?.score
+              : currentProject?.notefinale || 0,
           votes: currentProject?.like || 0,
           shares: currentProject?.partage || 0,
           comments: currentProject?.commentaires_count || 0,

@@ -1051,6 +1051,7 @@ export default function ProjectCard({ project, challenge }: any) {
       </div>
 
       <ScoreDetailModal
+        postId={project?.id}
         isOpen={showScoreDetail}
         onClose={() => setShowScoreDetail(false)}
         isNoteFinale={false} // À mettre à true si tu utilises une variable notefinale
