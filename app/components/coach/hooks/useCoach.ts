@@ -29,7 +29,6 @@ export function useCoach(mode: "general" | "challenge", challengeId?: number) {
   const [loading, setLoading] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [quota, setQuota] = useState<QuotaInfo | null>(null);
-  // null = pas encore chargé, true = quota atteint
   const [quotaExceeded, setQuotaExceeded] = useState(false);
   const [quotaMessage, setQuotaMessage] = useState<string>("");
 
@@ -100,8 +99,9 @@ export function useCoach(mode: "general" | "challenge", challengeId?: number) {
     [conversationId, newConversation]
   );
 
+  // Modification ici : Ajout du paramètre optionnel intent
   const sendMessage = useCallback(
-    async (content: string) => {
+    async (content: string, intent?: string) => {
       if (!content.trim() || loading) return;
 
       const userMsg: CoachMessage = { role: "user", content };
@@ -114,19 +114,21 @@ export function useCoach(mode: "general" | "challenge", challengeId?: number) {
             ? `/coach/chat/challenge/${challengeId}`
             : `/coach/chat/general`;
 
-        const body: any = { message: content };
-        if (conversationId) body.conversation_id = conversationId;
+        // Construction du body avec l'intent s'il existe
+        const body: any = { 
+          message: content,
+          ...(intent && { intent }), // Ajoute l'intent si défini
+          ...(conversationId && { conversation_id: conversationId })
+        };
 
         const res = await apiFetch(endpoint, {
           method: "POST",
           body: JSON.stringify(body),
-        });
+        }); console.log(res)
 
-        // Quota atteint (HTTP 429)
         if (res?.statut === 429 && res?.quota) {
           setQuotaExceeded(true);
           setQuotaMessage(res.message);
-          // Retirer le message user qu'on venait d'ajouter
           setMessages((prev) => prev.slice(0, -1));
           return;
         }
@@ -142,7 +144,6 @@ export function useCoach(mode: "general" | "challenge", challengeId?: number) {
             setConversationId(res.conversation_id);
           }
 
-          // Mettre à jour le quota depuis la réponse
           if (res.quota) {
             setQuota(res.quota);
             setQuotaExceeded(res.quota.restant <= 0);
@@ -161,8 +162,7 @@ export function useCoach(mode: "general" | "challenge", challengeId?: number) {
           ...prev,
           {
             role: "assistant",
-            content:
-              "❌ Une erreur de connexion est survenue. Veuillez réessayer.",
+            content: "❌ Erreur de connexion. Veuillez réessayer.",
           },
         ]);
       } finally {

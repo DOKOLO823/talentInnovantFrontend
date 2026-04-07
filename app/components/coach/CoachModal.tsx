@@ -21,6 +21,7 @@ import {
   UserPlus,
   Lock,
   Zap,
+  RefreshCw,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -413,6 +414,9 @@ export default function CoachModal({
   const [showQuotaModal, setShowQuotaModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [activeIntent, setActiveIntent] = useState<string | undefined>(
+    undefined,
+  );
 
   const [greeting] = useState(() => {
     const fn = greetings[Math.floor(Math.random() * greetings.length)];
@@ -464,27 +468,38 @@ export default function CoachModal({
 
   // Garde-fou avant envoi : vérifie connexion et quota
   const guardedSend = useCallback(
-    async (overrideMessage?: string) => {
+    async (overrideMessage?: string, intent?: string) => {
       const msg = (overrideMessage ?? inputValue).trim();
       if (!msg || loading) return;
 
-      // Vérification connexion
       if (!currentUser) {
         setShowLoginModal(true);
         return;
       }
 
-      // Vérification quota (côté frontend, avant même la requête)
       if (quotaExceeded) {
         setShowQuotaModal(true);
         return;
       }
 
+      // On mémorise l'intent utilisé (soit le nouveau, soit celui déjà actif)
+      const currentIntent = intent ?? activeIntent;
+      if (intent) setActiveIntent(intent);
+
       setInputValue("");
       if (textareaRef.current) textareaRef.current.style.height = "auto";
-      await sendMessage(msg);
+
+      // On passe l'intent au hook useCoach
+      await sendMessage(msg, currentIntent);
     },
-    [inputValue, loading, currentUser, quotaExceeded, sendMessage],
+    [
+      inputValue,
+      loading,
+      currentUser,
+      quotaExceeded,
+      sendMessage,
+      activeIntent,
+    ],
   );
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -518,6 +533,18 @@ export default function CoachModal({
     quota?.limite ?? parseInt(process.env.NEXT_PUBLIC_NB_PROMPT_JOUR ?? "5");
 
   if (!isOpen) return null;
+
+  // Fonction pour relancer la dernière requête utilisateur
+  const handleRetry = useCallback(() => {
+    const lastUserMessage = [...messages]
+      .reverse()
+      .find((m) => m.role === "user");
+
+    if (lastUserMessage) {
+      // On relance avec le contenu ET l'intent actif
+      guardedSend(lastUserMessage.content, activeIntent);
+    }
+  }, [messages, guardedSend, activeIntent]);
 
   return (
     <>
@@ -587,6 +614,7 @@ export default function CoachModal({
                       onClick={() => {
                         newConversation();
                         setShowHistory(false);
+                        setActiveIntent(undefined); // Reset de l'intent
                       }}
                       className="w-full py-3 px-4 bg-orange-700 hover:bg-orange-800 text-white rounded-xl flex items-center justify-center gap-2 font-bold transition-all shadow-md shadow-orange-200"
                     >
@@ -792,7 +820,10 @@ export default function CoachModal({
                         )}
                         <button
                           onClick={() =>
-                            guardedSend(card.buildPrompt(cardInputs[card.id]))
+                            guardedSend(
+                              card.buildPrompt(cardInputs[card.id]),
+                              card.id,
+                            )
                           }
                           disabled={
                             loading ||
@@ -816,60 +847,86 @@ export default function CoachModal({
 
               {/* MESSAGES */}
               <div className="flex flex-col gap-16">
-                {messages.map((msg, idx) => (
-                  <div
-                    key={idx}
-                    className="w-full animate-in slide-in-from-bottom-4 duration-500"
-                  >
-                    <div
-                      className={`flex items-center gap-3 mb-4 ${
-                        msg.role === "user" ? "flex-row-reverse" : "flex-row"
-                      }`}
-                    >
-                      <div
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm ${
-                          msg.role === "assistant"
-                            ? "bg-orange-700 text-white"
-                            : "bg-gray-100 text-gray-600"
-                        }`}
-                      >
-                        {msg.role === "assistant" ? (
-                          <Bot size={22} />
-                        ) : (
-                          <User size={22} />
-                        )}
-                      </div>
-                      <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                        {msg.role === "assistant" ? "Coach IA" : "Vous"}
-                      </span>
-                    </div>
+                {messages.map((msg, idx) => {
+                  const isErrorMessage =
+                    msg.content.includes("Une erreur est survenue") ||
+                    msg.content.includes("Une erreur de connexion");
 
+                  const isLastMessage = idx === messages.length - 1;
+
+                  return (
                     <div
-                      className={`w-full ${
-                        msg.role === "user" ? "text-right" : "text-left"
-                      }`}
+                      key={idx}
+                      className="w-full animate-in slide-in-from-bottom-4 duration-500"
                     >
                       <div
-                        className={`inline-block w-full text-left ${
-                          msg.role === "user"
-                            ? "bg-gray-50 p-8 rounded-[2rem] border border-gray-100 text-gray-800 text-lg leading-relaxed shadow-sm"
-                            : ""
-                        }`}
+                        className={`flex items-center gap-3 mb-4 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}
                       >
-                        {msg.role === "assistant" ? (
-                          <TypewriterMessage
-                            content={msg.content}
-                            isLatest={idx === messages.length - 1}
-                          />
-                        ) : (
-                          <p className="whitespace-pre-wrap">{msg.content}</p>
-                        )}
+                        <div
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm ${
+                            msg.role === "assistant"
+                              ? "bg-orange-700 text-white"
+                              : "bg-gray-100 text-gray-600"
+                          }`}
+                        >
+                          {msg.role === "assistant" ? (
+                            <Bot size={22} />
+                          ) : (
+                            <User size={22} />
+                          )}
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                          {msg.role === "assistant" ? "Coach IA" : "Vous"}
+                        </span>
+                      </div>
+
+                      <div
+                        className={`w-full ${msg.role === "user" ? "text-right" : "text-left"}`}
+                      >
+                        <div
+                          className={`inline-block w-full text-left ${
+                            msg.role === "user"
+                              ? "bg-gray-50 p-8 rounded-[2rem] border border-gray-100 text-gray-800 text-lg leading-relaxed shadow-sm"
+                              : ""
+                          }`}
+                        >
+                          {msg.role === "assistant" ? (
+                            <div className="flex flex-col gap-4">
+                              <TypewriterMessage
+                                content={msg.content}
+                                isLatest={isLastMessage}
+                              />
+
+                              {/* BOUTON REESSAYER : Apparaît si c'est une erreur */}
+                              {isErrorMessage && (
+                                <motion.button
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  onClick={handleRetry}
+                                  disabled={loading}
+                                  className="flex items-center gap-2 w-fit px-4 py-2 mt-2 bg-white border border-orange-200 text-orange-700 rounded-xl text-sm font-bold hover:bg-orange-50 transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                                >
+                                  {loading ? (
+                                    <Loader2
+                                      size={16}
+                                      className="animate-spin"
+                                    />
+                                  ) : (
+                                    <RefreshCw size={16} />
+                                  )}
+                                  Relancer la demande
+                                </motion.button>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="whitespace-pre-wrap">{msg.content}</p>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
-
               {loading && (
                 <div className="flex items-center gap-3 mt-10 p-4 bg-orange-50/50 rounded-2xl border border-orange-100 w-fit">
                   <Loader2 size={18} className="animate-spin text-orange-700" />
