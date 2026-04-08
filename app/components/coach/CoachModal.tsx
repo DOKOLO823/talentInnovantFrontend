@@ -850,7 +850,7 @@ export default function CoachModal({
                 {messages.map((msg, idx) => {
                   const isErrorMessage =
                     msg.content.includes("Une erreur est survenue") ||
-                    msg.content.includes("Une erreur de connexion");
+                    msg.content.includes("Erreur de connexion");
 
                   const isLastMessage = idx === messages.length - 1;
 
