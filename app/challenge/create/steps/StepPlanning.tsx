@@ -43,21 +43,23 @@ export default function StepPlanning({
 
     if (!data.datelancement) {
       newErrors.datelancement = "La date de lancement est obligatoire.";
-    } else if (new Date(data.datelancement) < now) {
-      newErrors.datelancement =
-        "La date de lancement ne peut pas être dans le passé.";
     }
+    //  else if (new Date(data.datelancement) < now) {
+    //   newErrors.datelancement =
+    //     "La date de lancement ne peut pas être dans le passé.";
+    // }
 
     if (!data.datefininscription) {
       newErrors.datefininscription =
         "La date de fin des inscriptions est obligatoire.";
-    } else if (
-      data.datelancement &&
-      new Date(data.datefininscription) <= new Date(data.datelancement)
-    ) {
-      newErrors.datefininscription =
-        "La fin des inscriptions doit être après le lancement.";
     }
+    // else if (
+    //   data.datelancement &&
+    //   new Date(data.datefininscription) <= new Date(data.datelancement)
+    // ) {
+    //   newErrors.datefininscription =
+    //     "La fin des inscriptions doit être après le lancement.";
+    // }
 
     if (!data.datefin) {
       newErrors.datefin = "La date de fin du challenge est obligatoire.";
