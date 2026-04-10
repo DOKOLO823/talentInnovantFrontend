@@ -31,7 +31,7 @@ export default function CoachGeneralBanner({
     {
       id: "idees",
       emoji: "💡",
-      title: "Générer des idées de projets",
+      title: "Générer des idées de projets dans mon domaine",
       description: `Obtenir 5 idées de projets innovants adaptées à votre domaine ${userDomain ? `(${userDomain})` : ""} et au contexte africain, avec leur potentiel et les ressources nécessaires.`,
       buildPrompt: () =>
         `Génère-moi 5 idées de projets innovants adaptés à mon domaine principal (${userDomain || "non défini"}) et à mes compétences (${userCompetences || "non définies"}). Pour chaque idée, donne : le nom du projet, le problème résolu avec une statistique africaine fiable, la cible, la solution proposée, et les ressources minimales pour démarrer. Tout doit être adapté au contexte africain.`,

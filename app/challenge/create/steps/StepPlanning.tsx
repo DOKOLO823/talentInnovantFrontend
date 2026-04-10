@@ -63,13 +63,14 @@ export default function StepPlanning({
 
     if (!data.datefin) {
       newErrors.datefin = "La date de fin du challenge est obligatoire.";
-    } else if (
-      data.datefininscription &&
-      new Date(data.datefin) <= new Date(data.datefininscription)
-    ) {
-      newErrors.datefin =
-        "La fin du challenge doit être après la clôture des inscriptions.";
     }
+    // else if (
+    //   data.datefininscription &&
+    //   new Date(data.datefin) <= new Date(data.datefininscription)
+    // ) {
+    //   newErrors.datefin =
+    //     "La fin du challenge doit être après la clôture des inscriptions.";
+    // }
 
     setErrors(newErrors);
 
