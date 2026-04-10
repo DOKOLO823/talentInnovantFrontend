@@ -125,7 +125,7 @@ export function useCoach(mode: "general" | "challenge", challengeId?: number) {
           method: "POST",
           body: JSON.stringify(body),
         }); 
-        // console.log(res)
+        console.log(res)
 
         if (res?.statut === 429 && res?.quota) {
           setQuotaExceeded(true);
