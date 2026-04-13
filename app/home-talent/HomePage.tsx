@@ -372,6 +372,7 @@ export default function HomePage() {
       try {
         if (typeof c.recompense === "string" && c.recompense !== "null") {
           const parsed = JSON.parse(c.recompense);
+
           rewardsArray = Object.values(parsed);
         } else if (Array.isArray(c.recompense)) {
           rewardsArray = c.recompense;

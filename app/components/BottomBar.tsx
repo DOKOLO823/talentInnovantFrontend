@@ -75,11 +75,6 @@ export default function BottomBar() {
       Icon: Trophy, // ou une autre icône de votre choix
     },
     {
-      href: "/communaute",
-      label: "Communauté",
-      Icon: Users,
-    },
-    {
       href: "/reseau",
       label: "Réseau",
       Icon: Network,
@@ -87,6 +82,11 @@ export default function BottomBar() {
       isLoading: loadingReseau,
       // On définit les routes secondaires qui activent cet onglet
       activeOn: ["/reseau", "/collaborateurs"],
+    },
+    {
+      href: "/communaute",
+      label: "Communauté",
+      Icon: Users,
     },
   ];
 

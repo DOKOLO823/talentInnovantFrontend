@@ -175,8 +175,8 @@ export default function Navbar() {
   const pcTalentLinks = [
     { href: "/home-talent", label: "Accueil" },
     { href: "/mes-challenges", label: "Mes challenges" },
-    { href: "/communaute", label: "Communauté" },
     { href: "/reseau", label: "Réseau" },
+    { href: "/communaute", label: "Communauté" },
   ];
 
   const pcEntrepriseLinks = [{ href: "/home-entreprise", label: "Accueil" }];
