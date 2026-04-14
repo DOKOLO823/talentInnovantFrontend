@@ -179,6 +179,7 @@ export default function HomePage() {
         if (enCoursRes?.statut === 200) {
           const challenges = enCoursRes.challenges_en_cours || [];
           setChallengesEnCours(challenges);
+          // console.log(challenges);
           setVillesEnCours(enCoursRes.villes || ["Partout"]);
 
           const allDomaines = new Set<string>();
@@ -517,7 +518,7 @@ export default function HomePage() {
             className="text-center md:text-left mb-8 min-h-[100px]"
           >
             <h1 className="text-xl md:text-3xl font-bold text-gray-900 tracking-tight flex items-center justify-center md:justify-start gap-2">
-              Hello{" "}
+              Salut{" "}
               <span className="text-orange-700 capitalize line-clamp-1">
                 {userName}
               </span>{" "}
