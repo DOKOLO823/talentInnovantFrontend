@@ -9,6 +9,7 @@ import {
   ChevronRight,
   AlertCircle,
   CheckCircle2,
+  Sparkles, // Ajout de l'icône pour Monday Motivation
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { apiFetch } from "@/app/lib/api";
@@ -19,8 +20,16 @@ import toast, { Toaster } from "react-hot-toast";
 export default function ParametresTalent() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [toggling, setToggling] = useState(false);
+
+  // États pour Challenges par mail
   const [receiveEmail, setReceiveEmail] = useState(false);
+  const [toggling, setToggling] = useState(false);
+
+  // États pour Monday Motivation
+  const [mondayMotivation, setMondayMotivation] = useState(false);
+  const [togglingMonday, setTogglingMonday] = useState(false);
+
+  // États pour Disponibilité
   const [isAvailable, setIsAvailable] = useState(false);
   const [togglingAvail, setTogglingAvail] = useState(false);
 
@@ -33,9 +42,9 @@ export default function ParametresTalent() {
     try {
       const res = await apiFetch("/talent-infos", { method: "GET" });
       if (res.statut == 200) {
-        // console.log(res);
-        // On synchronise le state avec la valeur "oui"/"non" de la BD
+        // Synchronisation des states avec la BD
         setReceiveEmail(res.talent.recevoirchallengemail == "oui");
+        setMondayMotivation(res.talent.recevoirmondaymotivation == 1);
         setIsAvailable(res.user.disponible == 1);
       }
     } catch (error) {
@@ -48,14 +57,12 @@ export default function ParametresTalent() {
 
   const handleToggleEmail = async () => {
     if (toggling) return;
-
     setToggling(true);
     try {
       const res = await apiFetch("/parametres-talent/receiveemail", {
         method: "GET",
       });
       if (res.statut === 200) {
-        // Mise à jour locale après succès
         setReceiveEmail(res.nouvelle_valeur === "oui");
         toast.success(res?.message, { duration: 5000 });
       } else {
@@ -69,10 +76,30 @@ export default function ParametresTalent() {
     }
   };
 
-  // 3. La fonction de bascule (Toggle)
+  // Nouvelle fonction pour Monday Motivation
+  const handleToggleMondayMotivation = async () => {
+    if (togglingMonday) return;
+    setTogglingMonday(true);
+    try {
+      const res = await apiFetch("/parametres/monday-motivation/toggle", {
+        method: "POST", // On utilise POST comme défini dans ta route
+      });
+      if (res.statut === 200) {
+        setMondayMotivation(res.recevoirmondaymotivation);
+        toast.success(res.message);
+      } else {
+        toast.error(res.message || "Une erreur est survenue.");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Erreur de connexion au serveur.");
+    } finally {
+      setTogglingMonday(false);
+    }
+  };
+
   const handleToggleAvailability = async () => {
     if (togglingAvail) return;
-
     setTogglingAvail(true);
     try {
       const res = await apiFetch(
@@ -154,7 +181,8 @@ export default function ParametresTalent() {
               </h2>
             </div>
 
-            <div className="bg-white rounded-[28px] border border-slate-100 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-[28px] border border-slate-100 shadow-sm overflow-hidden divide-y divide-slate-50">
+              {/* Carte Challenges */}
               <div className="p-6 flex items-center justify-between group transition-all">
                 <div className="flex flex-col items-start gap-4">
                   <div
@@ -172,14 +200,10 @@ export default function ParametresTalent() {
                     </p>
                   </div>
                 </div>
-
-                {/* Toggle Professionnel */}
                 <button
                   onClick={handleToggleEmail}
                   disabled={toggling}
-                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none ${
-                    receiveEmail ? "bg-orange-600" : "bg-slate-200"
-                  } ${toggling ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none ${receiveEmail ? "bg-orange-600" : "bg-slate-200"} ${toggling ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                 >
                   <motion.span
                     animate={{ x: receiveEmail ? 28 : 4 }}
@@ -192,6 +216,47 @@ export default function ParametresTalent() {
                       />
                     ) : (
                       receiveEmail && (
+                        <CheckCircle2 className="text-orange-600" size={14} />
+                      )
+                    )}
+                  </motion.span>
+                </button>
+              </div>
+
+              {/* Carte Monday Motivation */}
+              <div className="p-6 flex items-center justify-between group transition-all">
+                <div className="flex flex-col items-start gap-4">
+                  <div
+                    className={`p-3 rounded-2xl transition-colors ${mondayMotivation ? "bg-orange-100 text-orange-600" : "bg-slate-100 text-slate-400"}`}
+                  >
+                    <Sparkles size={14} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900">
+                      Monday Motivation
+                    </h3>
+                    <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-[220px] md:max-w-xs">
+                      Recevoir chaque lundi matin un conseil exclusif pour
+                      booster votre créativité et votre carrière.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleToggleMondayMotivation}
+                  disabled={togglingMonday}
+                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none ${mondayMotivation ? "bg-orange-600" : "bg-slate-200"} ${togglingMonday ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                >
+                  <motion.span
+                    animate={{ x: mondayMotivation ? 28 : 4 }}
+                    className="flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-lg"
+                  >
+                    {togglingMonday ? (
+                      <Loader2
+                        className="animate-spin text-orange-600"
+                        size={12}
+                      />
+                    ) : (
+                      mondayMotivation && (
                         <CheckCircle2 className="text-orange-600" size={14} />
                       )
                     )}
@@ -214,11 +279,7 @@ export default function ParametresTalent() {
               <div className="p-6 flex items-center justify-between group transition-all">
                 <div className="flex flex-col items-start gap-4">
                   <div
-                    className={`p-3 rounded-2xl transition-colors ${
-                      isAvailable
-                        ? "bg-green-100 text-green-600"
-                        : "bg-slate-100 text-slate-400"
-                    }`}
+                    className={`p-3 rounded-2xl transition-colors ${isAvailable ? "bg-green-100 text-green-600" : "bg-slate-100 text-slate-400"}`}
                   >
                     <CheckCircle2 size={14} />
                   </div>
@@ -228,19 +289,14 @@ export default function ParametresTalent() {
                     </h3>
                     <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-[220px] md:max-w-xs">
                       Si désactivé, vous ne serez plus suggéré aux autres
-                      talents comme collaborateur et vous ne recevrez plus de
-                      demandes de collaboration.
+                      talents comme collaborateur.
                     </p>
                   </div>
                 </div>
-
-                {/* Toggle Disponibilité */}
                 <button
                   onClick={handleToggleAvailability}
                   disabled={togglingAvail}
-                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none ${
-                    isAvailable ? "bg-green-600" : "bg-slate-200"
-                  } ${togglingAvail ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none ${isAvailable ? "bg-green-600" : "bg-slate-200"} ${togglingAvail ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                 >
                   <motion.span
                     animate={{ x: isAvailable ? 28 : 4 }}
@@ -261,23 +317,6 @@ export default function ParametresTalent() {
               </div>
             </div>
           </section>
-
-          {/* Section Sécurité (Exemple de design pour futurs ajouts) */}
-          {/* <section className="opacity-60">
-            <div className="flex items-center gap-2 mb-4 px-2">
-                <ShieldCheck size={18} className="text-slate-400" />
-                <h2 className="text-xs font-black uppercase tracking-widest text-slate-400">Compte & Sécurité</h2>
-            </div>
-            <div className="bg-white rounded-[28px] border border-slate-100 shadow-sm divide-y divide-slate-50">
-                <div className="p-6 flex items-center justify-between">
-                    <span className="font-bold text-slate-700">Changer mon mot de passe</span>
-                    <ChevronRight size={18} className="text-slate-300" />
-                </div>
-            </div>
-            <p className="mt-4 px-6 text-[11px] text-slate-400 font-medium text-center italic">
-                Version de l'application 1.0.2 • Talent Innovant
-            </p>
-          </section> */}
         </div>
       </div>
     </div>
