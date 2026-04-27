@@ -545,8 +545,7 @@ export default function HomePage() {
           {/* Titre de section simple */}
           <div className="mb-6">
             <h2 className="text-sm  md:text-xl font-bold flex items-center gap-x-1 ">
-              Explorez les challenges disponibles{" "}
-              <span className="text-orange-700"> :</span>
+              Explorez les challenges publiés par les entreprises :{" "}
             </h2>
             <div className="h-0.5 w-12 mt-1 bg-black" />
           </div>

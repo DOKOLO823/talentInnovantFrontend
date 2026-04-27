@@ -21,18 +21,18 @@ export default function Step2ChallengeForm({
   onBack,
   onSubmit,
   isSubmitting,
-  forCreate
+  forCreate,
 }: Step2ChallengeFormProps) {
   const [openPreview, setOpenPreview] = useState(false);
 
   const handleSubmit = () => {
     const validFields = fields.filter((f) => f.label.trim() !== "");
-    
+
     if (validFields.length === 0) {
       toast.error("Veuillez configurer au moins un champ de saisie.");
       return;
     }
-    
+
     onSubmit();
   };
 
@@ -49,7 +49,8 @@ export default function Step2ChallengeForm({
           Conception du Formulaire
         </h2>
         <p className="text-sm text-slate-500 mt-1">
-          Structurez les données requises pour la soumission des projets participants.
+          Structurez les données requises pour la soumission des projets
+          participants.
         </p>
       </div>
 
@@ -60,7 +61,7 @@ export default function Step2ChallengeForm({
             Configuration des champs de saisie
           </h3>
         </div>
-        
+
         {/* Note: Assurez-vous que DynamicFieldBuilder utilise 'accent-orange-700' sur ses inputs checkbox */}
         <DynamicFieldBuilder fields={fields} setFields={setFields} />
       </div>
@@ -77,7 +78,7 @@ export default function Step2ChallengeForm({
           Retour aux paramètres
         </button>
 
-        <div className="flex items-center gap-3 w-full sm:w-auto">
+        <div className="flex items-center flex-wrap px-4 gap-3 w-full sm:w-auto">
           <button
             type="button"
             onClick={() => setOpenPreview(true)}
@@ -88,24 +89,26 @@ export default function Step2ChallengeForm({
             Aperçu
           </button>
 
-         {forCreate &&  <button
-            type="button"
-            onClick={handleSubmit}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 min-w-[220px] bg-orange-700 hover:bg-orange-800 text-white px-8 py-2.5 rounded-md text-[12px] font-black uppercase tracking-widest transition-all shadow-md active:scale-[0.98] disabled:opacity-50"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin text-orange-200" />
-                Publication...
-              </>
-            ) : (
-              <>
-                <Rocket size={16} />
-                Publier le challenge
-              </>
-            )}
-          </button>}
+          {forCreate && (
+            <button
+              type="button"
+              onClick={handleSubmit}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 min-w-[220px] bg-orange-700 hover:bg-orange-800 text-white px-8 py-2.5 rounded-md text-[12px] font-black uppercase tracking-widest transition-all shadow-md active:scale-[0.98] disabled:opacity-50"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-orange-200" />
+                  Publication...
+                </>
+              ) : (
+                <>
+                  <Rocket size={16} />
+                  Publier le challenge
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
 

@@ -93,7 +93,7 @@ function DynamicList({
               <button
                 type="button"
                 onClick={() => removeItem(idx)}
-                className="mt-1 p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all shrink-0"
+                className="mt-1 p-0 md:p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all shrink-0"
               >
                 <Trash2 size={16} />
               </button>
@@ -284,11 +284,11 @@ export default function StepInfo({
       </div>
 
       {/* ── FOOTER ── */}
-      <div className="flex justify-between items-center pt-6 border-t border-slate-200">
+      <div className="flex justify-between items-center gap-x-1 pt-6 border-t border-slate-200">
         <button
           type="button"
           onClick={onBack}
-          className="text-[12px] font-bold text-slate-400 hover:text-slate-900 uppercase tracking-widest transition-colors"
+          className="text-[10px] md:text-[12px] font-bold text-slate-400 hover:text-slate-900 uppercase tracking-widest transition-colors"
         >
           ← Précédent
         </button>
@@ -297,7 +297,7 @@ export default function StepInfo({
           type="button"
           onClick={handleContinue}
           disabled={isSubmitting}
-          className="bg-orange-700 text-white px-8 py-2.5 rounded-md text-sm font-bold hover:bg-orange-800 transition-all shadow-md active:scale-[0.98] flex items-center gap-2 disabled:opacity-60"
+          className="bg-orange-700 text-white px-4 md:px-8 py-2.5 rounded-md text-sm font-bold hover:bg-orange-800 transition-all shadow-md active:scale-[0.98] flex items-center gap-2 disabled:opacity-60"
         >
           {isSubmitting ? (
             <>

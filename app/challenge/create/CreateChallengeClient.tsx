@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast, Toaster } from "react-hot-toast";
 import { apiFetch } from "@/app/lib/api";
 import Stepper from "./Stepper";
@@ -27,6 +27,10 @@ export default function CreateChallengeClient({
   jurys,
 }: CreateChallengeClientProps) {
   const router = useRouter();
+
+  const searchParams = useSearchParams();
+  const typeChallenge = searchParams.get("typechallenge") || "entreprise";
+  const isTalentChallenge = typeChallenge === "talent";
 
   const [mainStep, setMainStep] = useState(1);
   const [subStep, setSubStep] = useState(1);
@@ -114,6 +118,7 @@ export default function CreateChallengeClient({
       formData.append("datelancement", challenge.datelancement || "");
       formData.append("datefin", challenge.datefin || "");
       formData.append("site", challenge.site || "talent innovant");
+      formData.append("typechallenge", typeChallenge);
       formData.append("is_official", challenge.is_official ? "1" : "0");
       formData.append(
         "typeevaluation_id",
@@ -233,14 +238,19 @@ export default function CreateChallengeClient({
         });
       }
 
-      const response = await apiFetch("/challenges", {
+      const endpoint = isTalentChallenge ? "/challenges-talent" : "/challenges";
+      const response = await apiFetch(endpoint, {
         method: "POST",
         body: formData,
       });
 
       if (response.statut === 200 || response.status === true) {
         toast.success("Challenge publié avec succès !");
-        router.push("/home-entreprise/Challenges");
+        if (isTalentChallenge) {
+          router.push("/communaute/meschallenges");
+        } else {
+          router.push("/home-entreprise/Challenges");
+        }
       } else {
         toast.error(response.message || "Erreur lors de la publication");
       }
@@ -263,7 +273,7 @@ export default function CreateChallengeClient({
   return (
     <div className="min-h-screen bg-slate-50/50 pb-20">
       <Toaster position="top-right" />
-      <div className="max-w-6xl mx-auto px-4 py-10">
+      <div className="max-w-6xl mx-auto px-0 md:px-4 py-10">
         <div className="mb-6 flex items-center justify-between">
           <BackButton />
           {/* Affichage du Badge Mode */}
@@ -281,7 +291,7 @@ export default function CreateChallengeClient({
           }
         />
 
-        <div className="bg-white border border-slate-200 rounded-md shadow-sm p-8 md:p-12 animate-fadeIn">
+        <div className="bg-white border border-slate-200 rounded-md shadow-sm py-8 px-4 md:p-12 animate-fadeIn">
           {/* STEP 1 : LE TUNNEL D'INFOS (5 SOUS-ETAPES) */}
           {mainStep === 1 && (
             <>

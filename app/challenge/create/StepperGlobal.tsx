@@ -124,8 +124,8 @@ export default function StepGeneralInfo({
         e.target.value = ""; // Reset input
         return;
       }
-      if (file.size > 2 * 1024 * 1024) {
-        toast.error("L'image ne doit pas dépasser 2 MB.");
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("L'image ne doit pas dépasser 5 MB.");
         e.target.value = "";
         return;
       }

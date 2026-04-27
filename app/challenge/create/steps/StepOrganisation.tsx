@@ -94,6 +94,7 @@ export default function StepOrganisation({
   const packParam = searchParams.get("pack") ?? "";
   const isModification = !!data.id;
   const isInterne = data.site == "talent innovant";
+  const typechallenge = useSearchParams().get("typechallenge");
   const [lienExterne, setLienExterne] = useState(
     data.site && data.site != "talent innovant" ? data.site : "",
   );
@@ -230,7 +231,11 @@ export default function StepOrganisation({
       newErrors.jurys = "Veuillez sélectionner au moins un jury.";
     }
 
-    if (isInterne && selectedRegions.length === 0) {
+    if (
+      isInterne &&
+      typechallenge == "entreprise" &&
+      selectedRegions.length === 0
+    ) {
       newErrors.regions =
         "Veuillez sélectionner au moins une région de diffusion.";
     }
@@ -513,7 +518,7 @@ export default function StepOrganisation({
             </div>
 
             {/* MULTI-JURYS */}
-            {data.typeevaluation !== "Vote" && (
+            {data.typeevaluation !== "Vote" && isInterne && (
               <div>
                 <label className={labelStyle}>Jurys référents *</label>
 
@@ -652,7 +657,7 @@ export default function StepOrganisation({
       </div>
 
       {/* ── RÉGIONS (challenge interne uniquement) ── */}
-      {isInterne && (
+      {isInterne && typechallenge == "entreprise" && (
         <section className={cardStyle}>
           <h3 className={sectionTitle}>
             <MapPin size={16} className="text-orange-700" /> Régions de
@@ -709,7 +714,7 @@ export default function StepOrganisation({
             {criteres.map((critere, idx) => (
               <div
                 key={idx}
-                className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl"
+                className="flex flex-col md:flex-row justify-center items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl"
               >
                 <span className="text-[10px] font-black text-slate-400 w-5 shrink-0">
                   {idx + 1}.
@@ -761,13 +766,13 @@ export default function StepOrganisation({
             </button>
           </div>
 
-          {criteres.length > 0 && (
+          {/* {criteres.length > 0 && (
             <div className="mt-4 p-3 bg-orange-50 border border-orange-100 rounded-xl text-xs text-orange-800 font-bold">
               📊 Formule :{" "}
               <span className="font-normal">Σ(Note × Coef) / Σ(Coef)</span> par
               jury → moyenne inter-jurys = note finale
             </div>
-          )}
+          )} */}
 
           {errors.criteres && (
             <p className={`${errStyle} mt-2`}>

@@ -77,7 +77,9 @@ export default function ChallengeTypeModal({
 
   const handleSelectPack = () => {
     if (!selectedPack) return;
-    router.push(`/challenge/create?lieu=interne&pack=${selectedPack}`);
+    router.push(
+      `/challenge/create?lieu=interne&pack=${selectedPack}&typechallenge=entreprise`,
+    );
     onClose();
   };
 

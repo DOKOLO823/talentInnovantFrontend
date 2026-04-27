@@ -15,36 +15,38 @@ interface StepperProps {
   mainStepTitle?: string;
 }
 
-export default function Stepper({ 
-  currentStep, 
-  currentSubStep, 
+export default function Stepper({
+  currentStep,
+  currentSubStep,
   totalSubSteps,
-  mainStepTitle 
+  mainStepTitle,
 }: StepperProps) {
-  
   const mainSteps: Step[] = [
-    { 
-      number: 1, 
-      title: "Configuration", 
-      description: "Paramètres du challenge" 
+    {
+      number: 1,
+      title: "Configuration",
+      description: "Paramètres du challenge",
     },
-    { 
-      number: 2, 
-      title: "Formulaire", 
-      description: "Champs de participation" 
+    {
+      number: 2,
+      title: "Formulaire",
+      description: "Champs de participation",
     },
   ];
 
   return (
     <div className="w-full mb-10">
       {/* STEPPER PRINCIPAL STYLE 'CORPORATE' */}
-      <div className="flex items-center justify-between max-w-3xl mx-auto mb-10">
+      <div className="flex items-center justify-between w-3/5 md:max-w-3xl mx-auto mb-10">
         {mainSteps.map((step, index) => {
           const isCompleted = currentStep > step.number;
           const isActive = currentStep === step.number;
 
           return (
-            <div key={step.number} className="flex items-center flex-1 last:flex-none">
+            <div
+              key={step.number}
+              className="flex items-center flex-1 last:flex-none"
+            >
               <div className="flex flex-col items-center relative z-10">
                 {/* Cercle d'étape */}
                 <div
@@ -55,8 +57,8 @@ export default function Stepper({
                       isCompleted
                         ? "bg-orange-700 border-orange-700 text-white shadow-sm"
                         : isActive
-                        ? "bg-white border-orange-700 text-orange-700 ring-4 ring-orange-700/10"
-                        : "bg-white border-slate-200 text-slate-400"
+                          ? "bg-white border-orange-700 text-orange-700 ring-4 ring-orange-700/10"
+                          : "bg-white border-slate-200 text-slate-400"
                     }
                   `}
                 >
@@ -66,12 +68,16 @@ export default function Stepper({
                     `0${step.number}`
                   )}
                 </div>
-                
+
                 {/* Labels */}
                 <div className="absolute top-12 text-center min-w-[140px]">
-                  <p className={`text-[11px] font-black uppercase tracking-wider transition-colors ${
-                    isActive || isCompleted ? "text-slate-900" : "text-slate-400"
-                  }`}>
+                  <p
+                    className={`text-[11px] font-black uppercase tracking-wider transition-colors ${
+                      isActive || isCompleted
+                        ? "text-slate-900"
+                        : "text-slate-400"
+                    }`}
+                  >
                     {step.title}
                   </p>
                   <p className="text-[10px] text-slate-400 font-medium uppercase tracking-tighter mt-0.5 hidden sm:block">
@@ -104,14 +110,15 @@ export default function Stepper({
               <div className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-orange-700 animate-pulse" />
                 <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">
-                  {mainStepTitle || `Module ${currentSubStep} / ${totalSubSteps}`}
+                  {mainStepTitle ||
+                    `Module ${currentSubStep} / ${totalSubSteps}`}
                 </span>
               </div>
               <span className="text-[10px] text-slate-400 font-bold">
                 {Math.round((currentSubStep / totalSubSteps) * 100)}%
               </span>
             </div>
-            
+
             {/* Track de progression */}
             <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
               <div
