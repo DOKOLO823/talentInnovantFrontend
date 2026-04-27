@@ -735,15 +735,11 @@ export default function StepOrganisation({
                   <input
                     type="number"
                     min={1}
-                    max={10}
+                    max={100}
                     className="w-16 border border-slate-300 rounded-md p-1.5 text-sm text-center font-bold focus:border-orange-700 outline-none"
-                    value={critere.coefficient}
+                    value={critere.coefficient ?? ""}
                     onChange={(e) =>
-                      updateCritere(
-                        idx,
-                        "coefficient",
-                        Math.max(1, parseInt(e.target.value) || 1),
-                      )
+                      updateCritere(idx, "coefficient", e.target.value)
                     }
                   />
                 </div>
@@ -843,10 +839,12 @@ export default function StepOrganisation({
             <input
               type="number"
               className={inputStyle}
-              value={data.nombrecontribution || 1}
-              onChange={(e) =>
-                update("nombrecontribution", parseInt(e.target.value) || 1)
-              }
+              value={data.nombrecontribution ?? ""}
+              onChange={(e) => update("nombrecontribution", e.target.value)}
+              // Remet 1 si le champ est laissé vide à la fin de la saisie
+              onBlur={(e) => {
+                if (e.target.value === "") update("nombrecontribution", 1);
+              }}
             />
             <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">
               Nombre max de projets par participant

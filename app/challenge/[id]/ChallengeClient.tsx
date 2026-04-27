@@ -525,7 +525,7 @@ export default function ChallengeClient() {
       const res = await apiFetch(`/challenge/delete/${challengeId}`);
       if (res.statut === 200) {
         toast.success(res.message);
-        router.push("/home-entreprise/Challenges");
+        router.back();
       } else {
         toast.error(res.message);
       }

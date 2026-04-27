@@ -54,6 +54,8 @@ export default function CreateChallengeClient({
     recompense: [""],
     critereevaluation: [""],
     publiccible: [""],
+    nombrecontribution: 1, // Par défaut à 1
+    criteres: [{ libelle: "", coefficient: 1 }], // Coef par défaut à 1
   });
 
   const [fields, setFields] = useState<any[]>([]);
@@ -127,7 +129,7 @@ export default function CreateChallengeClient({
       formData.append("portee_id", (challenge.portee_id ?? 1).toString());
       formData.append(
         "nombrecontribution",
-        (challenge.nombrecontribution || 1).toString(),
+        (parseInt(challenge.nombrecontribution) || 1).toString(),
       );
       formData.append("details", challenge.details || "");
 
@@ -208,9 +210,16 @@ export default function CreateChallengeClient({
           .filter((c: any) => c.libelle && c.libelle.trim())
           .forEach((critere: any, idx: number) => {
             formData.append(`criteres[${idx}][libelle]`, critere.libelle);
+
+            // On convertit en entier.
+            // Si c'est une chaîne vide ou du texte, parseInt renvoie NaN.
+            // Le "|| 1" prend alors le relais pour forcer la valeur par défaut.
+            const coefficientSecurise =
+              parseInt(String(critere.coefficient)) || 1;
+
             formData.append(
               `criteres[${idx}][coefficient]`,
-              String(critere.coefficient ?? 1),
+              String(coefficientSecurise),
             );
           });
       }

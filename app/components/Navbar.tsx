@@ -249,7 +249,7 @@ export default function Navbar() {
                     className="flex flex-col items-center group"
                   >
                     <div
-                      className={`relative w-8 h-8 sm:w-9 sm:h-9 overflow-hidden rounded-full border-1 ${pathname.includes("/profil-talent") ? "border-orange-700" : "border-gray-200"} transition group-hover:border-orange-500`}
+                      className={`relative w-8 h-8 sm:w-9 sm:h-9 overflow-hidden rounded-full border-1 ${pathname.includes(profileLink) ? "border-orange-700" : "border-gray-200"} transition group-hover:border-orange-500`}
                     >
                       <img
                         key={imgKey} // Ajoutez la key directement ici aussi

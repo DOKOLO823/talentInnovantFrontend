@@ -229,7 +229,7 @@ export default function EditChallengeClient({
 
       if (response.statut === 200 || response.statut === 201) {
         toast.success("Challenge mis à jour avec succès !");
-        router.push("/home-entreprise/Challenges");
+        router.back();
       } else {
         toast.error(response.message || "Erreur lors de la modification");
       }
