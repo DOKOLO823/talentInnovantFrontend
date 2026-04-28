@@ -25,6 +25,7 @@ interface Challenge {
   id: number;
   user_id: number; // Ajouté pour la vérification du créateur
   title: string;
+  description: string;
   image: string;
   locationType: string;
   site: string;
@@ -335,9 +336,14 @@ export default function ChallengeCard({ challenge }: { challenge: Challenge }) {
         </div>
 
         <div className="p-4 space-y-3 flex-1 flex flex-col">
-          <h3 className="text-sm font-semibold text-gray-900 leading-tight line-clamp-2 overflow-hidden">
-            {challenge.title}
-          </h3>
+          <div className="flex flex-col">
+            <h3 className="text-sm font-semibold text-gray-900 leading-tight line-clamp-2 overflow-hidden">
+              {challenge.title}
+            </h3>
+            <span className="text-xs line-clamp-3 text-gray-600 mt-1">
+              {challenge?.description}
+            </span>
+          </div>
 
           <button
             onClick={() =>

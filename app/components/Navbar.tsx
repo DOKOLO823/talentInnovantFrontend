@@ -280,7 +280,7 @@ export default function Navbar() {
                       />
                     </div>
                     <span
-                      className={`text-[10px] sm:text-[11px] font-medium ${pathname.includes("/profil-talent") ? "text-orange-700" : "text-gray-500"} group-hover:text-orange-700 transition leading-tight mt-0.5`}
+                      className={`text-[10px] sm:text-[11px] font-medium ${pathname.includes(profileLink) ? "text-orange-700" : "text-gray-500"} group-hover:text-orange-700 transition leading-tight mt-0.5`}
                     >
                       Mon profil
                     </span>

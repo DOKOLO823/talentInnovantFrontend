@@ -30,6 +30,7 @@ export default function TabChallenges({ id, isOwner }: any) {
             id: c.id,
             user_id: c.user_id,
             title: c.titre,
+            description: c.description,
             image: c.photo
               ? `${apifile}/${c.photo}`
               : "../assets/images/innov.jpg",

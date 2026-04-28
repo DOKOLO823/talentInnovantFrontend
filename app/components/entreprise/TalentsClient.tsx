@@ -14,6 +14,7 @@ import {
   X,
   ExternalLink,
   User,
+  ShieldOff,
 } from "lucide-react";
 import { apiFetch } from "@/app/lib/api";
 import apifile from "@/app/lib/apifile";
@@ -24,6 +25,7 @@ export default function TalentsClient() {
   const [innovators, setInnovators] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTalent, setSelectedTalent] = useState<any>(null);
+  const [isCertifie, setIsCertifie] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -32,6 +34,10 @@ export default function TalentsClient() {
       router.push("/auth/login");
       return;
     }
+
+    // Lecture du statut de certification stocké par HomeClient
+    const certifieStr = localStorage.getItem("certifie");
+    setIsCertifie(certifieStr === "1");
 
     const fetchInnovators = async () => {
       try {
@@ -73,6 +79,22 @@ export default function TalentsClient() {
         <p className="text-gray-500 mt-2">
           Découvrez les profils les plus performants de la plateforme.
         </p>
+        {/* Bandeau si non certifié */}
+        {!isCertifie && (
+          <div className="mt-4 flex items-center gap-3 px-4 py-3 bg-orange-50 border border-orange-100 rounded-xl text-sm text-orange-800">
+            <ShieldOff className="w-4 h-4 shrink-0 text-orange-600" />
+            <span>
+              Seules les entreprises <strong>certifiées</strong> peuvent
+              contacter les talents.{" "}
+              <button
+                onClick={() => router.push("/home-entreprise")}
+                className="underline font-semibold hover:text-orange-900 transition"
+              >
+                Demander la certification
+              </button>
+            </span>
+          </div>
+        )}
       </div>
 
       <section>
@@ -99,6 +121,7 @@ export default function TalentsClient() {
                 key={innovator.id}
                 innovator={innovator}
                 index={index}
+                isCertifie={isCertifie}
                 onContact={() => setSelectedTalent(innovator)}
               />
             ))}
@@ -120,7 +143,7 @@ export default function TalentsClient() {
 }
 
 // --- SOUS-COMPOSANT CARD ---
-function TalentCard({ innovator, index, onContact }: any) {
+function TalentCard({ innovator, index, isCertifie, onContact }: any) {
   let SpecialIcon =
     index === 0 ? Crown : index === 1 ? Medal : index === 2 ? Star : null;
   const route = useRouter();
@@ -178,9 +201,21 @@ function TalentCard({ innovator, index, onContact }: any) {
         </div>
 
         <div className="flex items-center gap-x-2">
+          {/* Bouton Contacter — disabled si non certifié */}
           <button
-            onClick={onContact}
-            className="w-full bg-orange-700 hover:bg-orange-800 text-white font-semibold rounded-xl py-2 px-3 flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg"
+            onClick={isCertifie ? onContact : undefined}
+            disabled={!isCertifie}
+            title={
+              !isCertifie
+                ? "Certification requise pour contacter un talent"
+                : ""
+            }
+            className={`w-full font-semibold rounded-xl py-2 px-3 flex items-center justify-center gap-2 transition-all shadow-lg
+              ${
+                isCertifie
+                  ? "bg-orange-700 hover:bg-orange-800 text-white active:scale-95"
+                  : "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"
+              }`}
           >
             <Mail className="w-4 h-4" />
             Contacter
@@ -194,6 +229,13 @@ function TalentCard({ innovator, index, onContact }: any) {
             Profil
           </button>
         </div>
+
+        {/* Micro-texte d'explication sous le bouton si non certifié */}
+        {!isCertifie && (
+          <p className="text-[10px] text-gray-400 mt-2 leading-tight">
+            Certification requise
+          </p>
+        )}
       </div>
     </motion.div>
   );
@@ -239,7 +281,6 @@ function ContactModal({ talent, onClose }: any) {
           </p>
 
           <div className="space-y-3">
-            {/* Bouton Gmail */}
             <a
               href={`https://mail.google.com/mail/?view=cm&fs=1&to=${talent.email}`}
               target="_blank"
@@ -260,8 +301,6 @@ function ContactModal({ talent, onClose }: any) {
               </div>
               <ExternalLink className="w-4 h-4 text-gray-300 group-hover:text-orange-500" />
             </a>
-
-            {/* Bouton Téléphone */}
             <a
               href={`tel:${talent.phone}`}
               className="flex items-center justify-between w-full p-4 bg-gray-50 hover:bg-green-50 rounded-2xl group transition-all border border-gray-100 hover:border-green-200"

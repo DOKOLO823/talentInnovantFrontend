@@ -83,6 +83,7 @@ export default function ChallengesClient() {
           return {
             ...c,
             title: c.titre,
+            description: c.description,
             image:
               (c.photo && apifile + "/" + c.photo) ||
               "/assets/images/innov.jpg",

@@ -52,6 +52,10 @@ export default function HomeClient() {
         .then((res) => {
           if (res?.statut === 200) setStats(res.data);
           setCertifie(res?.data?.entreprise?.user?.certifie);
+          localStorage.setItem(
+            "certifie",
+            res?.data?.entreprise?.user?.certifie ? "1" : "0",
+          );
           setSoldeEntreprise(res.data?.entreprise?.solde);
         })
         .finally(() => setLoadingStats(false));
@@ -75,6 +79,7 @@ export default function HomeClient() {
                 return {
                   ...c,
                   title: c.titre,
+                  description: c.description,
                   image:
                     (c.photo && apifile + "/" + c.photo) ||
                     "../assets/images/innov.jpg",

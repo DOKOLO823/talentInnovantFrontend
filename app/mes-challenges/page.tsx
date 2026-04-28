@@ -20,6 +20,7 @@ import { useAuth } from "../context/AuthContext";
 import { apiFetch } from "@/app/lib/api";
 import apifile from "@/app/lib/apifile";
 import BackButton from "../components/BackButton";
+import { desc } from "framer-motion/client";
 
 type SubTab =
   | "mes_en_cours"
@@ -342,6 +343,7 @@ export default function MesChallengesPage() {
     id: c.id,
     user_id: c.user_id,
     title: c.titre,
+    description: c.description,
     image: c.photo ? `${apifile}/${c.photo}` : "/assets/images/innov.jpg",
     locationType: c.lieu || "",
     site: c.site || "",

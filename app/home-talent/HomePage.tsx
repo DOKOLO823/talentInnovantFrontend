@@ -361,6 +361,7 @@ export default function HomePage() {
     id: c.id,
     user_id: c.user_id,
     title: c.titre,
+    description: c.description,
     image: c.photo ? `${apifile}/${c.photo}` : "/assets/images/innov.jpg",
     locationType: c.lieu || "",
     site: c.site || "",
