@@ -1288,7 +1288,11 @@ function EvaluateProjectsSection({ challenge, isJury }: any) {
     challenge?.resultatdisponible,
   );
 
-  // ── État du modal d'édition des notes ──
+  // Sous-tab IA (uniquement dans a_evaluer)
+  const [activeEligibiliteTab, setActiveEligibiliteTab] = useState<
+    "eligibles" | "non_eligibles"
+  >("eligibles");
+
   const [editModal, setEditModal] = useState<{
     open: boolean;
     project: any;
@@ -1313,7 +1317,6 @@ function EvaluateProjectsSection({ challenge, isJury }: any) {
         const res = await apiFetch(
           `/challenge/posts-a-evaluer/${challenge?.id}`,
         );
-        // ✅ Utiliser posts_a_evaluer (filtré par jury côté backend)
         const data = res.posts_a_evaluer ?? res.top_posts ?? [];
         setProjects(data.sort((a: any, b: any) => b?.score - a?.score));
       } else {
@@ -1335,6 +1338,11 @@ function EvaluateProjectsSection({ challenge, isJury }: any) {
   useEffect(() => {
     fetchEvalData();
   }, [activeSubTab, challenge.id]);
+
+  // ── Séparation locale des projets par éligibilité ──
+  // null est traité comme éligible (pas encore analysé par l'IA)
+  const projetsEligibles = projects.filter((p) => p.eligible !== 0);
+  const projetsNonEligibles = projects.filter((p) => p.eligible === 0);
 
   const handlePublishResults = async () => {
     if (!challenge?.id) return;
@@ -1384,22 +1392,36 @@ function EvaluateProjectsSection({ challenge, isJury }: any) {
       minute: "2-digit",
     }).format(new Date(d));
 
+  // Projets à afficher selon le sous-tab IA actif
+  const projetsAffiches =
+    activeEligibiliteTab === "eligibles"
+      ? projetsEligibles
+      : projetsNonEligibles;
+
   return (
     <div className="space-y-6">
-      {/* Onglets + bouton publier */}
+      {/* Onglets principaux + bouton publier */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex gap-2 p-1 bg-gray-200 rounded-xl w-fit">
           {challenge?.typeevaluation?.type !== "vote" && (
             <button
               onClick={() => setActiveSubTab("a_evaluer")}
-              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeSubTab === "a_evaluer" ? "bg-white text-orange-700 shadow" : "text-gray-500"}`}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                activeSubTab === "a_evaluer"
+                  ? "bg-white text-orange-700 shadow"
+                  : "text-gray-500"
+              }`}
             >
               À évaluer
             </button>
           )}
           <button
             onClick={() => setActiveSubTab("provisoire")}
-            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeSubTab === "provisoire" ? "bg-white text-orange-700 shadow" : "text-gray-500"}`}
+            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+              activeSubTab === "provisoire"
+                ? "bg-white text-orange-700 shadow"
+                : "text-gray-500"
+            }`}
           >
             Résultats provisoires
           </button>
@@ -1432,7 +1454,58 @@ function EvaluateProjectsSection({ challenge, isJury }: any) {
         )}
       </div>
 
-      {/* Messages contextuels hybride */}
+      {/* ── SOUS-TABS ÉLIGIBILITÉ (uniquement dans a_evaluer) ── */}
+      {activeSubTab === "a_evaluer" && !loading && (
+        <div className="flex gap-2 border-b border-gray-100 pb-0">
+          <button
+            onClick={() => setActiveEligibiliteTab("eligibles")}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-all -mb-px ${
+              activeEligibiliteTab === "eligibles"
+                ? "border-green-600 text-green-700"
+                : "border-transparent text-gray-400 hover:text-gray-600"
+            }`}
+          >
+            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-100 text-green-700 text-[10px] font-black">
+              ✓
+            </span>
+            Projets conformes
+            <span
+              className={`ml-1 px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                activeEligibiliteTab === "eligibles"
+                  ? "bg-green-100 text-green-700"
+                  : "bg-gray-100 text-gray-500"
+              }`}
+            >
+              {projetsEligibles.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveEligibiliteTab("non_eligibles")}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-all -mb-px ${
+              activeEligibiliteTab === "non_eligibles"
+                ? "border-red-500 text-red-600"
+                : "border-transparent text-gray-400 hover:text-gray-600"
+            }`}
+          >
+            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-100 text-red-600 text-[10px] font-black">
+              ✕
+            </span>
+            Projets non conformes
+            <span
+              className={`ml-1 px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                activeEligibiliteTab === "non_eligibles"
+                  ? "bg-red-100 text-red-600"
+                  : "bg-gray-100 text-gray-500"
+              }`}
+            >
+              {projetsNonEligibles.length}
+            </span>
+          </button>
+        </div>
+      )}
+
+      {/* Message contextuel hybride */}
       {challenge?.typeevaluation?.type?.toLowerCase() === "hybride" &&
         dateFin > maintenant &&
         activeSubTab === "a_evaluer" && (
@@ -1444,81 +1517,107 @@ function EvaluateProjectsSection({ challenge, isJury }: any) {
         )}
 
       {/* Message aucun projet à évaluer */}
-      {!loading && projects.length === 0 && activeSubTab === "a_evaluer" && (
-        <div className="py-16 text-center border-2 border-dashed border-green-100 rounded-3xl bg-green-50/30">
-          <CheckCircle className="text-green-500 mx-auto mb-3" size={36} />
-          <p className="font-bold text-green-700 text-sm">
-            Vous avez évalué tous les projets !
-          </p>
-          <p className="text-green-600 text-xs mt-1">
-            Consultez les résultats provisoires ci-dessus.
-          </p>
-        </div>
-      )}
+      {!loading &&
+        projetsAffiches.length === 0 &&
+        activeSubTab === "a_evaluer" && (
+          <div className="py-16 text-center border-2 border-dashed border-green-100 rounded-3xl bg-green-50/30">
+            <CheckCircle className="text-green-500 mx-auto mb-3" size={36} />
+            <p className="font-bold text-green-700 text-sm">
+              {activeEligibiliteTab === "eligibles"
+                ? "Vous avez évalué tous les projets conformes !"
+                : "Aucun projet non conforme détecté."}
+            </p>
+            {activeEligibiliteTab === "eligibles" && (
+              <p className="text-green-600 text-xs mt-1">
+                Consultez les résultats provisoires ci-dessus.
+              </p>
+            )}
+          </div>
+        )}
 
-      {/* Grille */}
+      {/* Grille de projets */}
       {loading ? (
         <div className="py-20 flex justify-center">
           <Loader2 className="animate-spin text-orange-700" size={40} />
         </div>
-      ) : projects.length > 0 ? (
+      ) : projetsAffiches.length > 0 ? (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-3">
-          {projects.map((p) =>
-            activeSubTab === "a_evaluer" ? (
-              <ProjectCardToEvaluate
-                key={p.id}
-                project={p}
-                allProjects={projects}
-                challenge={challenge}
-                onEvaluate={() => setSelectedProjectId(p.id)}
-              />
-            ) : (
-              <ProjectCardResult
-                key={p.id}
-                project={p}
-                challenge={challenge}
-                isJury={isJury}
-                // ✅ Ouvre EditMesNotesModal avec callback de mise à jour immédiate
-                onEditNotes={(
-                  proj: any,
-                  onSavedCardCallback: (n: number) => void,
-                ) => {
-                  setEditModal({
-                    open: true,
-                    project: proj,
-                    mesNotesCriteres: proj.mes_notes_criteres ?? [],
-                    commentaireGlobal:
-                      proj.commentairejury?.[0]?.commentairejury ?? "", // Correction ici pour matcher ton objet
-                    onSaved: (
-                      newNote: number,
-                      updatedCriteres: any[],
-                      newComment: string,
-                    ) => {
-                      // 1. Mettre à jour la source de vérité (le tableau projects)
-                      setProjects((prev) =>
-                        prev.map((item) =>
-                          item.id === proj.id
-                            ? {
-                                ...item,
-                                notefinale: newNote,
-                                mes_notes_criteres: updatedCriteres,
-                                commentairejury: [
-                                  { commentairejury: newComment },
-                                ],
-                              }
-                            : item,
-                        ),
-                      );
-
-                      // 2. Mettre à jour l'UI de la carte (le callback local de ProjectCardResult)
-                      // On vérifie si la carte accepte les nouveaux paramètres
-                      onSavedCardCallback(newNote);
-                    },
-                  });
-                }}
-              />
-            ),
-          )}
+          {activeSubTab === "a_evaluer"
+            ? activeEligibiliteTab === "eligibles"
+              ? // Projets conformes → carte normale cliquable
+                projetsAffiches.map((p) => (
+                  <ProjectCardToEvaluate
+                    key={p.id}
+                    project={p}
+                    allProjects={projects}
+                    challenge={challenge}
+                    onEvaluate={() => setSelectedProjectId(p.id)}
+                  />
+                ))
+              : // Projets non conformes → carte avec raison IA
+                projetsAffiches.map((p) => (
+                  <div key={p.id} className="relative">
+                    <ProjectCardToEvaluate
+                      project={p}
+                      allProjects={projects}
+                      challenge={challenge}
+                      onEvaluate={() => setSelectedProjectId(p.id)}
+                    />
+                    {/* Bandeau raison non-éligibilité */}
+                    {p.resultats && p.resultats !== "Approuvé par IA" && (
+                      <div className="mt-2 flex items-start gap-2 px-3 py-2.5 bg-red-50 border border-red-100 rounded-xl">
+                        <span className="shrink-0 mt-0.5 text-red-500 text-xs font-black">
+                          IA
+                        </span>
+                        <p className="text-xs text-red-600 leading-relaxed">
+                          {p.resultats}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ))
+            : // Tab provisoire — inchangé
+              projetsAffiches.map((p) => (
+                <ProjectCardResult
+                  key={p.id}
+                  project={p}
+                  challenge={challenge}
+                  isJury={isJury}
+                  onEditNotes={(
+                    proj: any,
+                    onSavedCardCallback: (n: number) => void,
+                  ) => {
+                    setEditModal({
+                      open: true,
+                      project: proj,
+                      mesNotesCriteres: proj.mes_notes_criteres ?? [],
+                      commentaireGlobal:
+                        proj.commentairejury?.[0]?.commentairejury ?? "",
+                      onSaved: (
+                        newNote: number,
+                        updatedCriteres: any[],
+                        newComment: string,
+                      ) => {
+                        setProjects((prev) =>
+                          prev.map((item) =>
+                            item.id === proj.id
+                              ? {
+                                  ...item,
+                                  notefinale: newNote,
+                                  mes_notes_criteres: updatedCriteres,
+                                  commentairejury: [
+                                    { commentairejury: newComment },
+                                  ],
+                                }
+                              : item,
+                          ),
+                        );
+                        onSavedCardCallback(newNote);
+                      },
+                    });
+                  }}
+                />
+              ))}
         </div>
       ) : null}
 
@@ -1557,7 +1656,7 @@ function EvaluateProjectsSection({ challenge, isJury }: any) {
             project={editModal.project}
             mesNotesCriteres={editModal.mesNotesCriteres}
             commentaireGlobal={editModal.commentaireGlobal}
-            onSaved={editModal.onSaved} // ✅ callback transmis directement depuis ProjectCardResult
+            onSaved={editModal.onSaved}
           />
         )}
       </AnimatePresence>
