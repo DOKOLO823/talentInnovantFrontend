@@ -1054,7 +1054,7 @@ export default function ProjectCard({ project, challenge }: any) {
         postId={project?.id}
         isOpen={showScoreDetail}
         onClose={() => setShowScoreDetail(false)}
-        user={currentUser}
+        user={project?.user}
         isNoteFinale={false} // À mettre à true si tu utilises une variable notefinale
         data={{
           value: score,

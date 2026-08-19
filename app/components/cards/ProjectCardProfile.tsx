@@ -477,6 +477,7 @@ export default function ProjectCardProfile({ project, challenge }: any) {
         postId={project?.id}
         isOpen={showScoreDetail}
         onClose={() => setShowScoreDetail(false)}
+        user={project?.author}
         isNoteFinale={project.notefinale ? true : false}
         commentJury={commentJury}
         data={{
