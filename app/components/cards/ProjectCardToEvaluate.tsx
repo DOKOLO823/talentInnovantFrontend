@@ -685,6 +685,7 @@ export default function ProjectCardToEvaluate({
         postId={project?.id}
         isOpen={showScoreDetail}
         onClose={() => setShowScoreDetail(false)}
+        user={project?.user}
         isNoteFinale={false}
         data={{
           value: project?.score || 0,
