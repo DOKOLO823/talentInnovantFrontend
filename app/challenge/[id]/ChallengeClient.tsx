@@ -165,23 +165,27 @@ function PrivateResultCard({ project, rank, challenge }: any) {
             <p className="text-sm text-orange-600 font-bold">Rang : {rank}</p>
           </div>
         </Link>
-        <div className="text-right">
+        <div
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setShowScoreDetail(true);
+          }}
+          className="text-right cursor-default"
+        >
           <p className="text-xs">Note finale</p>
-          <div className="flex items-center justify-end gap-1.5">
-            <p className="font-black text-gray-800">{noteValue.toFixed(2)}</p>
-            {/* ✅ Bouton détails — preventDefault + stopPropagation car la carte est un <Link> */}
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setShowScoreDetail(true);
-              }}
-              className="text-gray-500 hover:text-orange-600 transition-colors mt-0.5"
-              title="Voir les détails de la note"
-            >
-              <Info size={16} />
-            </button>
-          </div>
+          <p className="font-black text-gray-800">{noteValue.toFixed(2)}</p>
+          {/* ✅ Bouton "Plus de détails" — remplace l'icône Info */}
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowScoreDetail(true);
+            }}
+            className="mt-1.5 px-2.5 py-1 bg-orange-600 hover:bg-orange-700 text-white text-[10px] font-bold rounded-full transition-colors whitespace-nowrap"
+          >
+            Plus de détails
+          </button>
         </div>
       </div>
 

@@ -27,6 +27,7 @@ import {
   Share2,
   Download,
   Info,
+  NotebookPen,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
@@ -732,9 +733,10 @@ export default function ProjectCardResult({
           {isOwner && (
             <button
               onClick={() => setShowContact(true)}
-              className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+              className="p-2 flex flex-row-reverse gap-x-1 justify-center items-center text-sm text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
             >
-              <UserRound size={19} />
+              Contacter
+              <Phone size={19} />
             </button>
           )}
           {isOwner && (
@@ -775,8 +777,8 @@ export default function ProjectCardResult({
         <div className="grid grid-cols-2 gap-2 text-[11px] font-bold">
           {/* Rang */}
           <div className="flex items-center gap-2 bg-white border border-gray-100 p-1.5 rounded-xl shadow-sm whitespace-nowrap">
-            <div className="bg-yellow-50 p-1.5 rounded-lg shrink-0">
-              <Trophy size={14} className="text-yellow-600" />
+            <div className="bg-orange-50 p-1.5 rounded-lg shrink-0">
+              <Trophy size={14} className="text-orange-600" />
             </div>
             <div className="flex flex-col overflow-hidden">
               <span className="text-[9px] text-gray-500 font-medium leading-none mb-1">
@@ -792,25 +794,29 @@ export default function ProjectCardResult({
           <div className="flex items-center justify-between bg-white border border-gray-100 p-1.5 rounded-xl shadow-sm whitespace-nowrap">
             <div className="flex items-center gap-2">
               <div className="bg-orange-50 p-1.5 rounded-lg shrink-0">
-                <Flame size={14} className="text-orange-600" />
+                <NotebookPen size={14} className="text-orange-600" />
               </div>
               <div className="flex flex-col">
                 <span className="text-[9px] text-gray-500 font-medium leading-none mb-1">
                   {isVoteType ? "Score" : "Note"} finale
                 </span>
-                <div className="flex items-center gap-1.5">
-                  {/* ✅ Affichage immédiat via localNote */}
-                  <span className="text-gray-900 leading-none text-[12px] font-black">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {/* ✅ Note cliquable — ouvre aussi le modal */}
+                  <span
+                    onClick={() => setShowScoreDetail(true)}
+                    className="text-gray-900 leading-none text-[12px] font-black cursor-pointer hover:text-orange-600 transition-colors"
+                  >
                     {formatKMMD(localNote || 0, !isVoteType)}
                     <span className="text-[9px] ml-0.5">
                       {!isVoteType ? "/20" : ""}
                     </span>
                   </span>
+                  {/* ✅ Bouton "Plus de détails" — remplace l'icône Info */}
                   <button
                     onClick={() => setShowScoreDetail(true)}
-                    className="text-gray-400 hover:text-orange-600 transition-colors"
+                    className="px-2 xl:px-1 hover:scale-105 transition-transform transition-colors transition-duration-200 transition py-0.5 bg-orange-600 hover:bg-orange-700 text-white text-[9px] font-bold rounded-full transition-colors whitespace-nowrap"
                   >
-                    <Info size={13} />
+                    Plus de détails
                   </button>
                 </div>
               </div>
@@ -826,9 +832,10 @@ export default function ProjectCardResult({
                     setShowEditScore(true);
                   }
                 }}
-                className="ml-2 p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all border-l border-gray-100 pl-2"
+                className="ml-2 p-1.5 flex flex-row items-center justify-center gap-x-0.5 text-gray-500 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all border-l border-gray-100 pl-2"
               >
                 <PencilLine size={13} />
+                <span className="text-[8px]">Editer</span>
               </button>
             )}
           </div>
@@ -836,7 +843,7 @@ export default function ProjectCardResult({
       </div>
 
       {/* ── CONTENU ── */}
-      <div className="px-4 mt-5 space-y-4 overflow-y-auto max-h-[200px] scrollbar-thin scrollbar-thumb-gray-200 pb-2">
+      <div className="px-4 mt-3 space-y-4 overflow-y-auto max-h-[200px] scrollbar-thin scrollbar-thumb-gray-200 pb-2">
         {responses.map((r: any, idx: number) => (
           <div
             key={r?.id}
