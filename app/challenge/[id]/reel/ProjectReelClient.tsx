@@ -1408,6 +1408,7 @@ export default function ProjectReelClient() {
         postId={currentProject?.id}
         isOpen={showDetailsModal}
         onClose={() => setShowDetailsModal(false)}
+        user={currentUser}
         isNoteFinale={filterMode == "all" ? false : true}
         data={{
           value:
