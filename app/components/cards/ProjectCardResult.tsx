@@ -957,6 +957,7 @@ export default function ProjectCardResult({
           onClose={() => setShowScoreDetail(false)}
           isNoteFinale={!!project.notefinale}
           commentJury={commentJury}
+          user={project?.user}
           data={{
             value: displayValue || 0,
             votes: project?.like || 0,

@@ -28,6 +28,7 @@ interface ScoreDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   data: { value: number; votes: number; shares: number; comments: number };
+  user: any;
   isNoteFinale: boolean;
   commentJury?: string;
   postId?: number | string;
@@ -217,6 +218,7 @@ export default function ScoreDetailModal({
   data,
   isNoteFinale,
   commentJury,
+  user,
   postId,
 }: ScoreDetailModalProps) {
   const [detailNotes, setDetailNotes] = useState<any>(null);
@@ -282,6 +284,28 @@ export default function ScoreDetailModal({
             <X size={20} />
           </button>
         </div>
+
+        {user && (
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 bg-gray-50">
+            <img
+              src={
+                user?.pp ? `${apifile}/${user.pp}` : "/assets/images/pp2.png"
+              }
+              width={44}
+              height={44}
+              alt="pp"
+              className="rounded-full aspect-square object-cover border-2 border-white shadow-sm shrink-0"
+            />
+            <div className="overflow-hidden">
+              <p className="font-bold text-sm text-gray-900 truncate max-w-[220px]">
+                {user?.talent?.nom || user?.name || "Participant"}
+              </p>
+              <p className="text-[11px] text-gray-500 font-medium truncate max-w-[220px]">
+                {user?.talent?.profession || "Participant"}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Corps scrollable */}
         <div className="overflow-y-auto flex-1 p-6 space-y-5">

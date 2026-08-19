@@ -57,6 +57,7 @@ import BackToTop from "@/app/components/BackToTop";
 import ProjectFormPreviewModal from "@/app/components/modals/ProjectFormPreviewModal";
 import ChallengeAnalytics from "../tabsChallenge/ChallengeAnalytics";
 import ChallengeMoreOptions from "./components/ChallengeMoreOptions";
+import ScoreDetailModal from "@/app/components/modals/ScoreDetailModal";
 
 // --- MODALS DE BASE ---
 
@@ -128,19 +129,27 @@ const ExternalRedirectModal = ({ isOpen, onClose, onConfirm, url }: any) => {
 // --- COMPOSANT CARD PRIVÉE (POUR RÉSULTATS CACHÉS) ---
 function PrivateResultCard({ project, rank, challenge }: any) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showScoreDetail, setShowScoreDetail] = useState(false); // ✅ nouveau state
+
+  const isVoteType = challenge?.typeevaluation?.type === "vote";
+  const noteValue = isVoteType
+    ? Number(project?.score || 0)
+    : Number(project?.notefinale || 0);
+
   return (
-    <Link
-      href={"/profil-talent/" + project.user?.id}
-      className="bg-white rounded-xl p-4 shadow-md border-l-4 border-orange-600"
-    >
+    <div className="bg-white rounded-xl p-4 shadow-md border-l-4 border-orange-600">
       <div className="flex justify-between items-start">
-        <div className="flex gap-3">
+        <Link
+          href={"/profil-talent/" + project.user?.id}
+          className="flex gap-3"
+          title="Voir le profil du talent"
+        >
           <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden relative">
             <Image
               src={
                 project.user?.pp
                   ? `${apifile}/${project.user.pp}`
-                  : "/avatar.png"
+                  : "/assets/images/pp2.png"
               }
               alt="User"
               fill
@@ -155,16 +164,27 @@ function PrivateResultCard({ project, rank, challenge }: any) {
             </p>
             <p className="text-sm text-orange-600 font-bold">Rang : {rank}</p>
           </div>
-        </div>
+        </Link>
         <div className="text-right">
           <p className="text-xs">Note finale</p>
-          <p className=" font-black text-gray-800">
-            {challenge?.typeevaluation?.type === "vote"
-              ? Number(project?.score || 0).toFixed(2)
-              : Number(project?.notefinale || 0).toFixed(2)}
-          </p>
+          <div className="flex items-center justify-end gap-1.5">
+            <p className="font-black text-gray-800">{noteValue.toFixed(2)}</p>
+            {/* ✅ Bouton détails — preventDefault + stopPropagation car la carte est un <Link> */}
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowScoreDetail(true);
+              }}
+              className="text-gray-500 hover:text-orange-600 transition-colors mt-0.5"
+              title="Voir les détails de la note"
+            >
+              <Info size={16} />
+            </button>
+          </div>
         </div>
       </div>
+
       {challenge?.typeevaluation?.type != "vote" &&
         project.commentaire_jury && (
           <div className="mt-4 p-3 bg-gray-50 rounded-lg">
@@ -178,7 +198,11 @@ function PrivateResultCard({ project, rank, challenge }: any) {
             </p>
             {project.commentaire_jury?.length > 100 && (
               <button
-                onClick={() => setIsExpanded(!isExpanded)}
+                onClick={(e) => {
+                  e.preventDefault(); // ✅ idem ici, déjà un bug potentiel présent avant votre demande
+                  e.stopPropagation();
+                  setIsExpanded(!isExpanded);
+                }}
                 className="text-orange-600 text-xs font-bold mt-1"
               >
                 {isExpanded ? "Voir moins" : "Voir plus"}
@@ -186,7 +210,25 @@ function PrivateResultCard({ project, rank, challenge }: any) {
             )}
           </div>
         )}
-    </Link>
+
+      {/* ✅ Modal détails de note */}
+      {showScoreDetail && (
+        <ScoreDetailModal
+          postId={project?.id}
+          isOpen={showScoreDetail}
+          onClose={() => setShowScoreDetail(false)}
+          isNoteFinale={!!project?.notefinale}
+          commentJury={project?.commentaire_jury ?? ""}
+          user={project?.user}
+          data={{
+            value: noteValue,
+            votes: project?.like || 0,
+            shares: project?.partage || 0,
+            comments: project?.commentaires_count || 0,
+          }}
+        />
+      )}
+    </div>
   );
 }
 
@@ -2497,7 +2539,11 @@ function ResultsSection({ challenge, isOwner, currentUser }: any) {
     }
   };
 
-  const limit = renderNombreGagnant();
+  const limit = !loading
+    ? renderNombreGagnant() != null
+      ? renderNombreGagnant()
+      : results.length
+    : "...";
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -2518,6 +2564,7 @@ function ResultsSection({ challenge, isOwner, currentUser }: any) {
         }
 
         const response = await apiFetch(endpoint);
+        // console.log("Réponse brute des résultats :", response);
 
         let dataToSort = [];
         if (response?.posts) {
@@ -2563,8 +2610,15 @@ function ResultsSection({ challenge, isOwner, currentUser }: any) {
     );
   }
 
-  const winners = results.slice(0, renderNombreGagnant());
-  const rest = results.slice(renderNombreGagnant());
+  // quand on ne defini pas un nombre de gagnants, on affiche tous les projets dans l'onglet "Les gagnants"
+  const winners =
+    renderNombreGagnant() == 0 || renderNombreGagnant() == null
+      ? results
+      : results.slice(0, renderNombreGagnant());
+  const rest =
+    renderNombreGagnant() == 0 || renderNombreGagnant() == null
+      ? []
+      : results.slice(renderNombreGagnant());
 
   return (
     <div className="space-y-6 md:space-y-8">
