@@ -2191,7 +2191,9 @@ function ProjectsSection({ challenge, currentUser, isOwner }: any) {
     fetchProj();
   }, [challenge?.id, currentUser]);
 
-  const canView = !(challenge?.portee?.portee == "privee" && !isOwner);
+  const isPrivate = challenge?.portee?.portee == "privee";
+  const canViewAll = isOwner || !isPrivate; // peut voir "tous" / "populaires"
+
   const isRegistrationClosed =
     new Date() > new Date(challenge?.datefininscription);
   const formattedDate = new Date(
@@ -2240,8 +2242,8 @@ function ProjectsSection({ challenge, currentUser, isOwner }: any) {
           </div>
         </div>
       )}
-
-      {currentUser && !canView && (
+      {/* ne s'affiche que si l'utilisateur n'a AUCUN projet à voir */}
+      {currentUser && isPrivate && !isOwner && !hasMyProjects && (
         <div className="p-10 bg-gray-50 rounded-2xl text-center border-2 border-dashed border-orange-700">
           <Lock className="mx-auto mb-3 text-orange-700" />
           <p className="font-bold text-black">
@@ -2250,10 +2252,9 @@ function ProjectsSection({ challenge, currentUser, isOwner }: any) {
           </p>
         </div>
       )}
-
       {/* MESSAGE D'ATTENTE : S'affiche UNIQUEMENT si l'utilisateur n'est pas owner ET n'a aucun projet soumis */}
       {currentUser &&
-        canView &&
+        canViewAll &&
         !isRegistrationClosed &&
         !isOwner &&
         !hasMyProjects && (
@@ -2266,11 +2267,10 @@ function ProjectsSection({ challenge, currentUser, isOwner }: any) {
             </p>
           </div>
         )}
-
       {/* SECTION PROJETS : S'affiche si la date est passée, si on est owner, OU si on a nos propres projets */}
       {currentUser &&
-        canView &&
-        (isRegistrationClosed || isOwner || hasMyProjects) && (
+        (hasMyProjects ||
+          (canViewAll && (isRegistrationClosed || isOwner))) && (
           <>
             {/* Notes administratives ou informatives */}
             {!isRegistrationClosed && !isOwner && hasMyProjects && (
@@ -2311,6 +2311,22 @@ function ProjectsSection({ challenge, currentUser, isOwner }: any) {
             {/* Grille de projets */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {(() => {
+                // ✅ Switch vers "tous" ou "populaires" alors que privé et non-owner
+                if (
+                  (activeSubTab === "tous" || activeSubTab === "populaires") &&
+                  !canViewAll
+                ) {
+                  return (
+                    <div className="col-span-full p-10 bg-gray-50 rounded-2xl text-center border-2 border-dashed border-orange-700">
+                      <Lock className="mx-auto mb-3 text-orange-700" />
+                      <p className="font-bold text-black">
+                        Ce challenge est privé. Seul le créateur peut visualiser
+                        les projets soumis.
+                      </p>
+                    </div>
+                  );
+                }
+
                 let currentData: any[] = [];
                 if (activeSubTab === "mes") currentData = data?.my_posts;
                 else if (isRegistrationClosed || isOwner) {
