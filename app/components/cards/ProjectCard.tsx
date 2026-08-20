@@ -851,15 +851,16 @@ export default function ProjectCard({ project, challenge }: any) {
           {isChallengeOwner && (
             <button
               onClick={() => setShowContactModal(true)}
-              className="p-2 text-blue-600 hover:bg-blue-50 rounded-full"
+              className="p-2 flex flex-row justify-center items-center gap-x-1 text-orange-700 hover:bg-orange-50 rounded-full"
             >
-              <UserRound size={19} />
+              <Phone size={17} />
+              Contacter
             </button>
           )}
           {shouldShowDropdownButton() && (
             <button
               onClick={() => setOpenMenu(!openMenu)}
-              className="p-2 text-gray-400 hover:bg-gray-100 rounded-full transition-colors"
+              className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors"
             >
               <MoreVertical size={20} />
             </button>

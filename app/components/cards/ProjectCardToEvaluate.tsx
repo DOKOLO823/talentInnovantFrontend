@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   MoreVertical,
   Trash2,
@@ -12,24 +12,20 @@ import {
   ChevronDown,
   ChevronUp,
   X,
-  UserRound,
   Copy,
   ExternalLink,
   Check,
   Eye,
   Loader2,
   FileText,
-  FileSpreadsheet,
   File,
   AlertTriangle,
   Mail,
   Phone,
   Download,
-  EyeOff,
-  FileSearch,
-  Presentation,
   Maximize2,
-  Info,
+  SquarePen,
+  RotateCcw,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
@@ -95,16 +91,13 @@ function DeleteModal({ isOpen, onClose, onConfirm, loading }: any) {
 function ContactModal({ isOpen, onClose, user }: any) {
   const router = useRouter();
   const [copied, setCopied] = useState<string | null>(null);
-
   if (!isOpen || !user) return null;
-
   const handleCopy = (text: string, type: string) => {
     navigator.clipboard.writeText(text);
     setCopied(type);
     toast.success(`${type} copié !`);
     setTimeout(() => setCopied(null), 2000);
   };
-
   return (
     <div
       className="fixed inset-0 bg-slate-900/60 z-[200] flex items-center justify-center p-4 backdrop-blur-md"
@@ -113,75 +106,101 @@ function ContactModal({ isOpen, onClose, user }: any) {
       <motion.div
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="bg-white rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl relative overflow-hidden"
+        className="bg-white rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-8">
-          <h3 className="font-extrabold text-xl text-slate-800 tracking-tight">
-            Contact
-          </h3>
+          <h3 className="font-extrabold text-xl text-slate-800">Contact</h3>
           <button
             onClick={onClose}
-            className="p-2.5 bg-slate-100 hover:bg-red-50 hover:text-red-500 rounded-full transition-all duration-300"
+            className="p-2.5 bg-slate-100 hover:bg-red-50 hover:text-red-500 rounded-full"
           >
-            <X size={20} strokeWidth={2.5} />
+            <X size={20} />
           </button>
         </div>
-        <div className="space-y-6">
-          <div
-            onClick={() => {
-              router.push(`/profil-talent/${user?.id}`);
-              onClose();
-            }}
-            className="group flex items-center gap-4 p-4 bg-slate-50 rounded-[2rem] border border-transparent hover:border-orange-200 hover:bg-orange-50/50 transition-all duration-300 cursor-pointer"
-          >
+        <div
+          onClick={() => {
+            router.push(`/profil-talent/${user?.id}`);
+            onClose();
+          }}
+          className="flex items-center gap-4 p-4 bg-slate-50 rounded-[2rem] border border-transparent hover:border-orange-200 hover:bg-orange-50/50 transition-all cursor-pointer mb-6"
+        >
+          <div className="relative">
             <Image
               src={apifile + "/" + user?.pp}
-              width={64}
-              height={64}
+              width={56}
+              height={56}
               alt="pp"
-              className="rounded-full aspect-square object-cover border-4 border-white shadow-md group-hover:scale-105 transition-transform duration-500"
+              className="rounded-full aspect-square object-cover border-4 border-white shadow-md"
             />
-            <div className="overflow-hidden">
-              <p className="font-black text-slate-800 truncate group-hover:text-orange-600 transition-colors">
-                {user?.talent?.nom || user?.name}
-              </p>
-              <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">
-                {user?.talent?.profession || "Talent"}
-              </p>
+            <div className="absolute -bottom-1 -right-1 bg-orange-500 text-white p-1 rounded-full border-2 border-white">
+              <ExternalLink size={12} />
             </div>
           </div>
-          <div className="space-y-3">
-            <div className="relative group">
+          <div>
+            <p className="font-black text-slate-800">
+              {user?.talent?.nom || user?.name}
+            </p>
+            <p className="text-xs text-slate-500 uppercase tracking-wider">
+              {user?.talent?.profession || "Talent"}
+            </p>
+          </div>
+        </div>
+        <div className="space-y-3">
+          {[
+            {
+              href: `mailto:${user?.email}`,
+              icon: <Mail size={20} />,
+              label: "E-mail",
+              value: user?.email,
+              color: "bg-blue-50 text-blue-600",
+              key: "Email",
+            },
+            {
+              href: `tel:${user?.telephone}`,
+              icon: <Phone size={20} />,
+              label: "Téléphone",
+              value: user?.telephone || "Non renseigné",
+              color: "bg-green-50 text-green-600",
+              key: "Téléphone",
+            },
+          ].map((item) => (
+            <div key={item.key} className="relative">
               <a
-                href={`mailto:${user?.email}`}
-                className="flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-2xl hover:shadow-lg transition-all duration-300"
+                href={item.href}
+                className="flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-2xl hover:shadow-md transition-all"
               >
-                <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-                  <Mail size={22} />
+                <div className={`p-3 ${item.color} rounded-xl`}>
+                  {item.icon}
                 </div>
                 <div className="flex-1 overflow-hidden">
                   <p className="text-[10px] font-black text-slate-400 uppercase">
-                    E-mail
+                    {item.label}
                   </p>
                   <p className="text-sm font-bold text-slate-700 truncate">
-                    {user?.email}
+                    {item.value}
                   </p>
                 </div>
               </a>
-              <button
-                onClick={() => handleCopy(user?.email, "Email")}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-300 hover:text-slate-600"
-              >
-                {copied === "Email" ? (
-                  <Check size={18} className="text-green-500" />
-                ) : (
-                  <Copy size={18} />
-                )}
-              </button>
+              {user?.[item.key === "Email" ? "email" : "telephone"] && (
+                <button
+                  onClick={() =>
+                    handleCopy(
+                      user[item.key === "Email" ? "email" : "telephone"],
+                      item.key,
+                    )
+                  }
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-300 hover:text-slate-600"
+                >
+                  {copied === item.key ? (
+                    <Check size={18} className="text-green-500" />
+                  ) : (
+                    <Copy size={18} />
+                  )}
+                </button>
+              )}
             </div>
-          </div>
+          ))}
         </div>
       </motion.div>
     </div>
@@ -437,6 +456,8 @@ export default function ProjectCardToEvaluate({
   project,
   challenge,
   onEvaluate,
+  isCorbeille = false,
+  onToggleCorbeille,
 }: any) {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [openMenu, setOpenMenu] = useState(false);
@@ -445,6 +466,7 @@ export default function ProjectCardToEvaluate({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRemoved, setIsRemoved] = useState(false);
+  const [isTogglingCorbeille, setIsTogglingCorbeille] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -468,6 +490,45 @@ export default function ProjectCardToEvaluate({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // systeme corbeille
+  const handleToggleCorbeille = async () => {
+    setIsTogglingCorbeille(true);
+    const t = toast.loading(
+      isCorbeille ? "Restauration..." : "Déplacement vers la corbeille...",
+    );
+    try {
+      const storedAuth = localStorage.getItem("auth");
+      const token = storedAuth ? JSON.parse(storedAuth).token : null;
+      const endpoint = isCorbeille
+        ? `/challenge/post/corbeille/retirer/${project.id}`
+        : `/challenge/post/corbeille/ajouter/${project.id}`;
+
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      });
+      const data = await response.json();
+
+      if (data.statut === 200) {
+        toast.success(
+          isCorbeille ? "Projet restauré" : "Projet déplacé dans la corbeille",
+          { id: t },
+        );
+        onToggleCorbeille?.(project.id, !isCorbeille);
+      } else {
+        toast.error(data.message || "Erreur", { id: t });
+      }
+    } catch {
+      toast.error("Erreur de connexion", { id: t });
+    } finally {
+      setIsTogglingCorbeille(false);
+    }
+  };
+
+  // supprimer un projet
   const handleDelete = async () => {
     setIsDeleting(true);
     const deletingToast = toast.loading("Suppression...");
@@ -539,34 +600,50 @@ export default function ProjectCardToEvaluate({
           {isChallengeOwner && (
             <button
               onClick={() => setShowContactModal(true)}
-              className="p-2 text-blue-600 hover:bg-blue-50 rounded-full"
+              className="p-2 flex flex-row-reverse gap-x-1 justify-center items-center text-orange-700 hover:bg-orange-50 rounded-full"
             >
-              <UserRound size={19} />
+              Contacter
+              <Phone size={16} />
+              {/* <UserRound size={19} /> */}
             </button>
           )}
-          <button
-            onClick={() => setOpenMenu(!openMenu)}
-            className="p-2 text-gray-400 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <MoreVertical size={20} />
-          </button>
+          {isChallengeOwner && (
+            <button
+              onClick={() => setOpenMenu(!openMenu)}
+              className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <MoreVertical size={20} />
+            </button>
+          )}
           <AnimatePresence>
             {openMenu && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
-                className="absolute right-0 top-12 w-48 bg-white border rounded-2xl shadow-xl z-50 overflow-hidden font-bold text-sm"
+                className="absolute right-0 top-12 w-60 bg-white border rounded-2xl shadow-xl z-50 overflow-hidden font-bold text-sm"
               >
-                <button
-                  onClick={() => {
-                    setOpenMenu(false);
-                    toast.success("Signalement envoyé");
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 border-b border-gray-50"
-                >
-                  <Flag size={18} /> Signaler
-                </button>
+                {isChallengeOwner && (
+                  <button
+                    onClick={() => {
+                      handleToggleCorbeille();
+                      setOpenMenu(false);
+                    }}
+                    disabled={isTogglingCorbeille}
+                    className={`w-full hover:bg-gray-100 flex items-center gap-3 px-4 py-3 transition-colors disabled:opacity-50`}
+                  >
+                    {isTogglingCorbeille ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : isCorbeille ? (
+                      <RotateCcw size={18} />
+                    ) : (
+                      <Trash2 size={18} />
+                    )}
+                    {isCorbeille
+                      ? "Retirer de la corbeille"
+                      : "Ajouter dans la corbeille"}
+                  </button>
+                )}
                 {isChallengeOwner && (
                   <button
                     onClick={() => {
@@ -609,17 +686,25 @@ export default function ProjectCardToEvaluate({
                 <span className="text-[9px] text-gray-500 font-medium leading-none mb-0.5">
                   Score provisoire
                 </span>
-                <div className="flex items-center gap-1">
+                <div className="flex flex-wrap items-center gap-1">
                   <span className="text-gray-900 leading-none text-[12px] font-black">
                     {/* isFloat: false car ce sont des points d'interaction */}
                     {formatKMMD(project?.score || 0, false)}
                   </span>
+
                   <button
+                    onClick={() => setShowScoreDetail(true)}
+                    className="px-2 xl:px-1 hover:scale-105 transition-transform transition-colors transition-duration-200 transition py-0.5 bg-orange-600 hover:bg-orange-700 text-white text-[9px] font-bold rounded-full transition-colors whitespace-nowrap"
+                  >
+                    Plus de détails
+                  </button>
+
+                  {/* <button
                     onClick={() => setShowScoreDetail(true)}
                     className="text-gray-400 hover:text-orange-600 transition-colors"
                   >
                     <Info size={13} className="text-gray-500" />
-                  </button>
+                  </button> */}
                 </div>
               </div>
             </div>
@@ -668,17 +753,19 @@ export default function ProjectCardToEvaluate({
       )}
 
       <div className="px-5 py-4 flex flex-col gap-3 bg-white border-t border-gray-100">
-        <button
-          onClick={onEvaluate}
-          disabled={
-            (challenge?.typeevaluation?.type?.toLowerCase() == "hybride" &&
-              dateFin > maintenant) ||
-            challenge?.typeevaluation?.type?.toLowerCase() == "vote"
-          }
-          className={`w-full flex items-center justify-center ${(challenge?.typeevaluation?.type?.toLowerCase() == "hybride" && dateFin > maintenant) || challenge?.typeevaluation?.type?.toLowerCase() == "vote" ? "bg-gray-200 text-gray-400" : "bg-orange-700 text-white hover:bg-orange-800"}  gap-2 py-3.5 rounded-xl font-black text-sm transition-all shadow-lg active:scale-95`}
-        >
-          <Eye size={20} /> Évaluer le projet
-        </button>
+        {!isCorbeille && (
+          <button
+            onClick={onEvaluate}
+            disabled={
+              (challenge?.typeevaluation?.type?.toLowerCase() == "hybride" &&
+                dateFin > maintenant) ||
+              challenge?.typeevaluation?.type?.toLowerCase() == "vote"
+            }
+            className={`w-full flex items-center justify-center ${(challenge?.typeevaluation?.type?.toLowerCase() == "hybride" && dateFin > maintenant) || challenge?.typeevaluation?.type?.toLowerCase() == "vote" ? "bg-gray-200 text-gray-400" : "bg-orange-700 text-white hover:bg-orange-800"}  gap-2 py-3.5 rounded-xl font-black text-sm transition-all shadow-lg active:scale-95`}
+          >
+            <SquarePen size={20} /> Évaluer le projet
+          </button>
+        )}
       </div>
 
       <ScoreDetailModal

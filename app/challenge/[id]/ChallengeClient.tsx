@@ -37,6 +37,7 @@ import {
   Save,
   AlertCircle,
   Scale,
+  Trash2,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -58,6 +59,7 @@ import ProjectFormPreviewModal from "@/app/components/modals/ProjectFormPreviewM
 import ChallengeAnalytics from "../tabsChallenge/ChallengeAnalytics";
 import ChallengeMoreOptions from "./components/ChallengeMoreOptions";
 import ScoreDetailModal from "@/app/components/modals/ScoreDetailModal";
+import CorbeilleProjetsModal from "@/app/components/modals/CorbeilleProjetsModal";
 
 // --- MODALS DE BASE ---
 
@@ -406,6 +408,8 @@ export default function ChallengeClient() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  // corbeille
+  const [isTogglingCorbeille, setIsTogglingCorbeille] = useState(false);
 
   const tabsContainerRef = useRef<HTMLDivElement>(null);
   const contentAnchorRef = useRef<HTMLDivElement>(null);
@@ -1334,6 +1338,9 @@ function EvaluateProjectsSection({ challenge, isJury }: any) {
     challenge?.resultatdisponible,
   );
 
+  // corbeille
+  const [showCorbeilleModal, setShowCorbeilleModal] = useState(false);
+
   // Sous-tab IA (uniquement dans a_evaluer)
   const [activeEligibiliteTab, setActiveEligibiliteTab] = useState<
     "eligibles" | "non_eligibles"
@@ -1385,10 +1392,24 @@ function EvaluateProjectsSection({ challenge, isJury }: any) {
     fetchEvalData();
   }, [activeSubTab, challenge.id]);
 
+  // pour actualiser apres retrait ou ajout dans la corbeille
+  const handleToggleCorbeille = (projectId: number, newValue: boolean) => {
+    setProjects((prev) =>
+      prev.map((item) =>
+        item.id === projectId ? { ...item, danscorbeille: newValue } : item,
+      ),
+    );
+  };
+
   // ── Séparation locale des projets par éligibilité ──
   // null est traité comme éligible (pas encore analysé par l'IA)
-  const projetsEligibles = projects.filter((p) => p.eligible !== 0);
-  const projetsNonEligibles = projects.filter((p) => p.eligible === 0);
+  const projetsEligibles = projects.filter(
+    (p) => p.eligible !== 0 && !p.danscorbeille,
+  );
+  const projetsNonEligibles = projects.filter(
+    (p) => p.eligible === 0 && !p.danscorbeille,
+  );
+  const projetsCorbeille = projects.filter((p) => p.danscorbeille == 1);
 
   const handlePublishResults = async () => {
     if (!challenge?.id) return;
@@ -1473,6 +1494,20 @@ function EvaluateProjectsSection({ challenge, isJury }: any) {
           </button>
         </div>
 
+        {activeSubTab === "a_evaluer" && (
+          <button
+            onClick={() => setShowCorbeilleModal(true)}
+            className="flex items-center gap-2 px-6 py-2 rounded-xl text-xs lg:text-sm bg-white hover:scale-105 border border-black text-black hover:border-orange-200 hover:text-orange-700 hover:bg-orange-50 transition-all active:scale-[0.98]"
+          >
+            <Trash2 size={16} color="black" /> Corbeille des projets
+            {projetsCorbeille.length > 0 && (
+              <span className="ml-1 px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-[10px]">
+                {projetsCorbeille.length}
+              </span>
+            )}
+          </button>
+        )}
+
         {activeSubTab === "provisoire" && (
           <button
             onClick={() => {
@@ -1489,7 +1524,7 @@ function EvaluateProjectsSection({ challenge, isJury }: any) {
           >
             {resultatDisponible == 1 ? (
               <>
-                <CheckCircle size={16} /> RÉSULTATS PUBLIÉS
+                <CheckCircle size={16} /> RÉSULTATS DÉJÀ PUBLIÉS
               </>
             ) : (
               <>
@@ -1598,6 +1633,7 @@ function EvaluateProjectsSection({ challenge, isJury }: any) {
                     allProjects={projects}
                     challenge={challenge}
                     onEvaluate={() => setSelectedProjectId(p.id)}
+                    onToggleCorbeille={handleToggleCorbeille}
                   />
                 ))
               : // Projets non conformes → carte avec raison IA
@@ -1608,6 +1644,7 @@ function EvaluateProjectsSection({ challenge, isJury }: any) {
                       allProjects={projects}
                       challenge={challenge}
                       onEvaluate={() => setSelectedProjectId(p.id)}
+                      onToggleCorbeille={handleToggleCorbeille}
                     />
                     {/* Bandeau raison non-éligibilité */}
                     {p.resultats && p.resultats !== "Approuvé par IA" && (
@@ -1616,7 +1653,7 @@ function EvaluateProjectsSection({ challenge, isJury }: any) {
                           IA
                         </span>
                         <p className="text-xs text-red-600 leading-relaxed">
-                          {p.resultats}
+                          {p.raison}
                         </p>
                       </div>
                     )}
@@ -1706,6 +1743,14 @@ function EvaluateProjectsSection({ challenge, isJury }: any) {
           />
         )}
       </AnimatePresence>
+
+      <CorbeilleProjetsModal
+        isOpen={showCorbeilleModal}
+        onClose={() => setShowCorbeilleModal(false)}
+        projects={projetsCorbeille}
+        challenge={challenge}
+        onToggleCorbeille={handleToggleCorbeille}
+      />
     </div>
   );
 }

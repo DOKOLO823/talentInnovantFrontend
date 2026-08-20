@@ -733,7 +733,7 @@ export default function ProjectCardResult({
           {isOwner && (
             <button
               onClick={() => setShowContact(true)}
-              className="p-2 flex flex-row-reverse gap-x-1 justify-center items-center text-sm text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+              className="p-2 flex flex-row-reverse gap-x-1 justify-center items-center text-sm text-orange-700 hover:bg-orange-50 rounded-full transition-colors"
             >
               Contacter
               <Phone size={19} />
@@ -743,7 +743,7 @@ export default function ProjectCardResult({
             <>
               <button
                 onClick={() => setOpenMenu(!openMenu)}
-                className={`p-2 hover:bg-gray-100 rounded-full transition-colors ${openMenu ? "text-orange-600 bg-gray-100" : "text-gray-400"}`}
+                className={`p-2 hover:bg-gray-100 rounded-full transition-colors ${openMenu ? "text-orange-600 bg-gray-100" : "text-gray-500"}`}
               >
                 <MoreVertical size={20} />
               </button>
