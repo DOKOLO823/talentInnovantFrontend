@@ -736,6 +736,7 @@ export default function ChallengeClient() {
           userName={currentUser?.talent?.nom || "Talent"}
           userDomain={""}
           userCompetences={""}
+          isCompany={currentUser?.entreprise?.id ? true : false}
         />
         {isOwner && (
           <div className="ml-auto flex gap-3">

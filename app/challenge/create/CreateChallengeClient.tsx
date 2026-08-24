@@ -44,6 +44,7 @@ export default function CreateChallengeClient({
   const [challenge, setChallenge] = useState<any>({
     site: "talent innovant", // Garder cette valeur exacte
     typeevaluation: "Jury",
+    diffuser: true,
     nombregagnant: [""],
     limite_soumissions: 1,
     portee_id: 1,
@@ -127,6 +128,7 @@ export default function CreateChallengeClient({
         getTypeEvaluationId(challenge.typeevaluation),
       );
       formData.append("portee_id", (challenge.portee_id ?? 1).toString());
+      formData.append("diffuser", challenge.diffuser === false ? "0" : "1");
       formData.append(
         "nombrecontribution",
         (parseInt(challenge.nombrecontribution) || 1).toString(),

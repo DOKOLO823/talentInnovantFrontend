@@ -17,6 +17,7 @@ interface StepGeneralInfoProps {
   data: any;
   onChange: (data: any) => void;
   photoFile: File | null;
+  existingPhotoUrl?: string | null; // ✅ nouveau
   photoPreview?: string | null; // ✅ Nouveau
   setPhotoPreview?: (url: string | null) => void; // ✅ Nouveau
   setPhotoFile: (file: File | null) => void;
@@ -27,6 +28,7 @@ export default function StepGeneralInfo({
   data,
   onChange,
   photoFile,
+  existingPhotoUrl,
   setPhotoFile,
   onNext,
 }: StepGeneralInfoProps) {
@@ -233,10 +235,11 @@ export default function StepGeneralInfo({
           </div>
         </div>
 
-        {/* VISUEL - VERSION ROBUSTE */}
+        {/* VISUEL */}
         <div className={cardStyle}>
           <label className={labelStyle}>Identité Visuelle (Banner)</label>
-          {!photoFile ? (
+
+          {!photoFile && !existingPhotoUrl && (
             <label className="group flex flex-col items-center justify-center border-2 border-dashed border-slate-200 hover:border-orange-700 hover:bg-orange-50/30 rounded-md p-8 transition-all cursor-pointer bg-slate-50/50">
               <div className="bg-white p-3 rounded border border-slate-200 shadow-sm group-hover:scale-105 transition-transform duration-200">
                 <Upload className="w-5 h-5 text-orange-700" />
@@ -256,7 +259,10 @@ export default function StepGeneralInfo({
                 onChange={handlePhotoChange}
               />
             </label>
-          ) : (
+          )}
+
+          {/* Nouvelle photo sélectionnée (remplace tout) */}
+          {photoFile && (
             <div className="flex items-center gap-5 p-3 border border-orange-700/20 bg-orange-50/30 rounded-md">
               <div className="relative w-20 h-20 rounded border border-slate-200 overflow-hidden bg-white shrink-0">
                 {previewUrl ? (
@@ -290,13 +296,46 @@ export default function StepGeneralInfo({
                   onClick={removePhoto}
                   className="mt-2 text-[11px] font-black text-red-600 hover:underline uppercase tracking-tighter"
                 >
-                  Retirer le visuel
+                  Annuler et garder la photo actuelle
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* Photo déjà existante (aucun nouvel upload) */}
+          {!photoFile && existingPhotoUrl && (
+            <div className="flex items-center gap-5 p-3 border border-slate-200 bg-slate-50/50 rounded-md">
+              <div className="relative w-20 h-20 rounded border border-slate-200 overflow-hidden bg-white shrink-0">
+                <img
+                  src={existingPhotoUrl}
+                  alt="Bannière actuelle"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-slate-900">
+                  Bannière actuelle
+                </p>
+                <p className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase">
+                  Conservée si vous n'en choisissez pas d'autre
+                </p>
+                <label className="mt-2 inline-block text-[12px] font-black text-orange-700 hover:underline uppercase tracking-tighter cursor-pointer">
+                  <span className="text-orange-700 hover:bg-orange-50 p-2 rounded transition-all hover:text-[13px]">
+                    Remplacer la photo
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    hidden
+                    onChange={handlePhotoChange}
+                  />
+                </label>
               </div>
             </div>
           )}
         </div>
       </div>
+
       {/* FOOTER ACTIONS */}
       <div className="flex justify-between items-center pt-6 border-t border-slate-200">
         <div className="flex items-center gap-2 text-slate-400">

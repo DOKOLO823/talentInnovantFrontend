@@ -26,6 +26,7 @@ interface ChallengeMoreOptionsProps {
   userName?: string;
   userDomain?: string;
   userCompetences?: string;
+  isCompany?: boolean; // Ajout de la prop isCompany
 }
 
 export default function ChallengeMoreOptions({
@@ -37,6 +38,7 @@ export default function ChallengeMoreOptions({
   userName = "Talent",
   userDomain,
   userCompetences,
+  isCompany,
 }: ChallengeMoreOptionsProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showCoachModal, setShowCoachModal] = useState(false);
@@ -216,25 +218,27 @@ export default function ChallengeMoreOptions({
               </button>
 
               {/* S'entraîner avec le coach */}
-              <button
-                onClick={() => {
-                  setShowCoachModal(true);
-                  setIsOpen(false);
-                }}
-                className="w-full flex items-center gap-3 px-4 py-4 mt-6 hover:bg-orange-50 transition-colors text-left group"
-              >
-                <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors shrink-0">
-                  <Bot size={20} className="text-orange-700" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-gray-800">
-                    S'entraîner avec le Coach IA
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Préparez ce challenge avec l'IA
-                  </p>
-                </div>
-              </button>
+              {!isCompany && (
+                <button
+                  onClick={() => {
+                    setShowCoachModal(true);
+                    setIsOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-4 mt-6 hover:bg-orange-50 transition-colors text-left group"
+                >
+                  <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors shrink-0">
+                    <Bot size={20} className="text-orange-700" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-gray-800">
+                      S'entraîner avec le Coach IA
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Préparez ce challenge avec l'IA
+                    </p>
+                  </div>
+                </button>
+              )}
 
               <div className="h-px bg-gray-100 mx-3" />
 
@@ -258,38 +262,42 @@ export default function ChallengeMoreOptions({
               <div className="h-px bg-gray-100 mx-3" />
 
               {/* Favoris */}
-              <button
-                onClick={handleFavorite}
-                disabled={loadingFavorite}
-                className="w-full flex items-center gap-3 px-4 py-4 hover:bg-gray-50 transition-colors text-left group"
-              >
-                <div
-                  className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors shrink-0 ${isFavorite ? "bg-red-50 group-hover:bg-red-100" : "bg-gray-100 group-hover:bg-gray-200"}`}
+              {!isCompany && (
+                <button
+                  onClick={handleFavorite}
+                  disabled={loadingFavorite}
+                  className="w-full flex items-center gap-3 px-4 py-4 hover:bg-gray-50 transition-colors text-left group"
                 >
-                  {loadingFavorite ? (
-                    <Loader2
-                      size={20}
-                      className="animate-spin text-orange-700"
-                    />
-                  ) : isFavorite ? (
-                    <HeartOff size={20} className="text-red-500" />
-                  ) : (
-                    <Heart size={20} className="text-gray-700" />
-                  )}
-                </div>
-                <div>
-                  <p
-                    className={`text-sm font-bold ${isFavorite ? "text-red-600" : "text-gray-800"}`}
+                  <div
+                    className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors shrink-0 ${isFavorite ? "bg-red-50 group-hover:bg-red-100" : "bg-gray-100 group-hover:bg-gray-200"}`}
                   >
-                    {isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {isFavorite
-                      ? "Ne plus suivre ce challenge"
-                      : "Sauvegarder pour plus tard"}
-                  </p>
-                </div>
-              </button>
+                    {loadingFavorite ? (
+                      <Loader2
+                        size={20}
+                        className="animate-spin text-orange-700"
+                      />
+                    ) : isFavorite ? (
+                      <HeartOff size={20} className="text-red-500" />
+                    ) : (
+                      <Heart size={20} className="text-gray-700" />
+                    )}
+                  </div>
+                  <div>
+                    <p
+                      className={`text-sm font-bold ${isFavorite ? "text-red-600" : "text-gray-800"}`}
+                    >
+                      {isFavorite
+                        ? "Retirer des favoris"
+                        : "Ajouter aux favoris"}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {isFavorite
+                        ? "Ne plus suivre ce challenge"
+                        : "Sauvegarder pour plus tard"}
+                    </p>
+                  </div>
+                </button>
+              )}
             </motion.div>
           </>
         )}

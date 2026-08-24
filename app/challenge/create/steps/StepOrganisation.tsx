@@ -19,6 +19,8 @@ import {
   MapPin,
   Scale,
   Link as LinkIcon,
+  Info,
+  Megaphone,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { li } from "framer-motion/client";
@@ -95,6 +97,8 @@ export default function StepOrganisation({
   const isModification = !!data.id;
   const isInterne = data.site == "talent innovant";
   const typechallenge = useSearchParams().get("typechallenge");
+  // pour mode edit
+  const effectiveTypechallenge = data.typechallenge || typechallenge;
   const [lienExterne, setLienExterne] = useState(
     data.site && data.site != "talent innovant" ? data.site : "",
   );
@@ -105,6 +109,9 @@ export default function StepOrganisation({
 
   const isCanalDisabled =
     !isModification && (lieuParam === "interne" || lieuParam === "externe");
+
+  // diffuser challenge ?
+  const isAlreadyDiffused = !!Number(data.infonewchallenge);
 
   // Initialisation canal selon param URL
   useEffect(() => {
@@ -143,11 +150,47 @@ export default function StepOrganisation({
     onChange(newData);
   };
 
-  const handleTypeChange = (val: string) => {
-    const newData = { ...data, typeevaluation: val };
-    newData.nombregagnant = val === "Hybride" ? ["", ""] : [""];
-    if (val === "Vote") newData.jurys = [];
-    onChange(newData);
+  // 1. Déterminer l'ID courant de manière stricte
+  const currentEvalId = Number(
+    data.typeevaluation_id ||
+      (typeof data.typeevaluation === "object"
+        ? data.typeevaluation?.id
+        : null) ||
+      1,
+  );
+
+  // 2. Synchroniser l'état au premier rendu si typeevaluation_id est manquant dans data
+  useEffect(() => {
+    if (!data.typeevaluation_id) {
+      const initialId =
+        typeof data.typeevaluation === "object"
+          ? data.typeevaluation?.id
+          : data.typeevaluation === "Jury"
+            ? 2
+            : data.typeevaluation === "Hybride"
+              ? 3
+              : 1;
+
+      onChange({
+        ...data,
+        typeevaluation_id: initialId,
+      });
+    }
+  }, []);
+
+  // 3. Fonction de mise à jour au clic
+  const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedId = Number(e.target.value);
+
+    let stringValue = "Vote";
+    if (selectedId === 2) stringValue = "Jury";
+    if (selectedId === 3) stringValue = "Hybride";
+
+    onChange({
+      ...data,
+      typeevaluation: stringValue,
+      typeevaluation_id: selectedId, // CRUCIAL : Envoyé au state parent
+    });
   };
 
   // ── Jurys (multi-sélection) ──
@@ -171,6 +214,8 @@ export default function StepOrganisation({
   const selectedRegions: string[] = data.regions ?? [];
 
   const toggleRegion = (region: string) => {
+    if (isAlreadyDiffused) return; // ✅ verrouillé après diffusion
+
     if (selectedRegions.includes(region)) {
       update(
         "regions",
@@ -233,7 +278,8 @@ export default function StepOrganisation({
 
     if (
       isInterne &&
-      typechallenge == "entreprise" &&
+      effectiveTypechallenge == "entreprise" &&
+      data.diffuser !== false &&
       selectedRegions.length === 0
     ) {
       newErrors.regions =
@@ -502,12 +548,12 @@ export default function StepOrganisation({
               <label className={labelStyle}>Méthode de sélection *</label>
               <select
                 className={`${inputStyle} ${errors.typeevaluation ? "border-red-400" : ""}`}
-                value={data.typeevaluation || "Jury"}
-                onChange={(e) => handleTypeChange(e.target.value)}
+                value={currentEvalId}
+                onChange={handleTypeChange}
               >
-                <option value="Jury">Comité d'experts (Jury)</option>
-                <option value="Vote">Audience publique (Vote)</option>
-                <option value="Hybride">Mixte (Vote + Jury)</option>
+                <option value={2}>Comité d'experts (Jury)</option>
+                <option value={1}>Audience publique (Vote)</option>
+                <option value={3}>Mixte (Vote + Jury)</option>
               </select>
               {errors.typeevaluation && (
                 <p className={errStyle}>
@@ -657,46 +703,107 @@ export default function StepOrganisation({
       </div>
 
       {/* ── RÉGIONS (challenge interne uniquement) ── */}
-      {isInterne && typechallenge == "entreprise" && (
-        <section className={cardStyle}>
-          <h3 className={sectionTitle}>
-            <MapPin size={16} className="text-orange-700" /> Régions de
-            diffusion *
-            <span className="ml-auto text-[10px] font-bold text-slate-400 normal-case">
-              {selectedRegions.length}/{maxRegions} sélectionnée(s)
-            </span>
-          </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-            {CAMEROON_REGIONS.map((region) => {
-              const isSelected = selectedRegions.includes(region);
-              const isDisabled =
-                !isSelected && selectedRegions.length >= maxRegions;
-              return (
-                <button
-                  key={region}
-                  type="button"
-                  onClick={() => toggleRegion(region)}
-                  disabled={isDisabled}
-                  className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all ${
-                    isSelected
-                      ? "bg-orange-700 text-white border-orange-700"
-                      : isDisabled
-                        ? "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed"
-                        : "bg-white text-slate-700 border-slate-200 hover:border-orange-400 hover:bg-orange-50"
+      {isInterne && effectiveTypechallenge == "entreprise" && (
+        <>
+          {/* ── DIFFUSION AUTOMATIQUE ── */}
+          <section className={cardStyle}>
+            <h3 className={sectionTitle}>
+              <Megaphone size={16} className="text-orange-700" /> Diffusion
+              automatique
+            </h3>
+
+            <label
+              className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${
+                isAlreadyDiffused
+                  ? "bg-slate-50 border-slate-200 cursor-not-allowed opacity-70"
+                  : data.diffuser !== false
+                    ? "bg-orange-50 border-orange-200 cursor-pointer"
+                    : "bg-slate-50 border-slate-200 cursor-pointer"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={data.diffuser !== false}
+                disabled={isAlreadyDiffused}
+                onChange={(e) => update("diffuser", e.target.checked)}
+                className="mt-0.5 w-5 h-5 accent-orange-700 shrink-0 disabled:cursor-not-allowed cursor-pointer"
+              />
+              <div>
+                <p
+                  className={`text-sm font-bold ${
+                    isAlreadyDiffused
+                      ? "text-slate-500"
+                      : data.diffuser !== false
+                        ? "text-orange-900"
+                        : "text-slate-500"
                   }`}
                 >
-                  {region}
-                </button>
-              );
-            })}
-          </div>
-          {errors.regions && (
-            <p className={`${errStyle} mt-3`}>
-              <AlertCircle size={10} />
-              {errors.regions}
-            </p>
+                  {data.diffuser !== false
+                    ? "Diffusion activée"
+                    : "Diffusion désactivée"}
+                </p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Envoie un e-mail et une notification aux talents éligibles des
+                  régions ciblées dès la publication du challenge.
+                </p>
+              </div>
+            </label>
+
+            {isAlreadyDiffused && (
+              <div className="mt-3 flex items-start gap-2 p-3 bg-orange-50 border border-orange-100 rounded-lg">
+                <Info size={14} className="text-orange-600 mt-0.5 shrink-0" />
+                <p className="text-xs text-orange-700 font-medium">
+                  Ce challenge a déjà été diffusé aux talents. Ce paramètre
+                  ainsi que les régions ci-dessous ne sont plus modifiables.
+                </p>
+              </div>
+            )}
+          </section>
+
+          {/* ── RÉGIONS DE DIFFUSION — masqué si diffusion désactivée ── */}
+          {data.diffuser !== false && (
+            <section className={cardStyle}>
+              <h3 className={sectionTitle}>
+                <MapPin size={16} className="text-orange-700" /> Régions de
+                diffusion *
+                <span className="ml-auto text-[10px] font-bold text-slate-400 normal-case">
+                  {selectedRegions.length}/{maxRegions} sélectionnée(s)
+                </span>
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                {CAMEROON_REGIONS.map((region) => {
+                  const isSelected = selectedRegions.includes(region);
+                  const isDisabled =
+                    isAlreadyDiffused ||
+                    (!isSelected && selectedRegions.length >= maxRegions);
+                  return (
+                    <button
+                      key={region}
+                      type="button"
+                      onClick={() => toggleRegion(region)}
+                      disabled={isDisabled}
+                      className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all ${
+                        isSelected
+                          ? "bg-orange-700 text-white border-orange-700"
+                          : isDisabled
+                            ? "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed"
+                            : "bg-white text-slate-700 border-slate-200 hover:border-orange-400 hover:bg-orange-50"
+                      }`}
+                    >
+                      {region}
+                    </button>
+                  );
+                })}
+              </div>
+              {errors.regions && (
+                <p className={`${errStyle} mt-3`}>
+                  <AlertCircle size={10} />
+                  {errors.regions}
+                </p>
+              )}
+            </section>
           )}
-        </section>
+        </>
       )}
 
       {/* ── CRITÈRES D'ÉVALUATION AVEC COEFFICIENTS ── */}

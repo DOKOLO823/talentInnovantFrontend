@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
   Menu,
@@ -16,6 +16,7 @@ import Link from "next/link";
 import { apiFetch } from "@/app/lib/api";
 import apifile from "@/app/lib/apifile";
 import LocationModal from "./LocationModal";
+import NotificationsDropdown from "../notification/NotificationsDropdown";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -34,6 +35,27 @@ export default function Navbar() {
 
   // Petite astuce pour forcer le rafraîchissement de l'image
   const [imgKey, setImgKey] = useState(Date.now());
+
+  // notifications en mode dropdown
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false);
+      }
+    };
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setNotifOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
 
   const settingsPath =
     role === "talent" ? "/parametres-talent" : "/parametres-entreprise";
@@ -229,7 +251,7 @@ export default function Navbar() {
             {!isCheckingAuth &&
               (isLoggedIn ? (
                 <div className="flex items-center space-x-4">
-                  <Link
+                  {/* <Link
                     href={"/notification"}
                     onClick={() => setNotificationCount(0)}
                     className="relative cursor-pointer flex items-center justify-center p-1"
@@ -242,7 +264,32 @@ export default function Navbar() {
                         {notificationCount > 9 ? "9+" : notificationCount}
                       </span>
                     )}
-                  </Link>
+                  </Link> */}
+
+                  <div className="relative" ref={notifRef}>
+                    <button
+                      onClick={() => {
+                        setNotifOpen((o) => !o);
+                        if (!notifOpen) setNotificationCount(0);
+                      }}
+                      className="relative cursor-pointer flex items-center justify-center p-1"
+                    >
+                      <Bell
+                        className={`h-6 w-6 transition ${notifOpen ? "text-orange-700" : "text-gray-700 hover:text-orange-600"}`}
+                      />
+                      {notificationCount > 0 && (
+                        <span className="absolute top-0 right-0.5 bg-orange-700 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center border border-white p-2">
+                          {notificationCount > 9 ? "9+" : notificationCount}
+                        </span>
+                      )}
+                    </button>
+
+                    {notifOpen && (
+                      <NotificationsDropdown
+                        onClose={() => setNotifOpen(false)}
+                      />
+                    )}
+                  </div>
 
                   <Link
                     href={profileLink}

@@ -16,6 +16,7 @@ import StepDetailsChallenge from "../../create/steps/StepInfo";
 import Step2ChallengeForm from "@/app/components/challenge/Step2ChallengeForm";
 
 import domainesJSON from "@/domaines.json";
+import apifile from "@/app/lib/apifile";
 
 interface EditChallengeClientProps {
   challengeId: string;
@@ -37,6 +38,9 @@ export default function EditChallengeClient({
   const [jurys, setJurys] = useState<any[]>([]);
   const [fields, setFields] = useState<any[]>([]);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
+
+  // pour la photo du challenge en mode edit
+  const [existingPhotoUrl, setExistingPhotoUrl] = useState<string | null>(null);
 
   /**
    * Parse les données JSON ou les objets du backend pour les adapter aux composants de création
@@ -73,19 +77,41 @@ export default function EditChallengeClient({
 
         if (challengeRes.statut === 200) {
           const data = challengeRes.data;
+          console.log("Données du challenge récupérées:", data);
 
           // Hydratation précise selon votre structure JSON fournie
           const hydratedChallenge = {
             ...data,
-            // Conversion des objets/JSON strings en tableaux pour les inputs dynamiques
             principe: parseBackendData(data.principe),
             recompense: parseBackendData(data.recompense),
             critereevaluation: parseBackendData(data.critereevaluation),
             publiccible: parseBackendData(data.publiccible),
             nombregagnant: parseBackendData(data.nombregagnant),
-            // Extraction des IDs des domaines depuis la relation pivot
             domaines: data.domaines?.map((d: any) => d.id) || [],
-            // Mapping du type d'évaluation (ex: "hybride" -> "Hybride")
+            diffuser:
+              data.diffuser === false ||
+              data.diffuser === 0 ||
+              data.diffuser === "0"
+                ? false
+                : true,
+
+            // ── Jurys : data.jurys est déjà un tableau d'objets user complets ──
+            jurys: data.jurys?.map((j: any) => j.id) || [],
+
+            // ── Critères : déjà au bon format {libelle, coefficient} ──
+            criteres:
+              data.criteres?.map((c: any) => ({
+                libelle: c.libelle,
+                coefficient: c.coefficient,
+              })) || [],
+
+            // ── Ces champs sont déjà des tableaux de strings, pas d'objets à mapper ──
+            regions: data.regions?.length ? data.regions : [],
+            regles: data.regles?.length ? data.regles : [""],
+            recompenses: data.recompenses?.length ? data.recompenses : [""],
+            objectifs: data.objectifs?.length ? data.objectifs : [""],
+            profils: data.profils?.length ? data.profils : [""],
+
             typeevaluation: data.typeevaluation?.type
               ? data.typeevaluation.type.charAt(0).toUpperCase() +
                 data.typeevaluation.type.slice(1)
@@ -96,6 +122,7 @@ export default function EditChallengeClient({
           };
 
           setChallenge(hydratedChallenge);
+          setExistingPhotoUrl(data.photo ? `${apifile}/${data.photo}` : null);
           setJurys(jurysRes?.data || []);
 
           // Hydratation du formulaire dynamique (fields)
@@ -154,11 +181,8 @@ export default function EditChallengeClient({
       "region",
       "ville",
       "format",
-      "nombrecontribution",
-      "objectif",
-      "details",
-      "jury_id",
       "portee_id",
+      "details", // <-- AJOUTÉ : était perdu avant (traité à tort comme un tableau)
     ];
 
     simpleFields.forEach((key) => {
@@ -168,44 +192,70 @@ export default function EditChallengeClient({
     });
 
     formData.append("is_official", challenge.is_official ? "1" : "0");
-    formData.append(
-      "typeevaluation_id",
-      getTypeEvaluationId(challenge.typeevaluation),
-    );
+    const evalId =
+      challenge.typeevaluation_id ??
+      getTypeEvaluationId(challenge.typeevaluation) ??
+      1;
+    formData.append("typeevaluation_id", evalId.toString());
+    formData.append("diffuser", challenge.diffuser === false ? "0" : "1");
+
+    if (
+      challenge.nombrecontribution !== undefined &&
+      challenge.nombrecontribution !== null
+    ) {
+      formData.append(
+        "nombrecontribution",
+        challenge.nombrecontribution.toString(),
+      );
+    }
 
     // 2. Image
     if (photoFile) {
       formData.append("photo", photoFile);
     }
 
-    // 3. Tableaux
-    const arrays = {
-      nombregagnant: challenge.nombregagnant,
-      principe: challenge.principe,
-      recompense: challenge.recompense,
-      critereevaluation: challenge.critereevaluation,
-      publiccible: challenge.publiccible,
-      domaines: challenge.domaines,
-      nombrecontribution: challenge?.nombrecontribution,
-      details: challenge?.details,
-    };
+    // 3. Tableaux simples — MÊME NOM local et backend, pas de renommage
+    const arrayFields = [
+      "nombregagnant",
+      "regles", // <-- clé correcte (plus "principe")
+      "recompenses", // <-- clé correcte (plus "recompense")
+      "objectifs",
+      "profils", // <-- clé correcte (plus "publiccible")
+      "domaines",
+      "regions",
+      "jurys",
+    ];
 
-    Object.entries(arrays).forEach(([key, value]) => {
+    arrayFields.forEach((key) => {
+      const value = challenge[key];
       if (Array.isArray(value)) {
         value.forEach((item, index) => {
-          if (item !== "" && item !== null)
+          if (item !== "" && item !== null && item !== undefined) {
             formData.append(`${key}[${index}]`, item.toString());
+          }
         });
       }
     });
 
-    // 4. Formulaire dynamique
+    // 4. Critères — structure objet {libelle, coefficient} (déjà OK)
+    if (Array.isArray(challenge.criteres)) {
+      challenge.criteres.forEach((c: any, index: number) => {
+        if (c?.libelle) {
+          formData.append(`criteres[${index}][libelle]`, c.libelle);
+          formData.append(
+            `criteres[${index}][coefficient]`,
+            (c.coefficient ?? 1).toString(),
+          );
+        }
+      });
+    }
+
+    // 5. Formulaire dynamique
     fields.forEach((field, index) => {
       if (field.label) {
         if (field.id) {
           formData.append(`fields[${index}][id]`, field.id.toString());
         }
-
         formData.append(`fields[${index}][label]`, field.label);
         formData.append(`fields[${index}][type]`, field.type);
         formData.append(
@@ -333,6 +383,7 @@ export default function EditChallengeClient({
                     onChange={setChallenge}
                     photoFile={photoFile}
                     setPhotoFile={setPhotoFile}
+                    existingPhotoUrl={existingPhotoUrl}
                     onNext={() => setSubStep(2)}
                   />
                 )}

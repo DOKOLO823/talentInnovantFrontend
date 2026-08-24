@@ -465,7 +465,7 @@ export default function EvaluateProjectModal({
         {/* ── Corps ── */}
         <div className="flex-1 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
           {/* Colonne gauche : réponses du projet */}
-          <div className="flex-1 overflow-y-auto p-4 md:p-8">
+          <div className="md:flex-1 p-4 md:p-8 md:overflow-y-auto">
             <AnimatePresence mode="wait" custom={direction}>
               <motion.div
                 key={project.id}
@@ -515,7 +515,7 @@ export default function EvaluateProjectModal({
           </div>
 
           {/* Colonne droite : formulaire de notation */}
-          <div className="hidden md:flex w-[380px] bg-white border-l p-6 flex-col gap-4 overflow-y-auto">
+          <div className="flex md:w-[380px] w-full bg-white border-t md:border-t-0 md:border-l p-6 flex-col gap-4 md:overflow-y-auto">
             <div className="flex items-center gap-2 mb-2">
               <Scale size={16} className="text-orange-700" />
               <h3 className="font-black text-slate-800 text-sm uppercase tracking-wide">
@@ -619,7 +619,7 @@ export default function EvaluateProjectModal({
                 <button
                   onClick={handleEvaluate}
                   disabled={loading}
-                  className={`w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-3 transition-all
+                  className={`hidden md:flex w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-3 transition-all
                     ${isFinalInModal ? "bg-green-600" : "bg-orange-700"}
                     text-white shadow-xl active:scale-95 disabled:opacity-50`}
                 >

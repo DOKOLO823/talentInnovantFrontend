@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Mail } from "lucide-react";
+import { AlertCircle, Mail } from "lucide-react";
 import { useState, useEffect, Suspense } from "react";
 import { apiFetch } from "@/app/lib/api";
 import { useSearchParams } from "next/navigation";
@@ -115,6 +115,17 @@ function VerifyEmailContent() {
           . Consultez votre boîte mail pour finaliser votre inscription.
         </p>
 
+        {/* ── NOUVEAU BLOC : conseil spams ── */}
+        <div className="mt-4 flex items-start gap-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+          <AlertCircle className="text-orange-700 shrink-0 mt-0.5" size={18} />
+          <p className="text-sm text-orange-700 leading-relaxed text-left">
+            <span className="font-semibold">Vous ne voyez pas l'email ?</span>{" "}
+            Vérifiez votre dossier{" "}
+            <span className="font-semibold">Spams / Courrier indésirable</span>{" "}
+            — il arrive que ce type de mail y soit classé par erreur.
+          </p>
+        </div>
+
         {successMessage && (
           <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm text-center">
             {successMessage}
@@ -180,7 +191,7 @@ function VerifyEmailContent() {
         </div>
 
         <div className="text-center">
-          <a href="/auth/login" className="text-orange-600 font-medium text-sm">
+          <a href="/auth/login" className="text-orange-700 font-medium text-sm">
             Retour à la connexion
           </a>
         </div>
