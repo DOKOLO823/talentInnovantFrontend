@@ -2605,11 +2605,12 @@ function ResultsSection({ challenge, isOwner, currentUser }: any) {
     }
   };
 
-  const limit = !loading
-    ? renderNombreGagnant() != null
-      ? renderNombreGagnant()
-      : results.length
-    : "...";
+  const limit =
+    !loading && currentUser
+      ? renderNombreGagnant() != null
+        ? renderNombreGagnant()
+        : results.length
+      : "...";
 
   useEffect(() => {
     const fetchResults = async () => {

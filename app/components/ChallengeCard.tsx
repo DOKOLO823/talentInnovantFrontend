@@ -259,7 +259,7 @@ export default function ChallengeCard({ challenge }: { challenge: Challenge }) {
               >
                 <div className="flex items-center justify-between bg-black/60 backdrop-blur-2xl border border-white/10 px-3 py-2 rounded-lg transition-all hover:bg-black/60">
                   <div className="flex items-center gap-2 overflow-hidden">
-                    <Trophy className="w-4 h-4 text-yellow-400 shrink-0" />
+                    <Trophy className="w-4 h-4 text-orange-600 shrink-0" />
                     <span className="text-white font-bold text-xs truncate uppercase tracking-tight">
                       {challenge?.rewards[0]}
                     </span>
