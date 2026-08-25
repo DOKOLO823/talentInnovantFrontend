@@ -26,6 +26,7 @@ import {
   ExternalLink,
   Check,
   Info,
+  Pencil,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
@@ -407,6 +408,7 @@ import {
 } from "lucide-react";
 import { formatKMMD } from "@/app/utils/formatters";
 import ScoreDetailModal from "../modals/ScoreDetailModal";
+import EditProjectModal from "../modals/EditProjectModal";
 
 // --- Sous-composants ---
 function ExpandableText({
@@ -637,6 +639,7 @@ function FileRenderer({
 export default function ProjectCard({ project, challenge }: any) {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [openMenu, setOpenMenu] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [showAllFields, setShowAllFields] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -651,6 +654,22 @@ export default function ProjectCard({ project, challenge }: any) {
 
   const [showScoreDetail, setShowScoreDetail] = useState(false);
 
+  // mise a jour du projet sur le frontend
+  const [currentProject, setCurrentProject] = useState(project);
+
+  useEffect(() => {
+    setCurrentProject(project);
+  }, [project]);
+
+  const handleProjectUpdated = (updatedPost: any) => {
+    setCurrentProject((prev: any) => ({
+      ...prev,
+      responses: updatedPost.responses,
+    }));
+    setShowEditModal(false);
+    toast.success("Projet mis à jour avec succès !");
+  };
+
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const params = useParams();
@@ -661,9 +680,14 @@ export default function ProjectCard({ project, challenge }: any) {
 
   // affichage des 3 bouton de dropdown
   const shouldShowDropdownButton = () => {
-    if (!(currentUser?.id == project?.user_id)) return false;
+    const isAuthorOrOwner =
+      currentUser?.id == project?.user_id ||
+      currentUser?.id == challenge?.user_id;
+    if (!isAuthorOrOwner) return false;
     const now = new Date();
     const dateFin = new Date(challenge?.datefininscription);
+    // Le créateur du challenge garde toujours accès, même après la date de fin (cohérent avec destroy())
+    if (currentUser?.id == challenge?.user_id) return true;
     return now < dateFin;
   };
 
@@ -811,7 +835,7 @@ export default function ProjectCard({ project, challenge }: any) {
     router.push(`/challenge/${idchallenge}/reel?${query}`);
   };
 
-  const responses = project?.responses || [];
+  const responses = currentProject?.responses || [];
 
   return (
     <div className="relative bg-white rounded-2xl shadow-sm border w-full max-w-xl mx-auto flex flex-col mb-6 overflow-hidden transition-all">
@@ -821,12 +845,14 @@ export default function ProjectCard({ project, challenge }: any) {
       <div className="flex justify-between items-center px-4 pt-4">
         <div
           className="flex items-center gap-3 cursor-pointer"
-          onClick={() => router.push(`/profil-talent/${project?.user?.id}`)}
+          onClick={() =>
+            router.push(`/profil-talent/${currentProject?.user?.id}`)
+          }
         >
           <Image
             src={
-              project?.user?.pp
-                ? apifile + "/" + project?.user?.pp
+              currentProject?.user?.pp
+                ? apifile + "/" + currentProject?.user?.pp
                 : "../../assets/images/pp2.png"
             }
             width={40}
@@ -837,12 +863,17 @@ export default function ProjectCard({ project, challenge }: any) {
           <div>
             <p className="font-bold text-gray-900 leading-tight text-sm hover:text-orange-600 transition-colors first-letter:uppercase">
               {truncate(
-                project?.user?.talent?.nom || project?.user?.name || "Talent",
+                currentProject?.user?.talent?.nom ||
+                  currentProject?.user?.name ||
+                  "Talent",
                 20,
               )}
             </p>
             <p className="text-[11px] text-gray-500 font-medium first-letter:uppercase">
-              {truncate(project?.user?.talent?.profession || "Participant", 20)}
+              {truncate(
+                currentProject?.user?.talent?.profession || "Participant",
+                20,
+              )}
             </p>
           </div>
         </div>
@@ -873,6 +904,17 @@ export default function ProjectCard({ project, challenge }: any) {
                 exit={{ opacity: 0, y: 10 }}
                 className="absolute right-0 top-12 w-48 bg-white border rounded-2xl shadow-xl z-50 overflow-hidden"
               >
+                {(isChallengeOwner || isAuthor) && (
+                  <button
+                    onClick={() => {
+                      setOpenMenu(false);
+                      setShowEditModal(true);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 border-b border-gray-50"
+                  >
+                    <Pencil size={18} /> Modifier mon post
+                  </button>
+                )}
                 {(isChallengeOwner || isAuthor) && (
                   <button
                     onClick={() => setShowDeleteConfirm(true)}
@@ -914,7 +956,7 @@ export default function ProjectCard({ project, challenge }: any) {
                     Rang provisoire
                   </span>
                   <span className="text-gray-900 leading-none text-[12px]">
-                    {project?.rang || "-"}
+                    {currentProject?.rang || "-"}
                   </span>
                 </div>
               </div>
@@ -929,19 +971,21 @@ export default function ProjectCard({ project, challenge }: any) {
                   <span className="text-[9px] text-gray-500 font-medium leading-none mb-0.5">
                     Score provisoire
                   </span>
-                  <div className="flex items-center gap-1">
-                    <span className="text-gray-900 leading-none text-[12px] font-black">
-                      {/* On traite le score comme un entier ici (false) */}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {/* ✅ Score cliquable — ouvre aussi le modal */}
+                    <span
+                      onClick={() => setShowScoreDetail(true)}
+                      className="text-gray-900 leading-none text-[12px] font-black cursor-pointer hover:text-orange-600 transition-colors"
+                    >
                       {formatKMMD(score, false)}
                     </span>
 
-                    {/* Icône i uniquement si > 1000 */}
-
+                    {/* ✅ Bouton "Plus de détails" — remplace l'icône Info */}
                     <button
                       onClick={() => setShowScoreDetail(true)}
-                      className="hover:text-orange-700 transition-colors"
+                      className="px-2 xl:px-1 py-0.5 bg-orange-600 hover:bg-orange-700 text-white text-[9px] font-bold rounded-full transition-all hover:scale-105 whitespace-nowrap"
                     >
-                      <Info size={13} className="text-gray-500" />
+                      Plus de détails
                     </button>
                   </div>
                 </div>
@@ -1017,7 +1061,7 @@ export default function ProjectCard({ project, challenge }: any) {
             className="flex flex-col items-center group bg-gray-200 px-6 md:px-2 py-1 rounded-xl"
           >
             <span className="text-sm font-black text-gray-900">
-              {project?.commentaires_count || 0}
+              {currentProject?.commentaires_count || 0}
             </span>
             <div className="flex items-center gap-1">
               <MessageCircle
@@ -1052,16 +1096,16 @@ export default function ProjectCard({ project, challenge }: any) {
       </div>
 
       <ScoreDetailModal
-        postId={project?.id}
+        postId={currentProject?.id}
         isOpen={showScoreDetail}
         onClose={() => setShowScoreDetail(false)}
-        user={project?.user}
+        user={currentProject?.user}
         isNoteFinale={false} // À mettre à true si tu utilises une variable notefinale
         data={{
           value: score,
           votes: likes,
           shares: shares,
-          comments: project?.commentaires_count || 0,
+          comments: currentProject?.commentaires_count || 0,
         }}
       />
 
@@ -1075,13 +1119,22 @@ export default function ProjectCard({ project, challenge }: any) {
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
         onShareSuccess={handleShareSuccess}
-        postId={project.id}
+        postId={currentProject?.id}
         challengeId={challenge?.id}
       />
       <ContactModal
         isOpen={showContactModal}
         onClose={() => setShowContactModal(false)}
-        user={project?.user}
+        user={currentProject?.user}
+      />
+
+      {/* edit post  */}
+      <EditProjectModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onUpdated={handleProjectUpdated}
+        project={currentProject}
+        challenge={challenge}
       />
     </div>
   );
