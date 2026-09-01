@@ -107,8 +107,7 @@ export default function StepOrganisation({
     ? (PACK_MAX_REGIONS[packParam] ?? PACK_MAX_REGIONS[data.pack] ?? 1)
     : 0;
 
-  const isCanalDisabled =
-    !isModification && (lieuParam === "interne" || lieuParam === "externe");
+  const isCanalDisabled = !isModification && lieuParam === "interne";
 
   // diffuser challenge ?
   const isAlreadyDiffused = !!Number(data.infonewchallenge);
@@ -271,7 +270,7 @@ export default function StepOrganisation({
     if (
       data.typeevaluation !== "Vote" &&
       selectedJuryIds.length === 0 &&
-      lieuParam != "externe"
+      isInterne
     ) {
       newErrors.jurys = "Veuillez sélectionner au moins un jury.";
     }
@@ -811,7 +810,7 @@ export default function StepOrganisation({
         <section className={cardStyle}>
           <h3 className={sectionTitle}>
             <Scale size={16} className="text-orange-700" /> Critères
-            d'évaluation *
+            d'évaluation {lieuParam == "interne" && "*"}
             <span className="text-[10px] font-normal text-slate-500 ml-2 normal-case">
               Note /20 × coefficient
             </span>
