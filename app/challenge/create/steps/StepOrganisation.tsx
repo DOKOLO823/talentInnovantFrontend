@@ -94,8 +94,12 @@ export default function StepOrganisation({
   const searchParams = useSearchParams();
   const lieuParam = searchParams.get("lieu");
   const packParam = searchParams.get("pack") ?? "";
+
   const isModification = !!data.id;
-  const isInterne = data.site == "talent innovant";
+  const isInterne = isModification
+    ? data.site == "talent innovant"
+    : lieuParam == "interne";
+
   const typechallenge = useSearchParams().get("typechallenge");
   // pour mode edit
   const effectiveTypechallenge = data.typechallenge || typechallenge;
@@ -107,19 +111,22 @@ export default function StepOrganisation({
     ? (PACK_MAX_REGIONS[packParam] ?? PACK_MAX_REGIONS[data.pack] ?? 1)
     : 0;
 
-  const isCanalDisabled = !isModification && lieuParam === "interne";
+  const isCanalDisabled = !isModification;
 
   // diffuser challenge ?
   const isAlreadyDiffused = !!Number(data.infonewchallenge);
 
   // Initialisation canal selon param URL
   useEffect(() => {
-    if (!isModification) {
-      if (lieuParam == "interne") update("site", "talent innovant");
-      else if (lieuParam == "externe") update("site", lienExterne);
+    if (lieuParam == "interne" && data.site != "talent innovant") {
+      update("site", "talent innovant");
+    } else if (lieuParam != "interne" && data.site === undefined) {
+      // Verrouille immédiatement le mode externe dans les données du
+      // formulaire ; l'utilisateur renseignera l'URL via le champ dédié.
+      update("site", "");
     }
     if (packParam && !data.pack) update("pack", packParam);
-  }, [lieuParam, isModification, packParam]);
+  }, []);
 
   // Chargement des utilisateurs (jurys potentiels)
   useEffect(() => {
@@ -346,7 +353,7 @@ export default function StepOrganisation({
   const showGeo = ["en presentiel", "presentiel", "hybride"].includes(
     data.lieu ?? "",
   );
-  const showUrlInput = data.site !== "talent innovant";
+  const showUrlInput = !isInterne;
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 py-4">
@@ -442,11 +449,7 @@ export default function StepOrganisation({
               <label className={labelStyle}>Canal de participation</label>
               <select
                 className={`${inputStyle} ${isCanalDisabled ? "bg-slate-100 cursor-not-allowed opacity-75" : ""}`}
-                value={
-                  data.site === "talent innovant"
-                    ? "talent innovant"
-                    : "hors talent innovant"
-                }
+                value={isInterne ? "talent innovant" : "hors talent innovant"}
                 disabled={isCanalDisabled}
                 onChange={(e) =>
                   update(
