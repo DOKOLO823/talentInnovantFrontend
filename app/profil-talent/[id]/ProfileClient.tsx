@@ -217,7 +217,7 @@ export default function ProfileClient() {
       </div>
 
       {/* PHOTO + INFOS */}
-      <div className="px-4 md:px-8 -mt-20 relative">
+      <div className="px-4 md:px-8 -mt-20 relative max-w-5xl mx-auto">
         <div className="flex flex-col items-center md:items-start gap-4">
           <div
             className="w-36 h-36 md:w-40 md:h-40 rounded-full border-4 border-white overflow-hidden shadow-xl cursor-pointer"
@@ -268,7 +268,7 @@ export default function ProfileClient() {
       {/* TABS (STICKY) */}
       <div
         ref={tabsRef}
-        className="px-4 md:px-8 mt-6 border-b flex gap-6 bg-white sticky top-0 z-40 pt-4 overflow-x-auto no-scrollbar"
+        className="px-4 md:px-8 mt-6 border-b flex gap-6 bg-white sticky top-0 z-40 pt-4 overflow-x-auto no-scrollbar max-w-5xl mx-auto"
       >
         {["about", "projets", "cv", "portfolio"].map((tab) => (
           <button
@@ -290,7 +290,7 @@ export default function ProfileClient() {
       </div>
 
       {/* CONTENT TABS */}
-      <div className="px-4 md:px-8 mt-6 pb-14">
+      <div className="px-4 md:px-8 mt-6 pb-14 max-w-5xl mx-auto">
         {activeTab === "about" && <TabsAbout user={userData} />}
         {activeTab === "projets" && (
           <TabsProjects

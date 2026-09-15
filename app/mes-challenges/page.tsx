@@ -620,7 +620,7 @@ export default function MesChallengesPage() {
       {/* Tabs Sticky */}
       <div
         className={cn(
-          "sticky bg-white z-40 shadow transition-all duration-300",
+          "sticky bg-white z-40 shadow transition-all duration-300 max-w-7xl mx-auto",
           tabsTopPosition,
         )}
         ref={tabsSectionRef}
@@ -721,7 +721,7 @@ export default function MesChallengesPage() {
       </div>
 
       {/* Liste des cartes */}
-      <section className="px-5 mt-6 flex flex-wrap gap-6 justify-center md:justify-start">
+      <section className="px-5 mt-6 flex flex-wrap gap-6 justify-center md:justify-start max-w-7xl mx-auto">
         {loadingChallenges ? (
           <div className="flex py-20 w-full justify-center">
             <Loader2 className="w-8 h-8 animate-spin text-orange-700" />

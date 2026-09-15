@@ -638,7 +638,7 @@ export default function HomePage() {
       {/* Tabs Sticky */}
       <div
         className={cn(
-          "sticky bg-white z-40 shadow transition-all duration-300 md:px-18 mx-auto",
+          "sticky bg-white z-40 shadow ... max-w-7xl mx-auto md:px-8 lg:px-12",
           tabsTopPosition,
         )}
         ref={tabsSectionRef}

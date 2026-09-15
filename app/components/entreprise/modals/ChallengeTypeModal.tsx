@@ -45,6 +45,7 @@ export default function ChallengeTypeModal({
   const [screen, setScreen] = useState<"choice" | "packs">("choice");
   const [packs, setPacks] = useState<Pack[]>([]);
   const [solde, setSolde] = useState<number>(soldeProp);
+  const [loadSolde, setLoadSolde] = useState(true);
   const [loadingPacks, setLoadingPacks] = useState(false);
   const [selectedPack, setSelectedPack] = useState<string | null>(null);
 
@@ -63,6 +64,7 @@ export default function ChallengeTypeModal({
         if (res?.statut === 200) {
           setPacks(res.packs);
           setSolde(res.solde);
+          setLoadSolde(!loadSolde);
         }
       })
       .finally(() => setLoadingPacks(false));
@@ -211,8 +213,9 @@ export default function ChallengeTypeModal({
                       Solde disponible
                     </p>
                     <p className="text-xl font-black text-slate-900 leading-none">
-                      {solde.toLocaleString("fr-FR")}{" "}
-                      <span className="text-orange-700">FCFA</span>
+                      {loadSolde
+                        ? "Chargement du solde..."
+                        : solde.toLocaleString("fr-FR") + " FCFA"}
                     </p>
                   </div>
                 </div>

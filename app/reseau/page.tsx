@@ -248,221 +248,226 @@ export default function ReseauPage() {
   return (
     <div className="min-h-screen bg-white pb-20">
       <Toaster position="top-center" />
-      <div className="ml-4">
-        <BackButton />
-      </div>
+      <div className="max-w-6xl mx-auto">
+        <div className="ml-4">
+          <BackButton />
+        </div>
 
-      <header className="px-4 flex items-center gap-4 bg-white mt-8">
-        <h1 className="text-xl font-bold text-slate-800">Mon Réseau</h1>
-      </header>
+        <header className="px-4 flex items-center gap-4 bg-white mt-8">
+          <h1 className="text-xl font-bold text-slate-800">Mon Réseau</h1>
+        </header>
 
-      {/* NOTIFICATION PROFESSIONNELLE RESPONSIVE */}
-      <AnimatePresence>
-        {unreadCount > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="mx-4 mt-6"
-          >
-            <div className="flex flex-col sm:flex-row items-center gap-4 p-5 bg-white border border-slate-100 rounded-[2rem] shadow-sm">
-              {/* Contenu : Badge + Texte */}
-              <div className="flex items-start gap-4 flex-1 w-full text-left">
-                {/* Badge circulaire professionnel */}
-                <div className="flex items-center justify-center shrink-0 w-10 h-10 border-2 border-orange-700 bg-white rounded-full">
-                  <span className="text-base font-black text-orange-700">
-                    {unreadCount}
-                  </span>
-                </div>
-
-                <div className="flex flex-col justify-center">
-                  <p className="text-[15px] text-slate-800 font-bold leading-tight">
-                    Nouvelle{unreadCount > 1 ? "s" : ""} demande
-                    {unreadCount > 1 ? "s" : ""} de collaboration
-                  </p>
-                  <p className="text-[13px] text-slate-500 mt-1">
-                    Vous avez {unreadCount} demande{unreadCount > 1 ? "s" : ""}{" "}
-                    de collaboration à consulter.
-                  </p>
-                </div>
-              </div>
-
-              {/* Action : S'adapte au nombre et à l'écran */}
-              <button
-                onClick={() => {
-                  setSubTab("recues");
-                  setShouldScroll(true); // Autorise le scroll
-                }}
-                className="w-full sm:w-auto px-8 py-3 bg-orange-700 text-white text-[13px] font-bold rounded-xl active:scale-95 transition-all shadow-lg shadow-orange-700/10 whitespace-nowrap"
-              >
-                {unreadCount > 1 ? "Voir les demandes" : "Voir la demande"}
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="flex p-2 bg-gray-100 mx-4 mt-4 rounded-2xl">
-        {["collaboration", "mentorat"].map((t) => (
-          <button
-            key={t}
-            onClick={() => setActiveTab(t)}
-            className={`flex-1 py-3 rounded-xl font-bold transition-all ${
-              activeTab === t
-                ? "bg-white text-orange-700 shadow-sm"
-                : "text-gray-500"
-            }`}
-          >
-            {t === "collaboration" ? "Collaboration" : "Mentorat"}
-          </button>
-        ))}
-      </div>
-
-      <AnimatePresence mode="wait">
-        {activeTab === "collaboration" ? (
-          <motion.div
-            key="collab"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="p-4"
-          >
-            <p className="text-gray-600 text-sm mb-3 leading-relaxed">
-              Bâtissez votre équipe : connectez-vous aux talents dont les
-              compétences complètent votre projet.
-            </p>
-
-            <div
-              onClick={() => router.push("/collaborateurs")}
-              className="w-full cursor-pointer md:w-1/2 lg:w-1/3 py-4 text-sm md:text-md bg-white text-orange-700 rounded-2xl font-bold flex items-center justify-center gap-2 mb-6 border border-orange-700"
+        {/* NOTIFICATION PROFESSIONNELLE RESPONSIVE */}
+        <AnimatePresence>
+          {unreadCount > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="mx-4 mt-6"
             >
-              <Search size={20} /> Trouver de nouveaux collaborateurs
-            </div>
+              <div className="flex flex-col sm:flex-row items-center gap-4 p-5 bg-white border border-slate-100 rounded-[2rem] shadow-sm">
+                {/* Contenu : Badge + Texte */}
+                <div className="flex items-start gap-4 flex-1 w-full text-left">
+                  {/* Badge circulaire professionnel */}
+                  <div className="flex items-center justify-center shrink-0 w-10 h-10 border-2 border-orange-700 bg-white rounded-full">
+                    <span className="text-base font-black text-orange-700">
+                      {unreadCount}
+                    </span>
+                  </div>
 
-            <div className="flex gap-3 overflow-x-auto no-scrollbar scrollbar-hide pb-4 mb-4">
-              {[
-                { id: "actives", label: "Collaborations actives" },
-                { id: "recues", label: "Demandes reçues" },
-                { id: "envoyees", label: "Demandes envoyées" },
-              ].map((b) => (
+                  <div className="flex flex-col justify-center">
+                    <p className="text-[15px] text-slate-800 font-bold leading-tight">
+                      Nouvelle{unreadCount > 1 ? "s" : ""} demande
+                      {unreadCount > 1 ? "s" : ""} de collaboration
+                    </p>
+                    <p className="text-[13px] text-slate-500 mt-1">
+                      Vous avez {unreadCount} demande
+                      {unreadCount > 1 ? "s" : ""} de collaboration à consulter.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Action : S'adapte au nombre et à l'écran */}
                 <button
-                  key={b.id}
-                  ref={subTab === b.id ? activeBtnRef : null}
                   onClick={() => {
-                    setSubTab(b.id);
+                    setSubTab("recues");
                     setShouldScroll(true); // Autorise le scroll
                   }}
-                  className={`relative px-6 py-2 rounded-full whitespace-nowrap text-sm font-semibold border transition-all ${
-                    subTab === b.id
-                      ? "bg-orange-700 border-orange-700 text-white"
-                      : "bg-white border-gray-200 text-gray-600"
-                  }`}
+                  className="w-full sm:w-auto px-8 py-3 bg-orange-700 text-white text-[13px] font-bold rounded-xl active:scale-95 transition-all shadow-lg shadow-orange-700/10 whitespace-nowrap"
                 >
-                  {b.label}
-
-                  {/* Le badge avec notification si count > 0 */}
-                  {b.id === "recues" && unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 flex h-5 w-5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-5 w-5 bg-orange-600 text-white text-[10px] items-center justify-center border-2 border-white">
-                        {unreadCount}
-                      </span>
-                    </span>
-                  )}
+                  {unreadCount > 1 ? "Voir les demandes" : "Voir la demande"}
                 </button>
-              ))}
-            </div>
-
-            <div ref={contentRef} className="scroll-mt-28">
-              {subTab === "actives" && (
-                <>
-                  <div className="mt-6 mb-3">
-                    <div className="relative">
-                      <input
-                        type="text"
-                        placeholder="Recherche par nom..."
-                        className="w-full p-4 pl-12 bg-gray-50 border border-gray-100 rounded-2xl outline-none"
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                      <Search
-                        className="absolute left-4 top-4 text-gray-400"
-                        size={20}
-                      />
-                    </div>
-                  </div>
-                  {loading ? (
-                    <SkeletonCard />
-                  ) : filteredData.length === 0 && !loading ? (
-                    <EmptyState
-                      message="Vous n'avez aucune collaboration active. C'est peut-être un probleme de connexion internet."
-                      onRetry={fetchData} // <--- Appel de la fonction ici
-                    />
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {filteredData.map((item) => (
-                        <ActiveCollabCard key={item.id} talent={item} />
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-
-              {subTab === "recues" && (
-                <div className="space-y-4">
-                  {loading ? (
-                    <SkeletonCard />
-                  ) : filteredData.length === 0 && !loading ? (
-                    <EmptyState
-                      message="Vous n'avez reçu aucune demande de collaboration. C'est peut-être un probleme de connexion internet."
-                      onRetry={fetchData} // <--- Appel de la fonction ici
-                    />
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {filteredData.map((req) => (
-                        <ReceivedRequestCard
-                          key={req.id}
-                          request={req}
-                          onRefresh={fetchData}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {subTab === "envoyees" && (
-                <div className="space-y-4">
-                  {loading ? (
-                    <SkeletonCard />
-                  ) : filteredData.length === 0 && !loading ? (
-                    <EmptyState
-                      message="Vous n'avez envoyé aucune demande de collaboration. C'est peut-être un probleme de connexion internet."
-                      onRetry={fetchData} // <--- Appel de la fonction ici
-                    />
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {filteredData.map((req) => (
-                        <SentRequestCard key={req.id} request={req} />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </motion.div>
-        ) : (
-          <div>
-            <p className="p-4 text-gray-600 text-sm mb-6 leading-relaxed">
-              Ne restez pas seul face à vos défis : bénéficiez de
-              l'accompagnement d'experts et de conseils stratégiques pour
-              transformer vos idées en succès.
-            </p>
-            <motion.div key="mentor" className="p-12 text-center text-gray-500">
-              Aucun mentor pour le moment. Restez à l'écoute !
+              </div>
             </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
+
+        <div className="flex p-2 bg-gray-100 mx-4 mt-4 rounded-2xl">
+          {["collaboration", "mentorat"].map((t) => (
+            <button
+              key={t}
+              onClick={() => setActiveTab(t)}
+              className={`flex-1 py-3 rounded-xl font-bold transition-all ${
+                activeTab === t
+                  ? "bg-white text-orange-700 shadow-sm"
+                  : "text-gray-500"
+              }`}
+            >
+              {t === "collaboration" ? "Collaboration" : "Mentorat"}
+            </button>
+          ))}
+        </div>
+
+        <AnimatePresence mode="wait">
+          {activeTab === "collaboration" ? (
+            <motion.div
+              key="collab"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="p-4"
+            >
+              <p className="text-gray-600 text-sm mb-3 leading-relaxed">
+                Bâtissez votre équipe : connectez-vous aux talents dont les
+                compétences complètent votre projet.
+              </p>
+
+              <div
+                onClick={() => router.push("/collaborateurs")}
+                className="w-full cursor-pointer md:w-1/2 lg:w-1/3 py-4 text-sm md:text-md bg-white text-orange-700 rounded-2xl font-bold flex items-center justify-center gap-2 mb-6 border border-orange-700"
+              >
+                <Search size={20} /> Trouver de nouveaux collaborateurs
+              </div>
+
+              <div className="flex gap-3 overflow-x-auto no-scrollbar scrollbar-hide pb-4 mb-4">
+                {[
+                  { id: "actives", label: "Collaborations actives" },
+                  { id: "recues", label: "Demandes reçues" },
+                  { id: "envoyees", label: "Demandes envoyées" },
+                ].map((b) => (
+                  <button
+                    key={b.id}
+                    ref={subTab === b.id ? activeBtnRef : null}
+                    onClick={() => {
+                      setSubTab(b.id);
+                      setShouldScroll(true); // Autorise le scroll
+                    }}
+                    className={`relative px-6 py-2 rounded-full whitespace-nowrap text-sm font-semibold border transition-all ${
+                      subTab === b.id
+                        ? "bg-orange-700 border-orange-700 text-white"
+                        : "bg-white border-gray-200 text-gray-600"
+                    }`}
+                  >
+                    {b.label}
+
+                    {/* Le badge avec notification si count > 0 */}
+                    {b.id === "recues" && unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 flex h-5 w-5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-5 w-5 bg-orange-600 text-white text-[10px] items-center justify-center border-2 border-white">
+                          {unreadCount}
+                        </span>
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              <div ref={contentRef} className="scroll-mt-28">
+                {subTab === "actives" && (
+                  <>
+                    <div className="mt-6 mb-3">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder="Recherche par nom..."
+                          className="w-full p-4 pl-12 bg-gray-50 border border-gray-100 rounded-2xl outline-none"
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                        <Search
+                          className="absolute left-4 top-4 text-gray-400"
+                          size={20}
+                        />
+                      </div>
+                    </div>
+                    {loading ? (
+                      <SkeletonCard />
+                    ) : filteredData.length === 0 && !loading ? (
+                      <EmptyState
+                        message="Vous n'avez aucune collaboration active. C'est peut-être un probleme de connexion internet."
+                        onRetry={fetchData} // <--- Appel de la fonction ici
+                      />
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {filteredData.map((item) => (
+                          <ActiveCollabCard key={item.id} talent={item} />
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {subTab === "recues" && (
+                  <div className="space-y-4">
+                    {loading ? (
+                      <SkeletonCard />
+                    ) : filteredData.length === 0 && !loading ? (
+                      <EmptyState
+                        message="Vous n'avez reçu aucune demande de collaboration. C'est peut-être un probleme de connexion internet."
+                        onRetry={fetchData} // <--- Appel de la fonction ici
+                      />
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {filteredData.map((req) => (
+                          <ReceivedRequestCard
+                            key={req.id}
+                            request={req}
+                            onRefresh={fetchData}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {subTab === "envoyees" && (
+                  <div className="space-y-4">
+                    {loading ? (
+                      <SkeletonCard />
+                    ) : filteredData.length === 0 && !loading ? (
+                      <EmptyState
+                        message="Vous n'avez envoyé aucune demande de collaboration. C'est peut-être un probleme de connexion internet."
+                        onRetry={fetchData} // <--- Appel de la fonction ici
+                      />
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {filteredData.map((req) => (
+                          <SentRequestCard key={req.id} request={req} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          ) : (
+            <div>
+              <p className="p-4 text-gray-600 text-sm mb-6 leading-relaxed">
+                Ne restez pas seul face à vos défis : bénéficiez de
+                l'accompagnement d'experts et de conseils stratégiques pour
+                transformer vos idées en succès.
+              </p>
+              <motion.div
+                key="mentor"
+                className="p-12 text-center text-gray-500"
+              >
+                Aucun mentor pour le moment. Restez à l'écoute !
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

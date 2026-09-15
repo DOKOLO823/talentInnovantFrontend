@@ -68,6 +68,7 @@ export default function PackSelector({ isOpen, onClose }: PackSelectorProps) {
   const router = useRouter();
   const [packs, setPacks] = useState<Pack[]>([]);
   const [solde, setSolde] = useState(50000);
+  const [loadSolde, setLoadSolde] = useState(true);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
 
@@ -81,6 +82,7 @@ export default function PackSelector({ isOpen, onClose }: PackSelectorProps) {
         if (res?.statut === 200) {
           setPacks(res.packs);
           setSolde(res.solde);
+          setLoadSolde(false);
         }
       } catch (e) {
         console.error(e);
@@ -124,7 +126,9 @@ export default function PackSelector({ isOpen, onClose }: PackSelectorProps) {
               <span className="text-sm font-bold text-slate-700">
                 Solde :{" "}
                 <span className="text-orange-700">
-                  {solde.toLocaleString("fr-FR")} FCFA
+                  {loadSolde
+                    ? "Chargement du solde..."
+                    : solde.toLocaleString("fr-FR") + " FCFA"}
                 </span>
               </span>
             </div>

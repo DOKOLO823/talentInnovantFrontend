@@ -177,7 +177,7 @@ export default function EntrepriseProfileClient({ id }: { id: string }) {
         />
       </div>
 
-      <div className="px-4 md:px-8 -mt-20 relative">
+      <div className="px-4 md:px-8 -mt-20 relative max-w-5xl mx-auto">
         <div className="flex flex-col items-center md:items-start gap-4">
           <div className="w-36 h-36 md:w-40 md:h-40 rounded-full border-4 border-white overflow-hidden shadow-xl bg-white">
             <img
@@ -247,7 +247,7 @@ export default function EntrepriseProfileClient({ id }: { id: string }) {
         </div>
       </div>
 
-      <div className="px-4 md:px-8 mt-6 border-b flex gap-6 bg-white sticky top-0 z-30 pt-4 overflow-x-auto whitespace-nowrap scrollbar-hide">
+      <div className="px-4 md:px-8 mt-6 border-b flex gap-6 bg-white sticky top-0 z-30 pt-4 overflow-x-auto whitespace-nowrap scrollbar-hide max-w-5xl mx-auto">
         {["about", "challenges", "annonces"].map(
           (
             t, // Ajout de "annonces"
@@ -271,7 +271,7 @@ export default function EntrepriseProfileClient({ id }: { id: string }) {
         )}
       </div>
 
-      <div className="px-4 md:px-8 mt-6 pb-14">
+      <div className="px-4 md:px-8 mt-6 pb-14 max-w-5xl mx-auto">
         {activeTab === "about" && (
           <TabAbout entreprise={entreprise} total={total} />
         )}

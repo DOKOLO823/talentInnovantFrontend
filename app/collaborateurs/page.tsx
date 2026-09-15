@@ -133,17 +133,18 @@ export default function SearchCollaborators() {
   return (
     <div className="min-h-screen bg-white pb-20">
       <Toaster position="top-center" />
-      <div className="ml-3">
-        <BackButton />
-      </div>
 
-      <header className="px-4 flex items-center gap-4 bg-white mt-8 mb-6">
+      <header className="px-4 md:px-8 lg:px-12 max-w-7xl mx-auto space-y-4 flex flex-col gap-4 bg-white mt-8 mb-6">
+        <div className="ml-3">
+          <BackButton />
+        </div>
+
         <h1 className="text-xl font-bold text-slate-800">
           Trouver un collaborateur
         </h1>
       </header>
 
-      <div className="px-4 space-y-4">
+      <div className="px-4 md:px-8 lg:px-12 max-w-7xl mx-auto space-y-4">
         {/* Sélecteurs */}
         <span className="text-[12px] pl-3 text-slate-500">Filtre :</span>
         <div className="flex gap-3 overflow-x-auto no-scrollbar scrollbar-hide pb-2">
