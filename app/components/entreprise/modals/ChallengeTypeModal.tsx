@@ -73,7 +73,7 @@ export default function ChallengeTypeModal({
   const handleOrganiser = () => setScreen("packs");
 
   const handlePublier = () => {
-    router.push("/challenge/create?lieu=externe");
+    router.push("/challenge/create?lieu=externe&typechallenge=entreprise");
     onClose();
   };
 

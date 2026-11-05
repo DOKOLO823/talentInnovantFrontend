@@ -21,6 +21,9 @@ import {
   Link as LinkIcon,
   Info,
   Megaphone,
+  MessageCircle,
+  Wallet,
+  X,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { li } from "framer-motion/client";
@@ -59,6 +62,14 @@ const PACK_MAX_REGIONS: Record<string, number> = {
   premium: 10,
 };
 
+const DIFFUSION_EXTERNE_COUT = 5000;
+const EXTERNAL_MAX_REGIONS = 10; // pas de pack en externe : à ajuster si besoin
+const WHATSAPP_RECHARGE_URL =
+  "https://wa.me/237655624168?text=" +
+  encodeURIComponent(
+    "Bonjour, je souhaite recharger mon solde Talent Innovant pour activer la diffusion automatique.",
+  );
+
 interface StepOrganisationProps {
   data: any;
   onChange: (data: any) => void;
@@ -77,6 +88,70 @@ const sectionTitle =
   "text-sm font-bold text-slate-900 mb-6 flex items-center gap-2 border-b border-slate-100 pb-4";
 const errStyle =
   "flex items-center gap-1 text-red-600 text-[10px] font-bold mt-1";
+
+function SoldeInsuffisantModal({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  if (!isOpen) return null;
+  return (
+    <div
+      className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md"
+      onClick={onClose}
+    >
+      <div
+        className="relative bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 text-center border border-slate-100"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 bg-slate-100 hover:bg-red-50 hover:text-red-500 rounded-full transition"
+        >
+          <X size={18} />
+        </button>
+
+        <div className="w-16 h-16 bg-orange-50 border border-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
+          <Wallet className="text-orange-700" size={28} />
+        </div>
+
+        <h3 className="text-lg font-black text-slate-900 mb-2">
+          Solde insuffisant
+        </h3>
+        <p className="text-sm text-slate-600 leading-relaxed">
+          La diffusion automatique d'un challenge externe coûte{" "}
+          <span className="font-bold text-slate-900">5 000 FCFA</span>. Votre
+          solde doit être d'au moins 5 000 FCFA pour activer ce service.
+        </p>
+
+        <div className="mt-6 flex flex-col gap-3">
+          <a
+            href={WHATSAPP_RECHARGE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 w-full py-3 bg-[#25D366] hover:brightness-95 text-white font-bold rounded-xl text-sm shadow-lg shadow-green-200 transition"
+          >
+            <MessageCircle size={18} fill="currentColor" /> Recharger via
+            WhatsApp
+          </a>
+          <button
+            type="button"
+            onClick={onClose}
+            className="py-2.5 text-sm font-bold text-slate-500 hover:text-slate-800 transition"
+          >
+            Fermer
+          </button>
+        </div>
+        <p className="mt-3 text-[10px] text-slate-500">
+          La recharge est facultative : vous pouvez publier sans diffusion.
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export default function StepOrganisation({
   data,
@@ -100,6 +175,9 @@ export default function StepOrganisation({
     ? data.site == "talent innovant"
     : lieuParam == "interne";
 
+  const isExterne = !isInterne;
+  const [showSoldeModal, setShowSoldeModal] = useState(false);
+
   const typechallenge = useSearchParams().get("typechallenge");
   // pour mode edit
   const effectiveTypechallenge = data.typechallenge || typechallenge;
@@ -109,7 +187,7 @@ export default function StepOrganisation({
 
   const maxRegions = isInterne
     ? (PACK_MAX_REGIONS[packParam] ?? PACK_MAX_REGIONS[data.pack] ?? 1)
-    : 0;
+    : EXTERNAL_MAX_REGIONS;
 
   const isCanalDisabled = !isModification;
 
@@ -118,14 +196,36 @@ export default function StepOrganisation({
 
   // Initialisation canal selon param URL
   useEffect(() => {
+    const patch: any = {};
+
     if (lieuParam == "interne" && data.site != "talent innovant") {
-      update("site", "talent innovant");
+      patch.site = "talent innovant";
     } else if (lieuParam != "interne" && data.site === undefined) {
-      // Verrouille immédiatement le mode externe dans les données du
-      // formulaire ; l'utilisateur renseignera l'URL via le champ dédié.
-      update("site", "");
+      patch.site = "";
     }
-    if (packParam && !data.pack) update("pack", packParam);
+    if (packParam && !data.pack) patch.pack = packParam;
+
+    if (!data.typeevaluation_id) {
+      patch.typeevaluation_id =
+        typeof data.typeevaluation === "object"
+          ? data.typeevaluation?.id
+          : data.typeevaluation === "Jury"
+            ? 2
+            : data.typeevaluation === "Hybride"
+              ? 3
+              : 1;
+    }
+
+    if (
+      !isModification &&
+      lieuParam != "interne" &&
+      data.diffuserDefaultApplied === undefined
+    ) {
+      patch.diffuser = false;
+      patch.diffuserDefaultApplied = true;
+    }
+
+    if (Object.keys(patch).length) onChange({ ...data, ...patch });
   }, []);
 
   // Chargement des utilisateurs (jurys potentiels)
@@ -166,23 +266,23 @@ export default function StepOrganisation({
   );
 
   // 2. Synchroniser l'état au premier rendu si typeevaluation_id est manquant dans data
-  useEffect(() => {
-    if (!data.typeevaluation_id) {
-      const initialId =
-        typeof data.typeevaluation === "object"
-          ? data.typeevaluation?.id
-          : data.typeevaluation === "Jury"
-            ? 2
-            : data.typeevaluation === "Hybride"
-              ? 3
-              : 1;
+  // useEffect(() => {
+  //   if (!data.typeevaluation_id) {
+  //     const initialId =
+  //       typeof data.typeevaluation === "object"
+  //         ? data.typeevaluation?.id
+  //         : data.typeevaluation === "Jury"
+  //           ? 2
+  //           : data.typeevaluation === "Hybride"
+  //             ? 3
+  //             : 1;
 
-      onChange({
-        ...data,
-        typeevaluation_id: initialId,
-      });
-    }
-  }, []);
+  //     onChange({
+  //       ...data,
+  //       typeevaluation_id: initialId,
+  //     });
+  //   }
+  // }, []);
 
   // 3. Fonction de mise à jour au clic
   const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -214,6 +314,28 @@ export default function StepOrganisation({
       "jurys",
       selectedJuryIds.filter((id) => id !== userId),
     );
+  };
+
+  // Solde lu depuis la session locale ; null = inconnu (le backend tranchera)
+  const getSolde = (): number | null => {
+    try {
+      const auth = localStorage.getItem("auth");
+      const s = auth ? JSON.parse(auth)?.user?.entreprise?.solde : undefined;
+      return s === undefined || s === null ? null : Number(s);
+    } catch {
+      return null;
+    }
+  };
+
+  const handleDiffuserToggle = (checked: boolean) => {
+    if (checked && isExterne) {
+      const solde = getSolde();
+      if (solde !== null && solde < DIFFUSION_EXTERNE_COUT) {
+        setShowSoldeModal(true);
+        return; // on ne coche pas
+      }
+    }
+    update("diffuser", checked);
   };
 
   // ── Régions ──
@@ -283,7 +405,6 @@ export default function StepOrganisation({
     }
 
     if (
-      isInterne &&
       effectiveTypechallenge == "entreprise" &&
       data.diffuser !== false &&
       selectedRegions.length === 0
@@ -704,8 +825,8 @@ export default function StepOrganisation({
         </section>
       </div>
 
-      {/* ── RÉGIONS (challenge interne uniquement) ── */}
-      {isInterne && effectiveTypechallenge == "entreprise" && (
+      {/* ── RÉGIONS (challenge interne et externe) ── */}
+      {effectiveTypechallenge == "entreprise" && (
         <>
           {/* ── DIFFUSION AUTOMATIQUE ── */}
           <section className={cardStyle}>
@@ -727,7 +848,7 @@ export default function StepOrganisation({
                 type="checkbox"
                 checked={data.diffuser !== false}
                 disabled={isAlreadyDiffused}
-                onChange={(e) => update("diffuser", e.target.checked)}
+                onChange={(e) => handleDiffuserToggle(e.target.checked)}
                 className="mt-0.5 w-5 h-5 accent-orange-700 shrink-0 disabled:cursor-not-allowed cursor-pointer"
               />
               <div>
@@ -748,6 +869,12 @@ export default function StepOrganisation({
                   Envoie un e-mail et une notification aux talents éligibles des
                   régions ciblées dès la publication du challenge.
                 </p>
+
+                {isExterne && !isAlreadyDiffused && (
+                  <p className="text-xs font-bold text-orange-700 mt-1">
+                    Service facturé 5 000 FCFA, débités à la publication.
+                  </p>
+                )}
               </div>
             </label>
 
@@ -979,6 +1106,11 @@ export default function StepOrganisation({
           Continuer vers les domaines →
         </button>
       </div>
+
+      <SoldeInsuffisantModal
+        isOpen={showSoldeModal}
+        onClose={() => setShowSoldeModal(false)}
+      />
     </div>
   );
 }
