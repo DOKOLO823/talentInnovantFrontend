@@ -108,10 +108,10 @@ export default function Home() {
                     <span className="font-bold text-white whitespace-nowrap">
                       Pour les talents
                     </span>{" "}
-                    : Passez de l'idée à l'action en participant à des
-                    challenges d'innovation et profitez d'un accompagnement
-                    stratégique pour réaliser vos projets et révéler votre
-                    potentiel.
+                    : Découvrez des opportunités uniques à travers des
+                    challenges d'innovation, concours et hackathons nationaux et
+                    internationaux, et transformez vos idées en projets concrets
+                    qui révèlent votre potentiel.
                   </p>
                 </div>
 
@@ -240,7 +240,8 @@ export default function Home() {
               <span className="text-orange-600">Entreprise&nbsp;?</span>
             </h2>
 
-            <div className="grid md:grid-cols-3 gap-8">
+            {/* 4 cartes : 1 colonne (mobile) → 2x2 (tablette / petit PC) → 4 colonnes (grand écran) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
               {[
                 {
                   icon: Rocket,

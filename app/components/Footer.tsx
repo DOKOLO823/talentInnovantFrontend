@@ -1,22 +1,22 @@
-import Link from 'next/link';
+import Link from "next/link";
+import SocialLinks from "@/app/components/SocialLinks"; // NOUVEAU
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
-  const WHATSAPP_GROUP_LINK =
-  "https://chat.whatsapp.com/KZDescNoqkgKqREqCKg34Q?mode=ems_copy_t";
 
   return (
     <footer className="bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 border-b border-gray-700 pb-8">
-          
           {/* Logo/Titre */}
           <div className="col-span-2 md:col-span-2 space-y-4">
             <h3 className="text-3xl font-bold text-orange-700">
               TALENT INNOVANT
             </h3>
             <p className="text-gray-400 text-sm">
-              Connecter les talents et les entreprises par l'innovation.
+              La plateforme qui connecte talents et entreprises par des
+              challenges d'innovation : révélez votre potentiel, trouvez des
+              partenaires et concrétisez vos projets.
             </p>
           </div>
 
@@ -24,10 +24,38 @@ export default function Footer() {
           <div>
             <h4 className="text-lg font-semibold mb-3">Plateforme</h4>
             <ul className="space-y-2 text-sm text-gray-400">
-              <li><Link href="#challenges" className="hover:text-orange-500 transition">Challenges</Link></li>
-              <li><Link href="#avantages-talent" className="hover:text-orange-500 transition">Devenir Talent</Link></li>
-              <li><Link href="#avantages-entreprise" className="hover:text-orange-500 transition">Pour Entreprises</Link></li>
-              <li><Link href="#how-it-works" className="hover:text-orange-500 transition">Comment ça marche ?</Link></li>
+              <li>
+                <Link
+                  href="#challenges"
+                  className="hover:text-orange-500 transition"
+                >
+                  Challenges
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="#avantages-talent"
+                  className="hover:text-orange-500 transition"
+                >
+                  Devenir Talent
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="#avantages-entreprise"
+                  className="hover:text-orange-500 transition"
+                >
+                  Pour Entreprises
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="#how-it-works"
+                  className="hover:text-orange-500 transition"
+                >
+                  Comment ça marche ?
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -36,18 +64,22 @@ export default function Footer() {
             <h4 className="text-lg font-semibold mb-3">Support</h4>
             <ul className="space-y-2 text-sm text-gray-400">
               {/* <li><Link href="/faq" className="hover:text-orange-500 transition">FAQ</Link></li> */}
-              <li><Link href="#contact" className="hover:text-orange-500 transition">Contact</Link></li>
+              <li>
+                <Link
+                  href="#contact"
+                  className="hover:text-orange-500 transition"
+                >
+                  Contact
+                </Link>
+              </li>
               {/* <li><Link href="/terms" className="hover:text-orange-500 transition">Termes & Conditions</Link></li> */}
             </ul>
           </div>
 
-          {/* Communauté */}
+          {/* Suivez-nous */}
           <div>
-            <h4 className="text-lg font-semibold mb-3">Communauté</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
-              <li><a href={WHATSAPP_GROUP_LINK} target="_blank" rel="noopener noreferrer" className="hover:text-orange-500 transition">WhatsApp</a></li>
-              {/* <li><a href="#" target="_blank" rel="noopener noreferrer" className="hover:text-orange-500 transition">LinkedIn</a></li> */}
-            </ul>
+            <h4 className="text-lg font-semibold mb-3">Suivez-nous</h4>
+            <SocialLinks variant="footer" className="flex-wrap" />
           </div>
         </div>
 

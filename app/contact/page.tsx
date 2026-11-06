@@ -35,6 +35,7 @@ export default function ContactPage() {
         setMessage(""); // Réinitialise le formulaire après succès
       } else {
         toast.error(res?.message || "Une erreur est survenue lors de l'envoi.");
+        console.error("Erreur Contact:", res.erreur);
       }
     } catch (err: any) {
       console.error("Erreur Contact:", err);

@@ -17,6 +17,7 @@ import { apiFetch } from "@/app/lib/api";
 import apifile from "@/app/lib/apifile";
 import LocationModal from "./LocationModal";
 import NotificationsDropdown from "../notification/NotificationsDropdown";
+import SocialLinks from "./SocialLinks";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -225,16 +226,19 @@ export default function Navbar() {
           <div className="flex flex-row items-center justify-start flex-shrink-0">
             <button
               onClick={() => setMenuOpen(true)}
-              className={`p-2 rounded-md hover:bg-gray-100 transition md:hidden ${isLoggedIn && "mr-0"}`}
+              className={`py-2 px-1 rounded-md hover:bg-gray-100 transition md:hidden ${isLoggedIn && "mr-0"}`}
             >
               <Menu className="h-6 w-6 text-orange-700" />
             </button>
-            <span className="text-[13px] sm:text-sm md:text-md font-bold tracking-tight whitespace-nowrap">
-              TALENT <span className="text-orange-700">INNOVANT</span>
+            <span className="text-[15px] sm:text-sm md:text-md font-extrabold tracking-tight whitespace-nowrap">
+              <span className="inline xl:hidden"> T</span>{" "}
+              <span className="hidden xl:inline">TALENT</span>{" "}
+              <span className="text-orange-700 inline xl:hidden">I</span>
+              <span className="text-orange-700 hidden xl:inline">INNOVANT</span>
             </span>
           </div>
 
-          <div className="flex items-center space-x-3 sm:space-x-6">
+          <div className="flex items-center space-x-2 sm:space-x-4 md:space-x-6">
             <div className="hidden md:flex space-x-6">
               {!isCheckingAuth &&
                 navLinks.map((link) => (
@@ -248,9 +252,15 @@ export default function Navbar() {
                 ))}
             </div>
 
+            {/* NOUVEAU : réseaux sociaux (groupe WhatsApp masqué sur mobile) */}
+            <SocialLinks
+              variant="navbar"
+              className="md:border-l md:border-gray-200 md:pl-4"
+            />
+
             {!isCheckingAuth &&
               (isLoggedIn ? (
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-0 md:space-x-6">
                   {/* <Link
                     href={"/notification"}
                     onClick={() => setNotificationCount(0)}
@@ -358,13 +368,13 @@ export default function Navbar() {
                 <>
                   <Link
                     href="/auth/login"
-                    className="hidden md:inline-block px-4 py-2 bg-orange-700 text-white rounded-md font-medium hover:bg-orange-600 transition"
+                    className="hidden md:inline-block px-4 py-2 bg-orange-700 text-[10px] md:text-xs text-center text-white rounded-md font-medium hover:bg-orange-600 transition"
                   >
                     Se connecter
                   </Link>
                   <Link
                     href="/auth/login"
-                    className="md:hidden flex items-center text-xs font-bold text-orange-700 border border-orange-700 px-2 py-1 rounded"
+                    className="md:hidden flex items-center text-center text-[10px] md:text-xs font-bold text-orange-700 border border-orange-700 px-2 py-1 rounded"
                   >
                     <LogIn className="h-3 w-3 mr-1" /> Se connecter
                   </Link>
@@ -426,6 +436,14 @@ export default function Navbar() {
                 </>
               )}
             </ul>
+
+            {/* NOUVEAU : les 4 liens sociaux dans le menu mobile */}
+            <div className="mt-8 pt-4 border-t">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                Suivez-nous
+              </p>
+              <SocialLinks variant="drawer" />
+            </div>
           </div>
           <div className="border-t pt-4 relative -top-20">
             {isLoggedIn ? (
