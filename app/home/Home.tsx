@@ -53,43 +53,31 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50">
       <main>
         {/* ===================== HERO ===================== */}
-        <section className="relative w-full h-screen flex items-center overflow-hidden bg-gray-900">
-          {/* 1. IMAGE D'ARRIÈRE-PLAN AVEC OVERLAY PLUS SOBRE */}
+        <section className="relative w-full min-h-screen flex items-center overflow-hidden bg-gray-900 pt-24 pb-12 md:pt-20 md:pb-16">
+          {/* 1. IMAGE D'ARRIÈRE-PLAN AVEC OVERLAY */}
           <div
             className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
             style={{
               backgroundImage: "url('/assets/images/innov.jpg')",
             }}
           >
-            {/* Overlay sombre uniforme pour un aspect plus sérieux et une meilleure lisibilité */}
-            <div className="absolute inset-0 bg-black/60" />
+            <div className="absolute inset-0 bg-black/62" />
           </div>
 
-          {/* 2. CONTENU - Ajout de pt-20 sur mobile pour éviter le chevauchement avec la Navbar */}
-          <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 w-full pt-5 md:pt-0">
+          {/* 2. CONTENU */}
+          <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 w-full">
             <div className="max-w-3xl">
-              {/* Badge Professionnel */}
-              <motion.div
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="inline-flex items-center px-4 rounded-lg bg-orange-700/10 border border-orange-700/30 text-orange-500 text-xs font-bold uppercase tracking-widest mb-6"
-              >
-                {/* <span className="h-1.5 w-1.5 rounded-full bg-orange-600 mr-2 shadow-[0_0_8px_rgba(234,88,12,0.8)]"></span> */}
-                {/* Le Hub de l'innovation */}
-              </motion.div>
-
-              {/* Titre Principal - Taille ajustée pour mobile */}
+              {/* Titre Principal */}
               <motion.h1
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
                 className="font-extrabold text-white leading-tight md:leading-[1.1]"
               >
-                <span className="text-orange-600 text-2xl md:text-6xl">
+                <span className="text-orange-600 text-2xl sm:text-3xl md:text-6xl">
                   TALENT INNOVANT :{" "}
                 </span>
-                <span className="text-2xl md:text-5xl">
+                <span className="text-2xl sm:text-3xl md:text-5xl">
                   Le carrefour des opportunités.
                 </span>
               </motion.h1>
@@ -99,14 +87,14 @@ export default function Home() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="mt-6 space-y-4 max-w-2xl"
+                className="mt-5 md:mt-6 space-y-3 md:space-y-4 max-w-2xl"
               >
                 {/* Section Talents */}
                 <div className="flex items-start gap-3">
-                  <div className="mt-2 h-2.5 w-2.5 rounded-full bg-orange-700 shrink-0 shadow-[0_0_10px_rgba(194,65,12,0.5)]" />
-                  <p className="text-[16px] md:text-lg text-gray-100 leading-relaxed">
+                  <div className="mt-2 h-2 w-2 md:h-2.5 md:w-2.5 rounded-full bg-orange-700 shrink-0 shadow-[0_0_10px_rgba(194,65,12,0.5)]" />
+                  <p className="text-[16px] sm:text-base md:text-lg text-gray-100 leading-relaxed">
                     <span className="font-bold text-white whitespace-nowrap">
-                      Pour les talents
+                      POUR LES TALENTS
                     </span>{" "}
                     : Accédez à des challenges d'innovation, concours de projets
                     et hackathons nationaux ou internationaux. Saisissez de
@@ -117,10 +105,10 @@ export default function Home() {
 
                 {/* Section Entreprises */}
                 <div className="flex items-start gap-3">
-                  <div className="mt-2 h-2.5 w-2.5 rounded-full bg-orange-700 shrink-0 shadow-[0_0_10px_rgba(194,65,12,0.5)]" />
-                  <p className="text-[16px] md:text-lg text-gray-100 leading-relaxed">
+                  <div className="mt-2 h-2 w-2 md:h-2.5 md:w-2.5 rounded-full bg-orange-700 shrink-0 shadow-[0_0_10px_rgba(194,65,12,0.5)]" />
+                  <p className="text-[16px] sm:text-base md:text-lg text-gray-100 leading-relaxed">
                     <span className="font-bold text-white whitespace-nowrap">
-                      Pour les entreprises
+                      POUR LES ENTREPRISES
                     </span>{" "}
                     : Organisez et Gérez vos challenges en toute facilité pour
                     promouvoir votre marque, dénicher des idées ou recruter
@@ -134,26 +122,24 @@ export default function Home() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.3 }}
-                className="flex flex-col sm:flex-row gap-4 mt-10"
+                className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-8 md:mt-10"
               >
                 <div
                   onClick={() => router.push("/auth/register-talent")}
-                  className="px-8 py-4 cursor-pointer bg-orange-700 hover:bg-orange-800 text-white font-bold rounded-lg transition-all shadow-lg flex items-center justify-center active:scale-95"
+                  className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 text-center cursor-pointer bg-orange-700 hover:bg-orange-800 text-white font-bold rounded-lg transition-all shadow-lg flex items-center justify-center active:scale-95"
                 >
                   Rejoindre comme talent
                 </div>
 
                 <div
                   onClick={() => router.push("/auth/register-company")}
-                  className="px-8 py-4 cursor-pointer bg-transparent border border-white/40 hover:bg-white hover:text-black text-white font-bold rounded-lg transition-all flex items-center justify-center active:scale-95"
+                  className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 text-center cursor-pointer bg-transparent border border-white/40 hover:bg-white hover:text-black text-white font-bold rounded-lg transition-all flex items-center justify-center active:scale-95"
                 >
                   Espace Entreprise
                 </div>
               </motion.div>
             </div>
           </div>
-
-          {/* L'élément de brouillard a été supprimé pour un fini net */}
         </section>
 
         {/* les stats  */}

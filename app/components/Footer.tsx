@@ -77,9 +77,12 @@ export default function Footer() {
           </div>
 
           {/* Suivez-nous */}
-          <div>
+          <div className="w-max">
             <h4 className="text-lg font-semibold mb-3">Suivez-nous</h4>
-            <SocialLinks variant="footer" className="flex-wrap" />
+            <SocialLinks
+              variant="footer"
+              className="flex flex-row flex-nowrap w-full"
+            />
           </div>
         </div>
 
