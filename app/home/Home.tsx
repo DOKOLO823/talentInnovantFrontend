@@ -109,8 +109,8 @@ export default function Home() {
                       Pour les talents
                     </span>{" "}
                     : Accédez à des challenges d'innovation, concours de projets
-                    et hackathons au Cameroun comme à l'international. Saisissez
-                    de nouvelles opportunités, concrétisez vos idées et faites
+                    et hackathons nationaux ou internationaux. Saisissez de
+                    nouvelles opportunités, concrétisez vos idées et faites
                     rayonner votre talent.
                   </p>
                 </div>
