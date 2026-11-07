@@ -60,6 +60,41 @@ import ChallengeAnalytics from "../tabsChallenge/ChallengeAnalytics";
 import ChallengeMoreOptions from "./components/ChallengeMoreOptions";
 import ScoreDetailModal from "@/app/components/modals/ScoreDetailModal";
 import CorbeilleProjetsModal from "@/app/components/modals/CorbeilleProjetsModal";
+import { useChallengeView } from "@/app/hooks/useChallengeView";
+import DiscoverChallenges from "@/app/components/DiscoverChallenges";
+
+// --- Statut du challenge calculé à partir de ses dates ---
+const getChallengeStatus = (c: any) => {
+  if (!c?.datelancement || !c?.datefin) return null;
+  const now = Date.now();
+  const start = new Date(c.datelancement).getTime();
+  const end = new Date(c.datefin).getTime();
+
+  if (now < start)
+    return {
+      label: "Ce challenge est à venir",
+      dot: "bg-blue-500",
+      text: "text-blue-700",
+    };
+  if (now > end)
+    return {
+      label: "Ce challenge est terminé",
+      dot: "bg-red-400",
+      text: "text-red-600",
+    };
+  return {
+    label: "Ce challenge est en cours",
+    dot: "bg-green-500",
+    text: "text-green-700",
+  };
+};
+
+// 1200 -> "1,2 k"
+const formatCount = (n: number) =>
+  new Intl.NumberFormat("fr-FR", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(n);
 
 // --- MODALS DE BASE ---
 
@@ -511,6 +546,15 @@ export default function ChallengeClient() {
     : false;
   const hasLiked = currentUser ? likeursIds.includes(currentUser.id) : false;
 
+  // Comptage des vues : aucune requête si ce navigateur a déjà vu ce challenge.
+  // Le propriétaire du challenge n'est pas compté.
+  useChallengeView({
+    challengeId,
+    enabled: !!challenge,
+    onCounted: (n) =>
+      setChallenge((prev: any) => (prev ? { ...prev, nombrevues: n } : prev)),
+  });
+
   // on choisit le tab actif par defaut en fonction du role du user qui navigue sur TI
   useEffect(() => {
     // On ne change l'onglet que si le challenge est chargé
@@ -643,12 +687,25 @@ export default function ChallengeClient() {
     },
   ].filter(Boolean) as { id: string; label: string }[];
 
+  const status = getChallengeStatus(challenge);
+  const views = Number(challenge?.nombrevues || 0);
+  const likesCount = likeursIds?.length || 0;
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <Toaster />
       <BackButton m={16} />
 
-      <div className="relative w-full h-70 md:h-80 rounded-b-2xl overflow-hidden shadow mt-6">
+      {status && (
+        <div className="px-4 md:px-6 mt-4 flex items-center gap-1">
+          <span className={`h-2 w-2 rounded-full ${status.dot}`} />
+          <span className={`text-sm tracking-wide ${status.text}`}>
+            {status.label}
+          </span>
+        </div>
+      )}
+
+      <div className="relative w-full h-70 md:h-80 rounded-b-2xl overflow-hidden shadow mt-3">
         <Image
           src={
             challenge.photo
@@ -669,93 +726,117 @@ export default function ChallengeClient() {
       </div>
 
       {challenge?.site?.toLowerCase() != "talent innovant" && (
-        <div className="px-4 text-xs text-orange-700 leading-relaxed mt-4">
+        <div className="px-4 md:px-6 text-xs text-orange-700 leading-relaxed mt-4">
           <span className="font-semibold underline">NB:</span> Les inscriptions
           et le déroulement de ce challenge se font hors de{" "}
           <span className="font-bold">TALENT INNOVANT</span>.
         </div>
       )}
 
-      <div className="flex flex-row flex-wrap items-center gap-4 px-6 mt-4">
-        {(isOwner || isJury) &&
-          challenge?.site?.toLowerCase() == "talent innovant" && (
-            <button
-              onClick={() => setShowPreviewModal(true)}
-              className="px-3 text-orange-700 flex items-center justify-center gap-2 py-3 hover:bg-orange-100 text-gray-700 font-bold rounded-xl transition-all border border-orange-700"
-            >
-              <Eye size={18} /> Voir le formulaire de participation
-            </button>
-          )}
+      <div className="flex flex-col gap-3 px-4 md:px-6 mt-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+        {/* Groupe 1 : bouton principal + nombre de vues */}
+        <div className="flex flex-wrap items-center gap-3">
+          {(isOwner || isJury) &&
+            challenge?.site?.toLowerCase() == "talent innovant" && (
+              <button
+                onClick={() => setShowPreviewModal(true)}
+                className="px-3 text-orange-700 flex items-center justify-center gap-2 py-3 hover:bg-orange-100 font-bold rounded-xl transition-all border border-orange-700 text-sm md:text-base"
+              >
+                <Eye size={18} /> Voir le formulaire de participation
+              </button>
+            )}
 
-        {challenge?.site?.toLowerCase() == "talent innovant" &&
-          !isOwner &&
-          !isJury && (
+          {challenge?.site?.toLowerCase() == "talent innovant" &&
+            !isOwner &&
+            !isJury && (
+              <button
+                onClick={handleParticipate}
+                className="bg-orange-700 hover:bg-orange-800 text-white md:px-6 md:py-2 px-6 py-2 rounded-xl shadow flex items-center gap-2 transition-all active:scale-95 text-sm md:text-base"
+              >
+                <UserPlus size={18} /> Participer à ce challenge
+              </button>
+            )}
+
+          {challenge?.site?.toLowerCase() != "talent innovant" && (
             <button
               onClick={handleParticipate}
-              className="bg-orange-700 hover:bg-orange-800 text-white md:px-6 md:py-2 px-3 py-2 rounded-xl shadow flex items-center gap-2 transition-all active:scale-95"
+              className="bg-orange-700 hover:bg-orange-800 text-white md:px-6 md:py-2 px-6 py-2 rounded-xl shadow flex items-center gap-2 transition-all active:scale-95 text-sm md:text-base"
             >
-              <UserPlus size={18} /> Participer à ce challenge
+              <ExternalLink size={18} /> Aller au challenge
             </button>
           )}
 
-        {challenge?.site?.toLowerCase() != "talent innovant" && (
+          {/* Nombre de vues : masqué si 0 */}
+          {views > 0 && (
+            <span
+              className="inline-flex items-center gap-1.5 text-sm text-gray-500 whitespace-nowrap"
+              title={`${views} vue${views > 1 ? "s" : ""}`}
+            >
+              <Eye size={18} />
+              <span className="font-semibold text-gray-700">
+                {formatCount(views)}
+              </span>
+              <span className="">vue{views > 1 ? "s" : ""}</span>
+            </span>
+          )}
+        </div>
+
+        {/* Groupe 2 : like, options, actions propriétaire */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 sm:flex-1">
           <button
-            onClick={handleParticipate}
-            className="bg-orange-700 hover:bg-orange-800 text-white md:px-6 md:py-2 px-3 py-2 rounded-xl shadow flex items-center gap-2 transition-all active:scale-95"
+            onClick={handleLike}
+            disabled={loaderLikeChallenge}
+            className={`px-4 py-2 min-w-[48px] rounded-lg flex items-center justify-center gap-2 border transition-all active:scale-95 ${
+              hasLiked
+                ? "bg-orange-50 border-orange-700 text-orange-700"
+                : "bg-white text-gray-700 hover:bg-gray-100"
+            }`}
           >
-            <ExternalLink size={18} /> Aller au challenge
+            {loaderLikeChallenge ? (
+              <Loader2 size={18} className="animate-spin text-orange-700" />
+            ) : (
+              <Heart
+                size={18}
+                className={hasLiked ? "fill-orange-700 text-orange-700" : ""}
+              />
+            )}
+            {/* Nombre de likes : masqué si 0 (le bouton reste visible) */}
+            {likesCount > 0 && (
+              <span className="font-bold">{formatCount(likesCount)}</span>
+            )}
           </button>
-        )}
-        <button
-          onClick={handleLike}
-          disabled={loaderLikeChallenge}
-          style={{ minWidth: "100px" }} // Ajuste la taille selon ton besoin
-          className={`px-4 py-2 rounded-lg flex items-center justify-center gap-2 border transition-all active:scale-95 ${
-            hasLiked
-              ? "bg-orange-50 border-orange-700 text-orange-700"
-              : "bg-white text-gray-700 hover:bg-gray-100"
-          }`}
-        >
-          {loaderLikeChallenge ? (
-            <Loader2 size={18} className="animate-spin text-orange-700" />
-          ) : (
-            <Heart
-              size={18}
-              className={hasLiked ? "fill-orange-700 text-orange-700" : ""}
-            />
-          )}
-          <span className="font-bold">{likeursIds?.length}</span>
-        </button>
 
-        <ChallengeMoreOptions
-          challenge={challenge}
-          currentUser={currentUser}
-          challengeId={challengeId}
-          suiveurs_ids={suiveurIds}
-          onShare={() => setShowShareModal(true)}
-          userName={currentUser?.talent?.nom || "Talent"}
-          userDomain={""}
-          userCompetences={""}
-          isCompany={currentUser?.entreprise?.id ? true : false}
-        />
-        {isOwner && (
-          <div className="ml-auto flex gap-3">
-            <Link
-              href={`/challenge/edit/${challenge?.id}`}
-              className="p-2 text-orange-700 hover:bg-orange-100 rounded-lg flex items-center gap-1 border border-orange-200"
-            >
-              <Pencil size={18} />{" "}
-              <span className="hidden md:inline">Modifier</span>
-            </Link>
-            <button
-              onClick={() => setShowDeleteModal(true)}
-              className="p-2 bg-orange-700 hover:bg-orange-600 text-white rounded-lg flex items-center gap-1 border border-red-200"
-            >
-              <Trash size={18} />{" "}
-              <span className="hidden md:inline">Supprimer</span>
-            </button>
-          </div>
-        )}
+          <ChallengeMoreOptions
+            challenge={challenge}
+            currentUser={currentUser}
+            challengeId={challengeId}
+            suiveurs_ids={suiveurIds}
+            onShare={() => setShowShareModal(true)}
+            userName={currentUser?.talent?.nom || "Talent"}
+            userDomain={""}
+            userCompetences={""}
+            isCompany={currentUser?.entreprise?.id ? true : false}
+          />
+
+          {isOwner && (
+            <div className="ml-auto flex gap-2 sm:gap-3">
+              <Link
+                href={`/challenge/edit/${challenge?.id}`}
+                className="p-2 text-orange-700 hover:bg-orange-100 rounded-lg flex items-center gap-1 border border-orange-200"
+              >
+                <Pencil size={18} />{" "}
+                <span className="hidden md:inline">Modifier</span>
+              </Link>
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="p-2 bg-orange-700 hover:bg-orange-600 text-white rounded-lg flex items-center gap-1 border border-red-200"
+              >
+                <Trash size={18} />{" "}
+                <span className="hidden md:inline">Supprimer</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="sticky top-0 bg-white z-[40] mt-10 border-b">
@@ -833,6 +914,11 @@ export default function ChallengeClient() {
           )}
         </div>
       )}
+
+      {/* DÉCOUVRIR D'AUTRES CHALLENGES */}
+      <div className="mt-12 px-3 max-w-7xl mx-auto">
+        <DiscoverChallenges excludeId={challenge.id} />
+      </div>
 
       <AnimatePresence>
         {showShareModal && (

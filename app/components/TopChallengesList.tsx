@@ -56,6 +56,7 @@ export default function TopChallengesList() {
             return {
               id: c.id,
               title: c.titre,
+              description: c.description,
               image: c.photo
                 ? `${apifile}/${c.photo}`
                 : "/assets/images/innov.jpg",
