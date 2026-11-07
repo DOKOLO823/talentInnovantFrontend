@@ -36,7 +36,7 @@ export default function InformerPage() {
     try {
       setLoading(true);
 
-      const res = await apiFetch("/admin/informer-utilisateur", {
+      const res = await apiFetch("/informer-utilisateur", {
         method: "POST",
         body: JSON.stringify({
           email: email.trim(),
