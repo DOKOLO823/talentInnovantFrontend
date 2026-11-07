@@ -28,23 +28,39 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
   const [ppEntreprise, setPpEntreprise] = useState<string | null>(null);
   const [nomEntreprise, setNomEntreprise] = useState<string>("Mon Entreprise");
   const [entrepriseId, setEntrepriseId] = useState();
+  const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    const fetchData = async () => {
-      const userStr: any = localStorage.getItem("auth");
-      const authData = JSON.parse(userStr);
+    const fetchData = () => {
+      const userStr = localStorage.getItem("auth");
+
       if (!userStr) {
         router.push("/auth/login");
         return;
       }
-      // console.log(userStr);
-      setNomEntreprise(authData.user?.entreprise?.nom || "Mon Entreprise");
-      setPpEntreprise(authData?.user?.pp || null);
-      setEntrepriseId(authData?.user?.id);
+
+      try {
+        const authData = JSON.parse(userStr);
+        const user = authData.user;
+
+        setNomEntreprise(user?.entreprise?.nom || "Mon Entreprise");
+        setPpEntreprise(user?.pp || null);
+        setEntrepriseId(user?.id);
+
+        // Vérification du rôle administrateur
+        setIsAdmin(user?.role === "admin");
+      } catch (error) {
+        console.error(
+          "Erreur de lecture des informations utilisateur :",
+          error,
+        );
+        router.push("/auth/login");
+      }
     };
+
     fetchData();
-  }, []);
+  }, [router]);
 
   const menu = [
     { href: "/home-entreprise", label: "Accueil", Icon: Home },
@@ -60,6 +76,11 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
       href: "/home-entreprise/Entreprises",
       label: "Les entreprises",
       Icon: Building2,
+    },
+    {
+      href: "/home-entreprise/Informer",
+      label: "Informer",
+      Icon: Mail,
     },
   ];
 
@@ -120,22 +141,32 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
 
         {/* Menu */}
         <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-          {menu.map((m) => {
-            const isActive = pathname === m.href;
-            return (
-              <Link
-                key={m.href}
-                href={m.href}
-                className={`flex items-center gap-3 p-2 rounded hover:bg-gray-100 transition
-                  ${isActive ? "bg-orange-100 text-orange-700 font-semibold" : "text-gray-700"}`}
-              >
-                <m.Icon
-                  className={`w-5 h-5 ${isActive ? "text-orange-700" : "text-gray-600"}`}
-                />
-                <span>{m.label}</span>
-              </Link>
-            );
-          })}
+          {menu
+            .filter((m) => m.href !== "/home-entreprise/Informer" || isAdmin)
+            .map((m) => {
+              const isActive = pathname === m.href;
+
+              return (
+                <Link
+                  key={m.href}
+                  href={m.href}
+                  className={`flex items-center gap-3 p-2 rounded hover:bg-gray-100 transition
+            ${
+              isActive
+                ? "bg-orange-100 text-orange-700 font-semibold"
+                : "text-gray-700"
+            }`}
+                >
+                  <m.Icon
+                    className={`w-5 h-5 ${
+                      isActive ? "text-orange-700" : "text-gray-600"
+                    }`}
+                  />
+
+                  <span>{m.label}</span>
+                </Link>
+              );
+            })}
         </nav>
 
         {/* Bas fixe */}
