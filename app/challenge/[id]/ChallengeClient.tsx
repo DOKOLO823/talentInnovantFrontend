@@ -63,25 +63,66 @@ import CorbeilleProjetsModal from "@/app/components/modals/CorbeilleProjetsModal
 import { useChallengeView } from "@/app/hooks/useChallengeView";
 import DiscoverChallenges from "@/app/components/DiscoverChallenges";
 
+// "3 jours", "1 heure"...
+const plural = (n: number, word: string) => `${n} ${word}${n > 1 ? "s" : ""}`;
+
+// Nombre de jours CALENDAIRES entre deux dates (minuit à minuit, heure locale)
+// ex : lundi 18h -> mercredi 09h = 2
+const calendarDays = (from: Date, to: Date) => {
+  const a = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  const b = new Date(to.getFullYear(), to.getMonth(), to.getDate());
+  return Math.round((b.getTime() - a.getTime()) / (24 * 60 * 60 * 1000));
+};
+
 // --- Statut du challenge calculé à partir de ses dates ---
 const getChallengeStatus = (c: any) => {
   if (!c?.datelancement || !c?.datefin) return null;
-  const now = Date.now();
-  const start = new Date(c.datelancement).getTime();
-  const end = new Date(c.datefin).getTime();
 
-  if (now < start)
+  const HOUR = 60 * 60 * 1000;
+  const nowDate = new Date();
+  const now = nowDate.getTime();
+  const startDate = new Date(c.datelancement);
+  const endDate = new Date(c.datefin);
+
+  // À VENIR
+  if (now < startDate.getTime()) {
+    const days = calendarDays(nowDate, startDate);
+    const hours = Math.floor((startDate.getTime() - now) / HOUR);
+
+    const when =
+      days >= 1
+        ? `Débute dans ${plural(days, "jour")}`
+        : hours >= 1
+          ? `Débute dans ${plural(hours, "heure")}`
+          : "Débute dans moins d'une heure";
+
     return {
-      label: "Ce challenge est à venir",
+      label: `Ce challenge est à venir (${when})`,
       dot: "bg-blue-500",
       text: "text-blue-700",
     };
-  if (now > end)
+  }
+
+  // TERMINÉ
+  if (now > endDate.getTime()) {
+    const days = calendarDays(endDate, nowDate);
+    const hours = Math.floor((now - endDate.getTime()) / HOUR);
+
+    const when =
+      days >= 1
+        ? `il y a ${plural(days, "jour")}`
+        : hours >= 1
+          ? `il y a ${plural(hours, "heure")}`
+          : "il y a moins d'une heure";
+
     return {
-      label: "Ce challenge est terminé",
+      label: `Ce challenge est terminé (${when})`,
       dot: "bg-red-400",
       text: "text-red-600",
     };
+  }
+
+  // EN COURS
   return {
     label: "Ce challenge est en cours",
     dot: "bg-green-500",
@@ -556,15 +597,17 @@ export default function ChallengeClient() {
   });
 
   // on choisit le tab actif par defaut en fonction du role du user qui navigue sur TI
+
   useEffect(() => {
-    // On ne change l'onglet que si le challenge est chargé
     if (challenge) {
-      if (isOwner) {
+      const isInternal = challenge?.site?.toLowerCase() === "talent innovant";
+
+      if (isOwner && isInternal) {
         setActiveTab("stats");
-      } else if (isJury) {
+      } else if (isJury && isInternal) {
         setActiveTab("evaluate");
       } else {
-        setActiveTab("overview");
+        setActiveTab("overview"); // challenge externe, ou simple visiteur
       }
     }
   }, [challenge, currentUser, isOwner, isJury]);
@@ -917,7 +960,7 @@ export default function ChallengeClient() {
 
       {/* DÉCOUVRIR D'AUTRES CHALLENGES */}
       <div className="mt-12 px-3 max-w-7xl mx-auto">
-        <DiscoverChallenges excludeId={challenge.id} />
+        <DiscoverChallenges challengeId={challenge.id} />
       </div>
 
       <AnimatePresence>

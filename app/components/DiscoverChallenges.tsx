@@ -20,6 +20,7 @@ const mapChallenge = (c: any) => ({
   endDate: c.datefin || "",
   endInscription: c.datefininscription,
   participants: c.participants_count || 0,
+  views: c.nombrevues || 0,
   rewards: (() => {
     let rewardsArray = ["Prix non défini"];
     try {
@@ -118,11 +119,9 @@ function SkeletonRow() {
 }
 
 export default function DiscoverChallenges({
-  excludeId,
-  limit = 20,
+  challengeId,
 }: {
-  excludeId: number | string;
-  limit?: number;
+  challengeId: number | string;
 }) {
   const sectionRef = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(false);
@@ -153,21 +152,19 @@ export default function DiscoverChallenges({
     return () => obs.disconnect();
   }, []);
 
-  // 2) Chargement (relancé si on passe d'un challenge à un autre)
+  // 2) Challenges en cours ayant des domaines en commun (relancé si on change de challenge)
   useEffect(() => {
     if (!visible) return;
     let cancelled = false;
     setStatus("loading");
 
-    apiFetch(`/challenges/top-en-cours?exclude=${excludeId}&limit=${limit}`, {
-      method: "GET",
-    })
+    apiFetch(`/challenges/similaires/${challengeId}`, { method: "GET" })
       .then((res: any) => {
         if (cancelled) return;
         if (res?.statut === 200) {
           setItems(
             (res.data || [])
-              .filter((c: any) => String(c.id) !== String(excludeId)) // sécurité
+              .filter((c: any) => String(c.id) !== String(challengeId)) // sécurité
               .map(mapChallenge),
           );
           setStatus("done");
@@ -182,7 +179,7 @@ export default function DiscoverChallenges({
     return () => {
       cancelled = true;
     };
-  }, [visible, excludeId, limit]);
+  }, [visible, challengeId]);
 
   // Rien à proposer ou erreur : on masque toute la section
   if (status === "error" || (status === "done" && items.length === 0)) {

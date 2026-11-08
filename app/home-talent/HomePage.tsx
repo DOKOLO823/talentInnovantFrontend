@@ -369,6 +369,7 @@ export default function HomePage() {
     endDate: c.datefin || "",
     endInscription: c.datefininscription,
     participants: c.participants_count || 0,
+    views: c.nombrevues || 0,
     rewards: (() => {
       let rewardsArray = ["Prix non défini"];
       try {

@@ -66,16 +66,6 @@ export default function HomeClient() {
           if (res?.statut === 200) {
             const cleanedChallenges = res?.challenges_en_cours?.map(
               (c: any) => {
-                let rewardsArray = ["Prix non défini"];
-                try {
-                  if (typeof c.recompense === "string" && c.recompense) {
-                    const parsed = JSON.parse(c.recompense);
-                    rewardsArray = parsed ? Object?.values(parsed) : [];
-                  }
-                } catch (e) {
-                  console.error(e);
-                }
-
                 return {
                   ...c,
                   title: c.titre,
@@ -88,7 +78,24 @@ export default function HomeClient() {
                   endDate: c.datefin,
                   endInscription: c.datefininscription,
                   participants: c.nombrecompetiteur || 0,
-                  rewards: rewardsArray,
+                  views: c.nombrevues || 0,
+                  rewards: (() => {
+                    let rewardsArray = ["Prix non défini"];
+                    try {
+                      if (
+                        typeof c.recompense === "string" &&
+                        c.recompense !== "null"
+                      ) {
+                        const parsed = JSON.parse(c.recompense);
+                        rewardsArray = Object.values(parsed);
+                      } else if (Array.isArray(c.recompense)) {
+                        rewardsArray = c.recompense;
+                      }
+                    } catch (e) {
+                      console.error("Erreur parsing récompenses:", e);
+                    }
+                    return rewardsArray;
+                  })(),
                   categories:
                     c?.domaines?.length > 0
                       ? c.domaines?.map((d: any) => d.nom)

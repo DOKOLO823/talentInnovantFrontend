@@ -33,6 +33,7 @@ interface Challenge {
   endDate: string;
   endInscription: string;
   participants: number;
+  views?: number;
   rewards: string[];
   categories: string[];
   inscriptionEnd: string;
@@ -131,6 +132,13 @@ const LoginRequiredModal = ({
   );
 };
 
+// 1200 -> "1,2 k"
+const formatCount = (n: number) =>
+  new Intl.NumberFormat("fr-FR", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(n);
+
 export default function ChallengeCard({ challenge }: { challenge: Challenge }) {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -150,6 +158,7 @@ export default function ChallengeCard({ challenge }: { challenge: Challenge }) {
   }, []);
 
   const isOwner = currentUser?.id == challenge?.user_id;
+  const views = Number(challenge?.views || 0);
 
   const delayInfo = useMemo(() => {
     const now = new Date();
@@ -295,12 +304,36 @@ export default function ChallengeCard({ challenge }: { challenge: Challenge }) {
           </div>
 
           {!openRewards && (
-            <button
-              onClick={() => setShowDetails(!showDetails)}
-              className="absolute bottom-2 right-2 z-20 bg-black/40 hover:bg-black/60 backdrop-blur-md p-1.5 rounded text-white transition-all shadow-lg"
-            >
-              <Eye className="w-4 h-4" />
-            </button>
+            <div className="absolute bottom-2 right-2 z-20 flex items-center overflow-hidden rounded-full bg-black/55 backdrop-blur-md text-white text-[11px] shadow-lg">
+              {/* Vues : uniquement si > 0 */}
+              {views > 0 && (
+                <span
+                  className="flex items-center gap-1 pl-2.5 pr-2 py-1.5"
+                  title={`${views} vue${views > 1 ? "s" : ""}`}
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span className="font-semibold">
+                    {formatCount(views) + " "}
+                    {views > 1 ? "vues" : "vue"}
+                  </span>
+                </span>
+              )}
+
+              {/* Dates : toujours accessibles */}
+              <button
+                onClick={() => setShowDetails(!showDetails)}
+                aria-label="Voir les dates"
+                title="Voir les dates"
+                className={`flex items-center gap-1 hover:bg-white/20 transition-colors ${
+                  views > 0 ? "p-1.5 border-l border-white/25" : "px-2.5 py-1.5"
+                }`}
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                {views === 0 && (
+                  <span className="font-semibold">Voir les dates</span>
+                )}
+              </button>
+            </div>
           )}
 
           <div
