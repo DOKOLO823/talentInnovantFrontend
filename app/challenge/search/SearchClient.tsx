@@ -1,150 +1,225 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { ChevronsDown, Loader2, RotateCcw, Search } from "lucide-react";
 import ChallengeCard from "@/app/components/ChallengeCard";
-import { Search, Loader2 } from "lucide-react";
 import BackButton from "@/app/components/BackButton";
-import { apiFetch } from "@/app/lib/api";
-import apifile from "@/app/lib/apifile";
-import FiltreChallenge from "@/app/components/recherche/FiltreChallenge";
 import BackToTop from "@/app/components/BackToTop";
-import BottomBar from "@/app/components/BottomBar";
 import Navbar from "@/app/components/Navbar";
+import ChallengeSearchBox from "@/app/components/recherche/ChallengeSearchBox";
+import { ChallengeSkeletonCards } from "@/app/components/ChallengeSkeleton";
+import { apiFetch } from "@/app/lib/api";
+import { mapChallengeToCard } from "@/app/lib/mapChallengeCard";
+
+const STATUTS = [
+  { value: "tous", label: "Tous les challenges" },
+  { value: "en_cours", label: "En cours" },
+  { value: "avenir", label: "À venir" },
+  { value: "termines", label: "Terminés" },
+];
 
 export default function SearchClient() {
   const searchParams = useSearchParams();
+  const q = searchParams.get("q") || "";
+  const domaine = searchParams.get("domaine") || "";
+  const lieu = searchParams.get("lieu") || "";
 
-  const [category, setCategory] = useState(searchParams.get("domaine") || "");
-  const [location, setLocation] = useState(searchParams.get("lieu") || "");
-  const [categoryName, setCategoryName] = useState(
-    searchParams.get("domaineName") || "",
-  );
+  // Le statut se remet à "Tous" à chaque nouvelle recherche (sans double chargement)
+  const searchKey = `${q}|${domaine}|${lieu}`;
+  const [statutState, setStatutState] = useState({
+    key: searchKey,
+    value: "tous",
+  });
+  const statut = statutState.key === searchKey ? statutState.value : "tous";
+
   const [results, setResults] = useState<any[]>([]);
+  const [total, setTotal] = useState(0);
+  const [domaineNom, setDomaineNom] = useState("");
+  const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState(false);
 
-  const fetchChallenges = async (domaineId?: string, lieuName?: string) => {
-    setLoading(true);
-    try {
-      const res = await apiFetch("/challenges/filtre/resultat", {
-        method: "POST",
-        body: JSON.stringify({
-          domaines: domaineId ? [domaineId] : [],
-          lieu: lieuName || "Partout",
-        }),
-      });
+  const pageRef = useRef(1);
+  const requestId = useRef(0);
 
-      if (res && res.statut === 200) {
-        const mappedData = res.data.map((c: any) => {
-          // --- GESTION ROBUSTE DES RÉCOMPENSES ---
-          let rewardsArray: string[] = [];
+  const fetchPage = useCallback(
+    async (page: number) => {
+      const id = ++requestId.current;
+      if (page === 1) setLoading(true);
+      else setLoadingMore(true);
+      setError(false);
 
-          if (c.recompense) {
-            let data = c.recompense;
-            // Si c'est une string, on essaie de parser, sinon on garde l'objet
-            if (typeof c.recompense === "string") {
-              try {
-                data = JSON.parse(c.recompense);
-              } catch (e) {
-                data = { prix: c.recompense };
-              }
-            }
+      try {
+        const params = new URLSearchParams({ page: String(page), statut });
+        if (q) params.set("q", q);
+        if (domaine) params.set("domaine", domaine);
+        if (lieu) params.set("lieu", lieu);
 
-            // On transforme l'objet {1er_prix: "..."} en tableau ["1er prix : ..."]
-            if (typeof data === "object" && data !== null) {
-              rewardsArray = Object.entries(data).map(([key, val]) => `${val}`);
-            } else {
-              rewardsArray = [String(data)];
-            }
-          }
+        const res = await apiFetch(
+          `/challenges/recherche?${params.toString()}`,
+          {
+            method: "GET",
+          },
+        );
 
-          if (rewardsArray.length === 0) rewardsArray = ["Prix à définir"];
+        if (id !== requestId.current) return; // réponse périmée : on l'ignore
 
-          const formatDate = (d: string) =>
-            d
-              ? new Date(d).toLocaleDateString("fr-FR", {
-                  day: "numeric",
-                  month: "long",
-                })
-              : "---";
-          const formatDateFull = (d: string) =>
-            d
-              ? new Date(d).toLocaleDateString("fr-FR", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })
-              : "---";
-
-          return {
-            id: c.id,
-            title: c.titre,
-            image: c.photo
-              ? `${apifile}/${c.photo}`
-              : "/assets/images/innov.jpg",
-            locationType: c.lieu,
-            site: c.site || "Non spécifié",
-            startDate: c.datelancement,
-            endDate: c.datefin,
-            endInscription: c.datefininscription || c.datefin,
-            participants: c.participants_count || 0,
-            rewards: rewardsArray,
-            categories: c.domaines ? c.domaines.map((d: any) => d.nom) : [],
-            entrepriseNom: c.user?.entreprise?.nom || "Entreprise",
-            entrepriseLogo: c.user?.pp
-              ? `${apifile}/${c.user.pp}`
-              : "/assets/images/innov.jpg",
-            entrepriseId: c.user?.entreprise?.id || 1,
-          };
-        });
-        setResults(mappedData);
+        if (res?.statut === 200) {
+          const mapped = (res.data || []).map(mapChallengeToCard);
+          setResults((prev) => {
+            if (page === 1) return mapped;
+            const ids = new Set(prev.map((c) => c.id));
+            return [...prev, ...mapped.filter((c: any) => !ids.has(c.id))];
+          });
+          setTotal(res.total ?? 0);
+          setHasMore(!!res.has_more);
+          setDomaineNom(res.domaine_nom || "");
+          pageRef.current = page;
+        } else {
+          setError(true);
+        }
+      } catch (e) {
+        if (id === requestId.current) setError(true);
+      } finally {
+        if (id === requestId.current) {
+          setLoading(false);
+          setLoadingMore(false);
+        }
       }
-    } catch (error) {
-      console.error("Erreur API:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [q, domaine, lieu, statut],
+  );
 
+  // Nouvelle recherche ou nouveau statut : on repart de la page 1 (skeletons)
   useEffect(() => {
-    setCategory(searchParams.get("domaine") || "");
-    setLocation(searchParams.get("lieu") || "");
-    setCategoryName(searchParams.get("domaineName") || "");
-    fetchChallenges(
-      searchParams.get("domaine") || undefined,
-      searchParams.get("lieu") || undefined,
-    );
-  }, [searchParams]);
+    fetchPage(1);
+  }, [fetchPage]);
+
+  const hasCriteria = q || domaine || lieu;
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <BackButton m={16} />
 
-      <FiltreChallenge />
+      {/* Nouvelle recherche, sur la même page */}
+      <section className="max-w-6xl mx-auto px-4 mt-4">
+        <ChallengeSearchBox
+          initialQ={q}
+          initialDomaine={domaine}
+          initialVille={lieu}
+        />
+      </section>
 
-      <section className="py-16 max-w-7xl mx-auto px-4">
-        <div className="text-xl font-bold text-gray-900 mb-8">
-          {loading ? "Recherche..." : `${results.length} Résultat(s) pour `}{" "}
-          {!loading && (
-            <span className="text-orange-700">{`${(categoryName && categoryName) || "Tous les domaines"} ${(location && ": " + location) || ": Partout"}`}</span>
-          )}
+      <section className="max-w-7xl mx-auto px-4 py-10">
+        {/* Résumé + tri par statut */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-8">
+          <div className="min-w-0">
+            <p className="text-xl font-bold text-gray-900">
+              {loading
+                ? "Recherche en cours..."
+                : `${total} résultat${total > 1 ? "s" : ""}`}
+            </p>
+
+            <div className="mt-2 flex flex-wrap gap-2 text-xs">
+              {q && (
+                <span className="px-3 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-100">
+                  Mot-clé : « {q} »
+                </span>
+              )}
+              {domaine && (
+                <span className="px-3 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-100">
+                  Domaine : {domaineNom || "sélectionné"}
+                </span>
+              )}
+              {lieu && (
+                <span className="px-3 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-100">
+                  Ville : {lieu}
+                </span>
+              )}
+              {!hasCriteria && (
+                <span className="px-3 py-1 rounded-full bg-gray-100 text-gray-600">
+                  Tous les domaines · Toutes les villes
+                </span>
+              )}
+            </div>
+          </div>
+
+          <label className="flex items-center gap-2 text-sm text-gray-600 shrink-0">
+            <span className="font-medium">Afficher :</span>
+            <select
+              value={statut}
+              onChange={(e) =>
+                setStatutState({ key: searchKey, value: e.target.value })
+              }
+              className="px-3 py-2 rounded-xl border border-gray-300 bg-white text-sm font-medium text-gray-800 focus:ring-2 focus:ring-orange-500 focus:outline-none"
+            >
+              {STATUTS.map((s) => (
+                <option key={s.value} value={s.value}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
+        {/* Résultats */}
         {loading ? (
-          <div className="flex justify-center py-20">
-            <Loader2 className="h-12 w-12 text-orange-600 animate-spin" />
+          <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 justify-items-center">
+            <ChallengeSkeletonCards count={8} />
+          </div>
+        ) : error ? (
+          <div className="text-center py-20 bg-white rounded-xl border border-dashed">
+            <p className="text-gray-500 mb-4">
+              Impossible de charger les résultats.
+            </p>
+            <button
+              onClick={() => fetchPage(1)}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-orange-700 text-white rounded-xl font-bold hover:bg-orange-800 active:scale-95 transition-all"
+            >
+              <RotateCcw size={18} /> Réessayer
+            </button>
           </div>
         ) : results.length === 0 ? (
-          <div className="text-center text-gray-500 py-20 bg-white rounded-xl border border-dashed mb-12">
+          <div className="text-center text-gray-500 py-20 bg-white rounded-xl border border-dashed">
+            <Search className="mx-auto text-gray-300 mb-3" size={40} />
             Aucun résultat trouvé.
           </div>
         ) : (
-          <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mb-12">
-            {results.map((c) => (
-              <ChallengeCard key={c.id} challenge={c} />
-            ))}
-          </div>
+          <>
+            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 justify-items-center">
+              {results.map((c) => (
+                <ChallengeCard key={c.id} challenge={c} />
+              ))}
+            </div>
+
+            <div className="flex flex-col items-center mt-10">
+              {hasMore ? (
+                <button
+                  onClick={() => fetchPage(pageRef.current + 1)}
+                  disabled={loadingMore}
+                  className="flex items-center gap-2 px-8 py-3 bg-white text-orange-700 border border-orange-700 rounded-xl font-bold hover:bg-orange-700 hover:text-white active:scale-95 transition-all disabled:opacity-70"
+                >
+                  {loadingMore ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" /> Chargement...
+                    </>
+                  ) : (
+                    <>
+                      <ChevronsDown className="h-5 w-5" /> Charger plus de
+                      challenges
+                    </>
+                  )}
+                </button>
+              ) : (
+                <p className="text-sm text-gray-500">
+                  Vous avez vu tous les résultats.
+                </p>
+              )}
+            </div>
+          </>
         )}
       </section>
 

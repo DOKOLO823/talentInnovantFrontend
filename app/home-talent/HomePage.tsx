@@ -1,67 +1,87 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
 import ChallengeCard from "../components/ChallengeCard";
 import PartenairesAccueil from "./components/PartenairesAccueil";
+import ChallengeSearchBox from "../components/recherche/ChallengeSearchBox";
+import { ChallengeSkeletonCards } from "../components/ChallengeSkeleton";
 import {
-  Activity,
   ArrowUp,
-  CheckCircle,
-  ChevronDown,
+  ChevronsDown,
   Loader2,
-  Orbit,
-  Timer,
+  RotateCcw,
   Sparkles,
   Rocket,
   Target,
   Lightbulb,
   Trophy,
-  LayoutGrid,
-  RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
 import { apiFetch } from "@/app/lib/api";
-import apifile from "@/app/lib/apifile";
-import CoachGeneralBanner from "../components/coach/CoachGeneralBanner";
-import { CoachBannerSkeleton } from "./components/CoachBannerSkeleton";
+import { mapChallengeToCard } from "@/app/lib/mapChallengeCard";
+
+// --- Onglets : route + clé de la réponse ---
+const TABS = [
+  "Challenges en cours",
+  "Challenges à venir",
+  "Challenges terminés",
+] as const;
+
+const TAB_API: Record<string, { url: string; key: string }> = {
+  "Challenges en cours": {
+    url: "/challenges/en-cours",
+    key: "challenges_en_cours",
+  },
+  "Challenges à venir": {
+    url: "/challenges/avenir",
+    key: "challenges_avenir",
+  },
+  "Challenges terminés": {
+    url: "/challenges/end",
+    key: "challenges_termines",
+  },
+};
+
+type ListState = {
+  items: any[];
+  page: number;
+  hasMore: boolean;
+  loaded: boolean;
+  loading: boolean; // chargement de la page 1 (skeletons)
+  loadingMore: boolean; // "charger plus"
+  error: boolean;
+};
+
+const EMPTY_LIST: ListState = {
+  items: [],
+  page: 0,
+  hasMore: false,
+  loaded: false,
+  loading: false,
+  loadingMore: false,
+  error: false,
+};
+
+// Une liste par couple (onglet, tri) : on garde ce qui est déjà chargé
+const listKey = (tab: string, tri: string) => `${tab}|${tri}`;
 
 export default function HomePage() {
-  const [activeTab, setActiveTab] = useState("Challenges en cours");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedDomain, setSelectedDomain] = useState("");
-  const [selectedLocation, setSelectedLocation] = useState("Partout");
-  const [userProfile, setUserProfile] = useState<any>(null);
-  const [isProfileLoading, setIsProfileLoading] = useState(true);
-  const [profileError, setProfileError] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("Challenges en cours");
+  const [tri, setTri] = useState<"recents" | "populaires">("recents");
+  const [lists, setLists] = useState<Record<string, ListState>>({});
+  const [counts, setCounts] = useState<{
+    enCours: number;
+    avenir: number;
+    termines: number;
+  } | null>(null);
 
   const [showNavbar, setShowNavbar] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [showBackToTop, setShowBackToTop] = useState(false);
-
-  const [challengesEnCours, setChallengesEnCours] = useState<any[]>([]);
-  const [challengesTermines, setChallengesTermines] = useState<any[]>([]);
-  const [challengesAvenir, setChallengesAvenir] = useState<any[]>([]);
-  const [domaines, setDomaines] = useState<any[]>([]);
-
-  const [villesEnCours, setVillesEnCours] = useState(["Partout"]);
-  const [villesAvenir, setVillesAvenir] = useState(["Partout"]);
-  const [villesTermines, setVillesTermines] = useState(["Partout"]);
-
-  const [loadingChallenges, setLoadingChallenges] = useState<boolean>(true);
-  const [initialLoadComplete, setInitialLoadComplete] =
-    useState<boolean>(false);
-
-  const [stats, setStats] = useState({
-    enCours: 0,
-    avenir: 0,
-    termines: 0,
-    total: 0,
-  });
 
   // --- LOGIQUE MESSAGES ANIMÉS ---
   const welcomeMessages = [
@@ -98,7 +118,6 @@ export default function HomePage() {
   const { talent, user, loading: authLoading, token } = useAuth();
   const userName = talent?.nom || "";
 
-  const tabsSectionRef = useRef<HTMLDivElement>(null);
   const tabsContainerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -123,156 +142,93 @@ export default function HomePage() {
     }
   };
 
-  const navigateToTab = (tab: string) => {
-    setActiveTab(tab);
-    setTimeout(() => {
-      if (tabsSectionRef.current) {
-        const yOffset = showNavbar ? -64 : 0;
-        const y =
-          tabsSectionRef.current.getBoundingClientRect().top +
-          window.pageYOffset +
-          yOffset;
-        window.scrollTo({ top: y, behavior: "smooth" });
-      }
-      scrollToTab(tab);
-    }, 100);
-  };
+  // --- CHARGEMENT D'UNE PAGE (20 challenges) D'UN ONGLET ---
+  const loadList = useCallback(
+    async (tab: string, triValue: string, page: number) => {
+      const k = listKey(tab, triValue);
 
-  // N'oublie pas d'ajouter useCallback dans tes imports 'react'
-  const fetchInitialData = useCallback(async () => {
-    if (!token) {
-      setIsProfileLoading(false);
-      setLoadingChallenges(false);
-      return;
-    }
+      setLists((prev) => ({
+        ...prev,
+        [k]: {
+          ...(prev[k] ?? EMPTY_LIST),
+          loading: page === 1,
+          loadingMore: page > 1,
+          error: false,
+        },
+      }));
 
-    // 1. ISOLATION DU CHARGEMENT DU PROFIL (COACH)
-    const loadProfile = async () => {
-      setProfileError(false);
-      setIsProfileLoading(true);
       try {
-        const profileRes = await apiFetch(`/talent/profil/${user.id}`, {
+        const cfg = TAB_API[tab];
+        const res = await apiFetch(`${cfg.url}?page=${page}&tri=${triValue}`, {
           method: "GET",
         });
-        if (profileRes?.statut === 200) {
-          setUserProfile(profileRes);
-        } else {
-          setProfileError(true);
-        }
-      } catch (err) {
-        setProfileError(true);
-      } finally {
-        setIsProfileLoading(false);
-      }
-    };
 
-    // 2. CHARGEMENT DES CHALLENGES ET STATS
-    const loadChallenges = async () => {
-      setLoadingChallenges(true);
-      try {
-        const [enCoursRes, avenirRes, terminesRes] = await Promise.all([
-          apiFetch("/challenges/en-cours", { method: "GET" }),
-          apiFetch("/challenges/avenir", { method: "GET" }),
-          apiFetch("/challenges/end", { method: "GET" }),
-        ]);
+        if (res?.statut !== 200) throw new Error("statut");
 
-        if (enCoursRes?.statut === 200) {
-          const challenges = enCoursRes.challenges_en_cours || [];
-          setChallengesEnCours(challenges);
-          // console.log(challenges);
-          setVillesEnCours(enCoursRes.villes || ["Partout"]);
+        const incoming: any[] = res[cfg.key] || [];
 
-          const allDomaines = new Set<string>();
-          challenges.forEach((c: any) => {
-            if (Array.isArray(c.domaines)) {
-              c.domaines.forEach((d: any) => allDomaines.add(d.nom || d.name));
-            }
-          });
-          setDomaines(Array.from(allDomaines));
-        }
-
-        const avenirCount =
-          avenirRes?.statut === 200
-            ? avenirRes.challenges_avenir?.length || 0
-            : 0;
-        const terminesCount =
-          terminesRes?.statut === 200
-            ? terminesRes.challenges_termines?.length || 0
-            : 0;
-        const enCoursCount =
-          enCoursRes?.statut === 200
-            ? enCoursRes.challenges_en_cours?.length || 0
-            : 0;
-
-        setStats({
-          enCours: enCoursCount,
-          avenir: avenirCount,
-          termines: terminesCount,
-          total: enCoursCount + avenirCount + terminesCount,
+        setLists((prev) => {
+          const cur = prev[k] ?? EMPTY_LIST;
+          const ids = new Set(cur.items.map((c) => c.id));
+          return {
+            ...prev,
+            [k]: {
+              items:
+                page === 1
+                  ? incoming
+                  : [...cur.items, ...incoming.filter((c) => !ids.has(c.id))],
+              page,
+              hasMore: !!res.has_more,
+              loaded: true,
+              loading: false,
+              loadingMore: false,
+              error: false,
+            },
+          };
         });
-
-        setInitialLoadComplete(true);
       } catch (error) {
-        console.error("Erreur challenges:", error);
-      } finally {
-        setLoadingChallenges(false);
+        console.error("Erreur chargement challenges:", error);
+        setLists((prev) => ({
+          ...prev,
+          [k]: {
+            ...(prev[k] ?? EMPTY_LIST),
+            loading: false,
+            loadingMore: false,
+            error: true,
+          },
+        }));
       }
-    };
+    },
+    [],
+  );
 
-    // Lancement parallèle
-    loadProfile();
-    loadChallenges();
+  // Compteurs des 3 onglets (une requête légère)
+  useEffect(() => {
+    if (!token) return;
+    apiFetch("/challenges/compteurs", { method: "GET" })
+      .then((res: any) => {
+        if (res?.statut === 200) {
+          setCounts({
+            enCours: res.en_cours,
+            avenir: res.avenir,
+            termines: res.termines,
+          });
+        }
+      })
+      .catch(() => {});
   }, [token]);
 
+  // Charge la liste de l'onglet / du tri actif si elle n'a pas encore été chargée
+  const listsRef = useRef(lists);
+  listsRef.current = lists;
+
   useEffect(() => {
-    fetchInitialData();
-  }, [fetchInitialData]);
-
-  // Chargement au changement de tab
-  useEffect(() => {
-    const fetchChallengesByTab = async () => {
-      if (!token || !initialLoadComplete) return;
-
-      if (activeTab === "Challenges en cours" && challengesEnCours.length > 0) {
-        setLoadingChallenges(false);
-        return;
-      }
-      if (activeTab === "Challenges à venir" && challengesAvenir.length > 0) {
-        setLoadingChallenges(false);
-        return;
-      }
-      if (
-        activeTab === "Challenges terminés" &&
-        challengesTermines.length > 0
-      ) {
-        setLoadingChallenges(false);
-        return;
-      }
-
-      setLoadingChallenges(true);
-      try {
-        if (activeTab === "Challenges terminés") {
-          const res = await apiFetch("/challenges/end", { method: "GET" });
-          if (res?.statut === 200) {
-            setChallengesTermines(res.challenges_termines || []);
-            setVillesTermines(res.villes || ["Partout"]);
-          }
-        } else if (activeTab === "Challenges à venir") {
-          const res = await apiFetch("/challenges/avenir", { method: "GET" });
-          if (res?.statut === 200) {
-            setChallengesAvenir(res.challenges_avenir || []);
-            setVillesAvenir(res.villes || ["Partout"]);
-          }
-        }
-      } catch (error) {
-        console.error("Erreur chargement tab:", error);
-      } finally {
-        setLoadingChallenges(false);
-      }
-    };
-
-    fetchChallengesByTab();
-  }, [activeTab, token, initialLoadComplete]);
+    if (!token) return;
+    const cur = listsRef.current[listKey(activeTab, tri)];
+    if (!cur || (!cur.loaded && !cur.loading && !cur.error)) {
+      loadList(activeTab, tri, 1);
+    }
+  }, [token, activeTab, tri, loadList]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -288,220 +244,71 @@ export default function HomePage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScrollY]);
 
-  useEffect(() => {
-    setSelectedLocation("Partout");
-  }, [activeTab]);
-
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
-  const getCurrentChallenges = () => {
-    if (activeTab === "Challenges en cours") return challengesEnCours;
-    if (activeTab === "Challenges terminés") return challengesTermines;
-    if (activeTab === "Challenges à venir") return challengesAvenir;
-    return [];
+  const current = lists[listKey(activeTab, tri)] ?? EMPTY_LIST;
+  const isInitialLoading =
+    !current.error &&
+    (!current.loaded || current.loading) &&
+    current.items.length === 0;
+
+  const countFor = (tab: string) => {
+    if (!counts) return null;
+    if (tab === "Challenges en cours") return counts.enCours;
+    if (tab === "Challenges à venir") return counts.avenir;
+    return counts.termines;
   };
-
-  const getCurrentVilles = () => {
-    if (activeTab === "Challenges en cours") return villesEnCours;
-    if (activeTab === "Challenges à venir") return villesAvenir;
-    if (activeTab === "Challenges terminés") return villesTermines;
-    return ["Partout"];
-  };
-
-  const filteredChallenges = useMemo(() => {
-    let challenges = getCurrentChallenges();
-
-    if (searchQuery.trim()) {
-      challenges = challenges.filter((c: any) =>
-        c.titre?.toLowerCase().includes(searchQuery.toLowerCase()),
-      );
-    }
-
-    if (selectedDomain && selectedDomain !== "") {
-      challenges = challenges.filter((c: any) => {
-        if (Array.isArray(c.domaines)) {
-          return c.domaines.some(
-            (d: any) => (d.nom || d.name) === selectedDomain,
-          );
-        }
-        return false;
-      });
-    }
-
-    if (selectedLocation && selectedLocation !== "Partout") {
-      challenges = challenges.filter((c: any) => {
-        const lieu = c.lieu?.toLowerCase();
-        const ville = c.ville?.toLowerCase();
-        if (selectedLocation === "En ligne") {
-          return lieu === "en ligne" || lieu === "hybride";
-        } else {
-          return ville === selectedLocation.toLowerCase();
-        }
-      });
-    }
-
-    return challenges;
-  }, [
-    activeTab,
-    searchQuery,
-    selectedDomain,
-    selectedLocation,
-    challengesEnCours,
-    challengesTermines,
-    challengesAvenir,
-  ]);
-
-  const tabs = [
-    "Challenges en cours",
-    "Challenges à venir",
-    "Challenges terminés",
-  ];
-
-  const mapChallenge = (c: any) => ({
-    id: c.id,
-    user_id: c.user_id,
-    title: c.titre,
-    description: c.description,
-    image: c.photo ? `${apifile}/${c.photo}` : "/assets/images/innov.jpg",
-    locationType: c.lieu || "",
-    site: c.site || "",
-    startDate: c.datelancement || "",
-    endDate: c.datefin || "",
-    endInscription: c.datefininscription,
-    participants: c.participants_count || 0,
-    views: c.nombrevues || 0,
-    rewards: (() => {
-      let rewardsArray = ["Prix non défini"];
-      try {
-        if (typeof c.recompense === "string" && c.recompense !== "null") {
-          const parsed = JSON.parse(c.recompense);
-
-          rewardsArray = Object.values(parsed);
-        } else if (Array.isArray(c.recompense)) {
-          rewardsArray = c.recompense;
-        }
-      } catch (e) {
-        console.error("Erreur parsing récompenses:", e);
-      }
-      return rewardsArray;
-    })(),
-    categories: Array.isArray(c.domaines)
-      ? c.domaines.map((d: any) => d.nom || d.name)
-      : ["Innovation"],
-    inscriptionEnd: c.datefininscription || "Bientôt",
-    entrepriseNom: c.user?.entreprise?.nom || "Partenaire",
-    entrepriseLogo: c.user?.pp
-      ? `${apifile}/${c.user.pp}`
-      : "../assets/images/ppe.png",
-    entrepriseId: c.user_id,
-  });
 
   const renderEmptyState = () => {
-    if (activeTab === "Challenges en cours") {
-      return (
-        <div className="text-center w-full py-20">
-          <p className="text-gray-600 text-lg font-medium mb-4">
-            Aucun challenge en cours
-            {searchQuery && (
-              <>
-                {" "}
-                avec ce mot clé :{" "}
-                <span className="font-bold">{searchQuery}</span>
-              </>
-            )}
-          </p>
-          {!searchQuery && (
-            <p className="text-gray-500 text-sm mb-6">
-              Il n'y a aucun challenge en cours pour le moment
-            </p>
-          )}
-          <Button
-            onClick={() => {
-              setActiveTab("Challenges à venir");
-              scrollToTab("Challenges à venir");
-            }}
-            className="bg-orange-700 hover:bg-orange-800 text-white"
-          >
-            Voir les challenges à venir
-          </Button>
-        </div>
-      );
-    } else if (activeTab === "Challenges terminés") {
-      return (
-        <div className="text-center w-full py-20">
-          <p className="text-gray-600 text-lg font-medium mb-4">
-            Aucun challenge terminé
-            {searchQuery && (
-              <>
-                {" "}
-                avec ce mot clé :{" "}
-                <span className="font-bold">{searchQuery}</span>
-              </>
-            )}
-          </p>
-          {!searchQuery && (
-            <p className="text-gray-500 text-sm mb-6">
-              Il n'y a aucun challenge terminé pour le moment
-            </p>
-          )}
-          <Button
-            onClick={() => {
-              setActiveTab("Challenges à venir");
-              scrollToTab("Challenges à venir");
-            }}
-            className="bg-orange-700 hover:bg-orange-800 text-white"
-          >
-            Voir les challenges à venir
-          </Button>
-        </div>
-      );
-    } else if (activeTab === "Challenges à venir") {
-      return (
-        <div className="text-center w-full py-20">
-          <p className="text-gray-600 text-lg font-medium mb-4">
-            Aucun challenge à venir
-            {searchQuery && (
-              <>
-                {" "}
-                avec ce mot clé :{" "}
-                <span className="font-bold">{searchQuery}</span>
-              </>
-            )}
-          </p>
-          {!searchQuery && (
-            <p className="text-gray-500 text-sm mb-6">
-              Il n'y a aucun challenge à venir pour le moment
-            </p>
-          )}
-          <Button
-            onClick={() => {
-              setActiveTab("Challenges en cours");
-              scrollToTab("Challenges en cours");
-            }}
-            className="bg-orange-700 hover:bg-orange-800 text-white"
-          >
-            Voir les challenges en cours
-          </Button>
-        </div>
-      );
-    }
-    return null;
+    const config: Record<
+      string,
+      { title: string; text: string; cta: string; to: string }
+    > = {
+      "Challenges en cours": {
+        title: "Aucun challenge en cours",
+        text: "Il n'y a aucun challenge en cours pour le moment",
+        cta: "Voir les challenges à venir",
+        to: "Challenges à venir",
+      },
+      "Challenges terminés": {
+        title: "Aucun challenge terminé",
+        text: "Il n'y a aucun challenge terminé pour le moment",
+        cta: "Voir les challenges à venir",
+        to: "Challenges à venir",
+      },
+      "Challenges à venir": {
+        title: "Aucun challenge à venir",
+        text: "Il n'y a aucun challenge à venir pour le moment",
+        cta: "Voir les challenges en cours",
+        to: "Challenges en cours",
+      },
+    };
+    const c = config[activeTab];
+    return (
+      <div className="text-center w-full py-20">
+        <p className="text-gray-600 text-lg font-medium mb-4">{c.title}</p>
+        <p className="text-gray-500 text-sm mb-6">{c.text}</p>
+        <Button
+          onClick={() => {
+            setActiveTab(c.to);
+            scrollToTab(c.to);
+          }}
+          className="bg-orange-700 hover:bg-orange-800 text-white"
+        >
+          {c.cta}
+        </Button>
+      </div>
+    );
   };
 
   const tabsTopPosition = showNavbar ? "top-16" : "top-0";
 
-  // Pour l'insertion des partenaires : on insère après le 3e item (index 2) sur mobile, après la première ligne sur desktop
-  // On sépare les challenges en deux parties : avant et après les partenaires
-  const SPLIT_INDEX_MOBILE = 4; // après 3 cards sur mobile
-  const SPLIT_INDEX_DESKTOP = 4; // après 4 cards sur desktop (première ligne de 4 colonnes)
-
-  const challengesBeforePartners = filteredChallenges.slice(
-    0,
-    SPLIT_INDEX_MOBILE,
-  );
-  const challengesAfterPartners = filteredChallenges.slice(SPLIT_INDEX_MOBILE);
+  // Insertion des partenaires après les 4 premiers challenges (onglet "en cours")
+  const SPLIT_INDEX = 4;
   const showPartnersSection =
-    activeTab === "Challenges en cours" && !loadingChallenges;
+    activeTab === "Challenges en cours" && !isInitialLoading;
+  const challengesBeforePartners = current.items.slice(0, SPLIT_INDEX);
+  const challengesAfterPartners = current.items.slice(SPLIT_INDEX);
 
   return (
     <div className="pb-32">
@@ -511,16 +318,16 @@ export default function HomePage() {
       ></motion.div>
       <div className="h-16" />
 
-      {/* Hero Section */}
-      <section className="bg-white px-6 py-10 md:py-16 border-b border-gray-50 overflow-hidden">
+      {/* Hero : salutation + zone de recherche */}
+      <section className="bg-white px-5 sm:px-6 py-10 md:py-16 border-b border-gray-50">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center md:text-left mb-8 min-h-[100px]"
+            className="text-center mb-8 min-h-[100px] flex flex-col items-center"
           >
             <h1 className="text-xl md:text-3xl font-bold text-gray-900 tracking-tight flex items-center justify-center md:justify-start gap-2">
-              Salut{" "}
+              Hello{" "}
               <span className="text-orange-700 capitalize line-clamp-1">
                 {userName}
               </span>{" "}
@@ -544,218 +351,145 @@ export default function HomePage() {
             </div>
           </motion.div>
 
-          {/* Titre de section simple */}
-          <div className="mb-6">
-            <h2 className="text-sm  md:text-xl font-bold flex items-center gap-x-1 ">
-              Explorez les challenges publiés par les entreprises :{" "}
+          {/* Rechercher un challenge (centré) */}
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-center text-base md:text-xl font-bold text-gray-900 mb-4">
+              Rechercher un challenge
             </h2>
-            <div className="h-0.5 w-12 mt-1 bg-black" />
-          </div>
-
-          {/* Statistiques */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-6">
-            {/* Challenges en cours */}
-            <div
-              onClick={() => navigateToTab("Challenges en cours")}
-              className="relative bg-white rounded-xl px-5 pt-5 pb-2 shadow-sm border-t-4 border-orange-700 text-left cursor-pointer transition-all duration-300 hover:shadow-2xl group"
-            >
-              <div className="text-xl md:text-3xl font-extrabold text-gray-900 leading-none">
-                {!initialLoadComplete ? (
-                  <Loader2 className="w-6 h-6 animate-spin text-orange-700" />
-                ) : (
-                  stats.enCours
-                )}
-              </div>
-              <p className="text-sm font-medium text-gray-500 mt-4 flex flex-col items-center gap-1">
-                Challenges en cours <ChevronDown size={14} />
-              </p>
-              <div className="absolute top-3 right-4 p-2 rounded-full bg-orange-100">
-                <Timer size={14} className="text-orange-700" />
-              </div>
-            </div>
-
-            {/* Challenges à venir */}
-            <div
-              onClick={() => navigateToTab("Challenges à venir")}
-              className="relative bg-white rounded-xl px-5 pt-5 pb-2 shadow-sm border-t-4 border-orange-700 text-left cursor-pointer transition-all duration-300 hover:shadow-2xl group"
-            >
-              <div className="text-xl md:text-3xl font-extrabold text-gray-900 leading-none">
-                {!initialLoadComplete ? (
-                  <Loader2 className="w-6 h-6 animate-spin text-orange-700" />
-                ) : (
-                  stats.avenir
-                )}
-              </div>
-              <p className="text-sm font-medium text-gray-500 mt-4 flex flex-col items-center gap-1">
-                Challenges à venir <ChevronDown size={14} />
-              </p>
-              <div className="absolute top-3 right-4 p-2 rounded-full bg-orange-100">
-                <Orbit size={14} className="text-orange-700" />
-              </div>
-            </div>
-
-            {/* Challenges terminés */}
-            <div
-              onClick={() => navigateToTab("Challenges terminés")}
-              className="relative bg-white rounded-xl px-5 pt-5 pb-2 shadow-sm border-t-4 border-orange-700 text-left cursor-pointer transition-all duration-300 hover:shadow-2xl group"
-            >
-              <div className="text-xl md:text-3xl font-extrabold text-gray-900 leading-none">
-                {!initialLoadComplete ? (
-                  <Loader2 className="w-6 h-6 animate-spin text-orange-700" />
-                ) : (
-                  stats.termines
-                )}
-              </div>
-              <p className="text-sm font-medium text-gray-500 mt-4 flex flex-col items-center gap-1">
-                Challenges terminés <ChevronDown size={14} />
-              </p>
-              <div className="absolute top-3 right-4 p-2 rounded-full bg-orange-100">
-                <CheckCircle size={14} className="text-orange-700" />
-              </div>
-            </div>
-
-            {/* Total challenges */}
-            <div className="relative bg-white rounded-xl px-5 pt-5 pb-2 shadow-sm border-t-4 border-orange-700 text-left transition-all duration-300">
-              <div className="text-xl md:text-3xl font-extrabold text-gray-900 leading-none">
-                {!initialLoadComplete ? (
-                  <Loader2 className="w-6 h-6 animate-spin text-orange-700" />
-                ) : (
-                  stats.total
-                )}
-              </div>
-              <p className="text-sm font-medium text-gray-500 mt-4 flex flex-col items-center gap-1">
-                Total challenges
-              </p>
-              <div className="absolute top-3 right-4 p-2 rounded-full bg-orange-100">
-                <Activity size={14} className="text-orange-700" />
-              </div>
-            </div>
+            <ChallengeSearchBox />
           </div>
         </div>
       </section>
 
-      {/* Section IA avec Loader, Erreur ou Banner voir dans ./page.tsx */}
-
-      {/* Tabs Sticky */}
-      <div
-        className={cn(
-          "sticky bg-white z-40 shadow ... max-w-7xl mx-auto md:px-8 lg:px-12",
-          tabsTopPosition,
-        )}
-        ref={tabsSectionRef}
-      >
-        <div
-          className="flex overflow-x-auto px-5 pt-3 gap-4 scrollbar-hide"
-          ref={tabsContainerRef}
-        >
-          {tabs.map((tab) => (
-            <button
-              key={tab}
-              data-tab={tab}
-              onClick={() => {
-                setActiveTab(tab);
-                scrollToTab(tab);
-              }}
-              className={cn(
-                "pb-3 text-sm font-medium whitespace-nowrap transition-colors",
-                activeTab === tab
-                  ? "text-orange-700 border-b-3 border-orange-700 font-semibold"
-                  : "text-gray-700 hover:text-orange-600",
-              )}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-
-        {/* Recherche et Filtres */}
-        <div className="px-5 pt-3">
-          <div className="flex gap-3 items-center overflow-x-auto scrollbar-hide">
-            <Input
-              placeholder="Rechercher un challenge par titre..."
-              className="rounded-xl min-w-[250px] max-w-[300px] flex-1"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            {domaines?.length > 0 && (
-              <select
-                value={selectedDomain}
-                onChange={(e) => setSelectedDomain(e.target.value)}
-                className="px-4 py-2 rounded-xl border border-gray-300 text-sm bg-white min-w-[180px]"
-              >
-                <option value="">Tous les domaines</option>
-                {domaines.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-        </div>
-
-        {!loadingChallenges ? (
-          <div className="px-5 py-3 bg-gradient-to-b from-gray-50/50 to-white">
-            <div className="flex gap-3 overflow-x-auto scrollbar-hide">
-              {getCurrentVilles()?.map((ville) => (
-                <button
-                  key={ville}
-                  className={cn(
-                    "px-4 py-1 rounded-full text-sm whitespace-nowrap transition-all",
-                    selectedLocation === ville
-                      ? "bg-orange-700 text-white shadow-md"
-                      : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200 shadow-sm",
-                  )}
-                  onClick={() => setSelectedLocation(ville)}
-                >
-                  {ville}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="px-5 py-3 bg-gradient-to-b from-gray-50/50 to-white">
-            <div className="flex gap-3 overflow-x-auto scrollbar-hide">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div
-                  key={i}
-                  className="h-8 rounded-full bg-gray-200 animate-pulse shrink-0 shadow-sm border border-gray-100"
-                  style={{ width: i % 2 === 0 ? "80px" : "110px" }}
-                />
-              ))}
-            </div>
-          </div>
-        )}
+      {/* Titre de section */}
+      <div className="px-5 sm:px-6 pt-10 max-w-7xl mx-auto">
+        <h2 className="text-sm md:text-xl font-bold flex items-center gap-x-1">
+          Explorer les challenges :
+        </h2>
+        <div className="h-0.5 w-12 mt-1 bg-black" />
       </div>
 
-      {/* Liste des cartes avec insertion partenaires */}
-      {loadingChallenges ? (
-        <div className="flex py-20 w-full justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-orange-700" />
+      {/* Onglets (sticky) avec compteurs */}
+      <div
+        className={cn(
+          "sticky bg-white z-40 shadow max-w-7xl mx-auto md:px-8 lg:px-12 mt-4 transition-all duration-300",
+          tabsTopPosition,
+        )}
+      >
+        <div
+          className="flex overflow-x-auto px-5 pt-3 gap-5 scrollbar-hide"
+          ref={tabsContainerRef}
+        >
+          {TABS.map((tab) => {
+            const n = countFor(tab);
+            return (
+              <button
+                key={tab}
+                data-tab={tab}
+                onClick={() => {
+                  setActiveTab(tab);
+                  scrollToTab(tab);
+                }}
+                className={cn(
+                  "pb-3 text-sm font-medium whitespace-nowrap transition-colors",
+                  activeTab === tab
+                    ? "text-orange-700 border-b-3 border-orange-700 font-semibold"
+                    : "text-gray-700 hover:text-orange-600",
+                )}
+              >
+                {tab}
+                {n !== null && (
+                  <span className="ml-1 font-semibold">({n})</span>
+                )}
+              </button>
+            );
+          })}
         </div>
-      ) : filteredChallenges?.length > 0 ? (
+      </div>
+
+      {/* Tri */}
+      <div className="max-w-7xl mx-auto px-5 sm:px-6 md:px-8 lg:px-12 mt-4 flex items-center justify-end gap-2">
+        <label
+          htmlFor="tri-challenges"
+          className="text-sm text-gray-600 font-medium"
+        >
+          Trier par :
+        </label>
+        <select
+          id="tri-challenges"
+          value={tri}
+          onChange={(e) => setTri(e.target.value as "recents" | "populaires")}
+          className="px-3 py-2 rounded-xl border border-gray-300 text-sm bg-white font-medium text-gray-800 focus:ring-2 focus:ring-orange-500 focus:outline-none"
+        >
+          <option value="recents">Les plus récents</option>
+          <option value="populaires">Les plus populaires</option>
+        </select>
+      </div>
+
+      {/* Liste */}
+      {isInitialLoading ? (
+        <section className="px-5 mt-6 flex flex-wrap gap-6 justify-center max-w-8xl mx-auto">
+          <ChallengeSkeletonCards count={8} />
+        </section>
+      ) : current.error && current.items.length === 0 ? (
+        <section className="px-5 mt-6 text-center py-16">
+          <p className="text-gray-500 mb-4">
+            Impossible de charger les challenges.
+          </p>
+          <button
+            onClick={() => loadList(activeTab, tri, 1)}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-orange-700 text-white rounded-xl font-bold hover:bg-orange-800 active:scale-95 transition-all"
+          >
+            <RotateCcw size={18} /> Réessayer
+          </button>
+        </section>
+      ) : current.items.length > 0 ? (
         <>
-          {/* Première partie des challenges (avant les partenaires) */}
           <section className="px-5 mt-6 flex flex-wrap gap-6 justify-center max-w-8xl mx-auto">
             {(showPartnersSection
               ? challengesBeforePartners
-              : filteredChallenges
+              : current.items
             ).map((c: any) => (
-              <ChallengeCard key={c.id} challenge={mapChallenge(c)} />
+              <ChallengeCard key={c.id} challenge={mapChallengeToCard(c)} />
             ))}
           </section>
 
-          {/* Section partenaires (uniquement dans le tab "Challenges en cours") */}
+          {/* Partenaires (uniquement dans l'onglet "Challenges en cours") */}
           {showPartnersSection && <PartenairesAccueil token={token} />}
 
-          {/* Suite des challenges (après les partenaires) */}
           {showPartnersSection && challengesAfterPartners.length > 0 && (
             <section className="px-5 mt-2 flex flex-wrap gap-6 justify-center max-w-8xl mx-auto">
               {challengesAfterPartners.map((c: any) => (
-                <ChallengeCard key={c.id} challenge={mapChallenge(c)} />
+                <ChallengeCard key={c.id} challenge={mapChallengeToCard(c)} />
               ))}
             </section>
           )}
+
+          {/* Charger plus / fin de liste */}
+          <div className="flex flex-col items-center mt-10 px-5">
+            {current.hasMore ? (
+              <button
+                onClick={() => loadList(activeTab, tri, current.page + 1)}
+                disabled={current.loadingMore}
+                className="flex items-center text-sm md:text-base gap-2 px-4 py-2 md:px-8 md:py-3 bg-white text-orange-700 border border-orange-700 rounded-xl font-bold hover:bg-orange-700 hover:text-white active:scale-95 transition-all disabled:opacity-70"
+              >
+                {current.loadingMore ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" /> Chargement...
+                  </>
+                ) : (
+                  <>
+                    <ChevronsDown className="h-5 w-5" /> Charger plus de
+                    challenges
+                  </>
+                )}
+              </button>
+            ) : (
+              <p className="text-sm text-gray-500">
+                C'est tout pour le moment : vous avez vu tous les {activeTab}.
+              </p>
+            )}
+          </div>
         </>
       ) : (
         <section className="px-5 mt-6 flex flex-wrap gap-6 justify-center md:justify-start max-w-8xl mx-auto">
