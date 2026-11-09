@@ -97,7 +97,7 @@ export default function Home() {
                       POUR LES TALENTS
                     </span>{" "}
                     : Accédez à des challenges d'innovation, concours de projets
-                    et hackathons nationaux ou internationaux. Saisissez de
+                    et hackathons nationaux et internationaux. Saisissez de
                     nouvelles opportunités, concrétisez vos idées et faites
                     rayonner votre talent.
                   </p>
