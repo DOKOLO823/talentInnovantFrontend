@@ -327,13 +327,15 @@ export default function Home() {
                 </span>
               </div>
               <a
-                href={WHATSAPP_GROUP_LINK}
+                href="https://wa.me/237655624168"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center px-8 py-3 text-base font-medium rounded-lg text-white bg-green-500 hover:bg-green-600 transition shadow-md"
+                className="flex items-center justify-center space-x-3 p-4 rounded-lg shadow-inner text-white bg-green-500 transition"
               >
-                <MessageCircle className="h-5 w-5 mr-2" />
-                Rejoindre la Communauté WhatsApp
+                <MessageCircle className="h-6 w-6 text-white" />
+                <span className="text-lg font-medium text-white">
+                  Joignez-nous sur WhatsApp
+                </span>
               </a>
             </div>
           </div>

@@ -108,6 +108,14 @@ export function TalentPropositionCard({
     );
   };
 
+  const hasBio = !!talent.bio?.trim();
+  // Évite les pastilles vides quand la compétence est "" ou contient ", ,"
+  const skills: string[] =
+    talent.talent?.competence
+      ?.split(",")
+      .map((s: string) => s.trim())
+      .filter(Boolean) ?? [];
+
   return (
     <div className="bg-white border border-slate-100 hover:border-orange-200 transition-colors p-5 rounded-[2rem] shadow-sm flex flex-col h-full">
       <div className="flex gap-4 items-start mb-4">
@@ -150,8 +158,8 @@ export function TalentPropositionCard({
         </div>
       </div>
 
-      <div className="flex-1">
-        {talent.bio && (
+      <div className="flex-1 flex flex-col">
+        {hasBio ? (
           <div
             onClick={() => setShowBioModal(true)}
             className="bg-slate-50 p-3 rounded-xl border border-slate-100 cursor-pointer hover:bg-slate-100 transition-colors mb-3"
@@ -160,17 +168,28 @@ export function TalentPropositionCard({
               " {talent.bio} "
             </p>
           </div>
+        ) : (
+          /* Pas de bio : simple message d'invitation centré */
+          <div className="flex-1 min-h-[7rem] flex items-center justify-center text-center px-4 mb-3">
+            <p className="text-slate-500 text-[13px] leading-relaxed">
+              Envoie-moi une demande de collaboration et discutons ensemble de
+              ton projet.
+            </p>
+          </div>
         )}
-        <div className="flex w-full flex-nowrap overflow-x-auto gap-2 no-scrollbar scrollbar-hide">
-          {talent.talent?.competence?.split(",").map((s: string, i: number) => (
-            <span
-              key={i}
-              className="px-2 py-0.5 bg-white whitespace-nowrap text-slate-500 rounded-md text-[12px] font-bold border border-slate-400 flex-shrink-0"
-            >
-              {s.trim()}
-            </span>
-          ))}
-        </div>
+
+        {skills.length > 0 && (
+          <div className="flex w-full flex-nowrap overflow-x-auto gap-2 no-scrollbar scrollbar-hide">
+            {skills.map((s: string, i: number) => (
+              <span
+                key={i}
+                className="px-2 py-0.5 bg-white whitespace-nowrap text-slate-500 rounded-md text-[12px] font-bold border border-slate-400 flex-shrink-0"
+              >
+                {s}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {renderActionButton()}

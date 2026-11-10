@@ -485,7 +485,7 @@ export default function HomePage() {
                 )}
               </button>
             ) : (
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 text-center">
                 C'est tout pour le moment : vous avez vu tous les {activeTab}.
               </p>
             )}
