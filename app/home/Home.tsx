@@ -28,6 +28,7 @@ import Footer from "../components/Footer";
 import { motion } from "framer-motion";
 import StatsSection from "../components/guest/StatsSection";
 import { useRouter } from "next/navigation";
+import TestimonialsSection from "../components/guest/TestimonialsSection";
 
 const CONTACT_PHONE = "+237 655 62 41 68";
 const WHATSAPP_GROUP_LINK =
@@ -309,6 +310,9 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        {/* ===================== TÉMOIGNAGES ===================== */}
+        <TestimonialsSection />
 
         {/* ===================== CONTACT ===================== */}
         <section id="contact" className="py-20 bg-white">
