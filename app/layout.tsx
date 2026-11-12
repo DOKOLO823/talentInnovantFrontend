@@ -17,7 +17,12 @@ export const metadata: Metadata = {
     title: "TALENT INNOVANT",
     statusBarStyle: "default",
   },
-  icons: { apple: "/icons/apple-touch-icon.png" },
+
+  icons: {
+    icon: [{ url: "/icon.png", type: "image/png" }],
+    shortcut: "/icon.png",
+    apple: "/icons/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {
