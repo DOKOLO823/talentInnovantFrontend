@@ -23,6 +23,7 @@ import {
   enablePush,
   getPushStatus,
   getServerPushStatus,
+  syncPushSubscription,
   type EnableResult,
   type PushStatus,
 } from "@/app/lib/push";
@@ -165,14 +166,14 @@ export default function PwaProvider({ children }: { children: ReactNode }) {
     [accountId, flagsVersion],
   );
 
-  // Appareil déjà abonné mais ce compte n'a pas de drapeau local (ex. application installée dont
-  // le stockage est séparé de celui du navigateur) : on demande au serveur si l'abonnement
-  // de cet appareil appartient à ce compte. Si oui, on l'adopte sans rien demander à l'utilisateur.
+  // L'appareil a déjà l'autorisation du navigateur mais ce compte n'a pas de drapeau local
+  // (ex. application installée dont le stockage ou l'abonnement est séparé de celui du navigateur) :
+  // on interroge le serveur avant de rien afficher, pour ne pas redemander ce qui est déjà fait.
   const needsCheck =
     ready &&
     !!accountId &&
     !optIn &&
-    pushStatus === "subscribed" &&
+    (pushStatus === "subscribed" || pushStatus === "granted") &&
     adoptChecked !== accountId;
 
   const accountPush: AccountPushStatus = useMemo(() => {
@@ -187,19 +188,32 @@ export default function PwaProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!needsCheck || !accountId) return;
     let cancelled = false;
-    getServerPushStatus().then((status) => {
+
+    (async () => {
+      const status = await getServerPushStatus();
+      let adopt = !!status?.subscribed; // le serveur connaît déjà cet appareil pour ce compte
+
+      // Autorisation déjà accordée sur cet appareil ET compte déjà activé sur un appareil :
+      // on enregistre celui-ci sans rien demander (ex. application installée avec son propre
+      // abonnement). Il est retiré du compte à la déconnexion.
+      if (!adopt && pushStatus === "granted" && (status?.count ?? 0) > 0) {
+        adopt = await syncPushSubscription();
+      }
+
       if (cancelled) return;
-      if (status?.subscribed) {
-        write(KEYS.optIn(accountId), "1"); // le serveur confirme : ce compte est bien activé ici
+      if (adopt) {
+        write(KEYS.optIn(accountId), "1");
         write(KEYS.modalSeen(accountId), "1"); // inutile de le solliciter
         setFlagsVersion((v) => v + 1);
       }
       setAdoptChecked(accountId);
-    });
+      if (adopt) await refreshPush();
+    })();
+
     return () => {
       cancelled = true;
     };
-  }, [needsCheck, accountId]);
+  }, [needsCheck, accountId, pushStatus, refreshPush]);
 
   const setAccount = useCallback((id: string | null) => {
     setAccountId((prev) => (prev === id ? prev : id));
