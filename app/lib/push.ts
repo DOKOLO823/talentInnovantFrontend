@@ -2,7 +2,17 @@
 
 import { apiFetch } from "@/app/lib/api";
 
-const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!;
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
+
+// Raison de la dernière erreur d'activation (affichée dans le message d'erreur, utile pour
+// diagnostiquer sur un téléphone où la console n'est pas accessible).
+let lastError = "";
+export const getLastPushError = () => lastError;
+function fail(reason: string, detail?: unknown): false {
+  lastError = reason;
+  console.error("[push]", reason, detail ?? "");
+  return false;
+}
 
 /**
  * unsupported : navigateur incompatible (ex. iPhone hors app installée)
@@ -40,9 +50,14 @@ const isSupported = () =>
 
 // Attend le service worker, mais sans bloquer indéfiniment s'il n'est pas prêt
 async function getRegistration(
-  timeoutMs = 5000,
+  timeoutMs = 10000, // un réseau mobile lent peut demander plusieurs secondes au 1er chargement
 ): Promise<ServiceWorkerRegistration | null> {
   try {
+    // S'assure qu'un service worker est bien enregistré (sans effet s'il l'est déjà)
+    const existing = await navigator.serviceWorker.getRegistration();
+    if (!existing) {
+      await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+    }
     return await Promise.race([
       navigator.serviceWorker.ready,
       new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),
@@ -64,21 +79,51 @@ export async function getPushStatus(): Promise<PushStatus> {
 
 // Crée l'abonnement si besoin puis l'enregistre côté Laravel (rattaché à l'utilisateur connecté)
 async function subscribeAndSave(): Promise<boolean> {
+  if (!VAPID_PUBLIC_KEY) return fail("clé VAPID absente du site");
+
   const reg = await getRegistration();
-  if (!reg) return false;
+  if (!reg) return fail("service worker pas prêt (connexion lente ?)");
 
-  const sub =
-    (await reg.pushManager.getSubscription()) ??
-    (await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-    }));
+  const key = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
 
-  const res = await apiFetch("/push/subscribe", {
-    method: "POST",
-    body: JSON.stringify(sub.toJSON()),
-  });
-  return res?.statut === 200;
+  let sub: PushSubscription | null = null;
+  try {
+    sub = await reg.pushManager.getSubscription();
+
+    // Un ancien abonnement créé avec une AUTRE clé VAPID ne recevrait jamais rien :
+    // on le supprime et on en recrée un avec la clé actuelle.
+    if (sub) {
+      const current = sub.options?.applicationServerKey;
+      if (current) {
+        const a = new Uint8Array(current);
+        const same = a.length === key.length && a.every((v, i) => v === key[i]);
+        if (!same) {
+          await sub.unsubscribe();
+          sub = null;
+        }
+      }
+    }
+
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: key,
+      });
+    }
+  } catch (e) {
+    return fail(`abonnement navigateur refusé : ${(e as Error)?.name ?? "erreur"}`, e);
+  }
+
+  try {
+    const res = await apiFetch("/push/subscribe", {
+      method: "POST",
+      body: JSON.stringify(sub.toJSON()),
+    });
+    if (res?.statut === 200) return true;
+    return fail(`serveur ${res?.statut ?? "?"} ${res?.message ?? ""}`.trim(), res);
+  } catch (e) {
+    return fail("serveur injoignable", e);
+  }
 }
 
 /** À appeler sur un clic : demande l'autorisation puis abonne l'appareil. */
@@ -92,7 +137,7 @@ export async function enablePush(): Promise<EnableResult> {
   try {
     return (await subscribeAndSave()) ? "granted" : "error";
   } catch (e) {
-    console.error("Erreur d'abonnement push :", e);
+    fail("erreur inattendue", e);
     return "error";
   }
 }
