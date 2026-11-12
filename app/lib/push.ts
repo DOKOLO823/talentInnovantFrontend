@@ -3,7 +3,7 @@
 import { apiFetch } from "@/app/lib/api";
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
-console.log("[push] clé VAPID :", VAPID_PUBLIC_KEY);
+// console.log("[push] clé VAPID :", VAPID_PUBLIC_KEY);
 
 // Raison de la dernière erreur d'activation (affichée dans le message d'erreur, utile pour
 // diagnostiquer sur un téléphone où la console n'est pas accessible).
