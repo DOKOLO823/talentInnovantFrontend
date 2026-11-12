@@ -1,14 +1,27 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AuthProvider } from "./context/AuthContext";
 import ConditionalLayout from "./components/LayoutWrapper";
 import { Toaster } from "react-hot-toast";
+import PwaProvider from "./components/pwa/PwaProvider";
 // import Script from "next/script";
 
 export const metadata: Metadata = {
-  title: "Talent Innovant",
+  title: "TALENT INNOVANT",
   description:
     "Une plateforme qui connecte les talents et les entreprises à travers des challenges d'innovation pour révéler les potentiels cachés et stimuler la créativité.",
+
+  applicationName: "TALENT INNOVANT",
+  appleWebApp: {
+    capable: true,
+    title: "TALENT INNOVANT",
+    statusBarStyle: "default",
+  },
+  icons: { apple: "/icons/apple-touch-icon.png" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#c2410c",
 };
 
 export default function RootLayout({
@@ -34,12 +47,14 @@ export default function RootLayout({
   `}
         </Script> */}
 
-        <AuthProvider>
-          <ConditionalLayout>
-            {children}
-            <Toaster containerStyle={{ zIndex: 999999999 }} />
-          </ConditionalLayout>
-        </AuthProvider>
+        <PwaProvider>
+          <AuthProvider>
+            <ConditionalLayout>
+              {children}
+              <Toaster containerStyle={{ zIndex: 999999999 }} />
+            </ConditionalLayout>
+          </AuthProvider>
+        </PwaProvider>
       </body>
     </html>
   );

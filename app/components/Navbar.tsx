@@ -18,6 +18,8 @@ import apifile from "@/app/lib/apifile";
 import LocationModal from "./LocationModal";
 import NotificationsDropdown from "../notification/NotificationsDropdown";
 import SocialLinks from "./SocialLinks";
+import PwaBar from "./pwa/PwaBar";
+import PushOptInModal from "./pwa/PushOptInModal";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -30,6 +32,10 @@ export default function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState<boolean>(true);
   const [notificationCount, setNotificationCount] = useState(0);
+  // pour voir l'etat des 2 modal qui ne doivent pas s'afficher en même temps (location et les notifications push)
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  // etat pour hauteur de bouton de notifications push sur app
+  const [pwaBarHeight, setPwaBarHeight] = useState(0);
 
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -190,6 +196,19 @@ export default function Navbar() {
     router.push("/auth/login");
   };
 
+  // deconnecter toutes les sessions de mon compte sur tous les onglets
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      const cleared =
+        (e.key === "auth" || e.key === null) && !localStorage.getItem("auth");
+      if (cleared && !window.location.pathname.startsWith("/auth")) {
+        window.location.replace("/auth/login");
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
   const guestLinks = [
     { href: "/", label: "Accueil" },
     { href: "#challenges", label: "Challenges" },
@@ -217,10 +236,21 @@ export default function Navbar() {
       : `/profil-entreprise/${userId}`
     : "/auth/login";
 
+  const pwaActive = isLoggedIn && !isCheckingAuth;
+
   return (
     <>
+      <PwaBar
+        isLoggedIn={pwaActive}
+        userId={userId}
+        onHeightChange={setPwaBarHeight}
+      />
+
       <nav
-        className={`fixed top-0 left-0 w-full bg-white shadow-md z-50 transition-transform duration-300 ${isVisible ? "translate-y-0" : "-translate-y-full"}`}
+        style={{
+          top: Math.min(pwaBarHeight, Math.max(0, pwaBarHeight - lastScrollY)),
+        }}
+        className={`fixed left-0 w-full bg-white shadow-md z-50 transition-transform duration-300 ${isVisible ? "translate-y-0" : "-translate-y-full"}`}
       >
         <div className="max-w-7xl mx-auto flex justify-between items-center px-4 sm:px-6 py-2">
           <div className="flex flex-row items-center justify-start flex-shrink-0">
@@ -384,6 +414,8 @@ export default function Navbar() {
         </div>
       </nav>
 
+      <PushOptInModal isLoggedIn={isLoggedIn} blocked={showLocationModal} />
+
       {/* Menu Mobile */}
       <div className="md:hidden">
         <div
@@ -468,7 +500,9 @@ export default function Navbar() {
         </div>
       </div>
 
-      {isLoggedIn && role === "talent" && <LocationModal />}
+      {isLoggedIn && role === "talent" && (
+        <LocationModal onOpenChange={setShowLocationModal} />
+      )}
     </>
   );
 

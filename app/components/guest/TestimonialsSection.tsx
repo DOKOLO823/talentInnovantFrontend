@@ -228,7 +228,7 @@ export default function TestimonialsSection() {
 
   return (
     <>
-      <section id="temoignages" className="bg-gray-50 py-0">
+      <section id="temoignages" className="bg-gray-50 pt-10">
         <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
           <h2 className="mb-3 text-2xl font-extrabold text-gray-900 sm:mb-4 sm:text-3xl md:text-4xl">
             Ils ont relevé le défi

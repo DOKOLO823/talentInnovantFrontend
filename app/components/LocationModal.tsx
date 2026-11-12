@@ -17,7 +17,11 @@ const CAMEROON_GEO = {
   "Sud-Ouest": ["Buea", "Limbe", "Kumba", "Mamfe", "Tiko"],
 };
 
-export default function LocationModal() {
+export default function LocationModal({
+  onOpenChange,
+}: {
+  onOpenChange?: (open: boolean) => void;
+}) {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ region: "", ville: "" });
   const [loading, setLoading] = useState(false);
@@ -98,6 +102,14 @@ export default function LocationModal() {
       setLoading(false);
     }
   };
+
+  // ... vos états et votre useEffect existants, inchangés ...
+
+  // Prévient la navbar quand cette modale est ouverte (pour éviter deux modales en même temps)
+  useEffect(() => {
+    onOpenChange?.(showModal);
+    return () => onOpenChange?.(false);
+  }, [showModal, onOpenChange]);
 
   if (!showModal) return null;
 

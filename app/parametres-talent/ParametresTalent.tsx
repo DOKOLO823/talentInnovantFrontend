@@ -16,6 +16,7 @@ import { apiFetch } from "@/app/lib/api";
 import { useAuth } from "@/app/context/AuthContext";
 import BackButton from "@/app/components/BackButton";
 import toast, { Toaster } from "react-hot-toast";
+import InstallAppSection from "../components/pwa/InstallAppSection";
 
 export default function ParametresTalent() {
   const { user } = useAuth();
@@ -317,6 +318,8 @@ export default function ParametresTalent() {
               </div>
             </div>
           </section>
+
+          <InstallAppSection />
         </div>
       </div>
     </div>
