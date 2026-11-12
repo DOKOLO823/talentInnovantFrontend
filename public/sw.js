@@ -13,11 +13,12 @@ self.addEventListener("push", (event) => {
   const { title = "Talent Innovant", ...options } = payload;
 
   event.waitUntil(
-    self.registration.showNotification(title, {
-      icon: "/icons/icon-192.png",
-      badge: "/icons/badge-72.png",
-      ...options,
-    })
+   self.registration.showNotification(title, {
+  icon: "/icons/icon-192.png",
+  badge: "/icons/badge-72.png",
+  renotify: Boolean(options.tag), // une notification de même identifiant remplace la précédente ET alerte à nouveau
+  ...options,
+})
   );
 });
 

@@ -244,6 +244,7 @@ export default function Navbar() {
         isLoggedIn={pwaActive}
         userId={userId}
         onHeightChange={setPwaBarHeight}
+        role={role}
       />
 
       <nav
@@ -414,7 +415,11 @@ export default function Navbar() {
         </div>
       </nav>
 
-      <PushOptInModal isLoggedIn={isLoggedIn} blocked={showLocationModal} />
+      <PushOptInModal
+        isLoggedIn={isLoggedIn}
+        blocked={showLocationModal}
+        role={role}
+      />
 
       {/* Menu Mobile */}
       <div className="md:hidden">

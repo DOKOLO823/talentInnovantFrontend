@@ -2,25 +2,26 @@
 
 // Emplacement : app/components/pwa/PwaBar.tsx
 // Dans la navbar, AVANT le <nav> (et non à l'intérieur) :
-//   <PwaBar isLoggedIn={pwaActive} userId={userId} onHeightChange={setPwaBarHeight} />
+//   <PwaBar isLoggedIn={pwaActive} userId={userId} role={role} onHeightChange={setPwaBarHeight} />
 //
-// La barre est dans le flux normal de la page (elle n'est PAS fixe) : elle prend sa place,
-// pousse le contenu vers le bas, et disparaît avec le défilement. La navbar, elle, reste
-// collée en haut une fois la barre sortie de l'écran (voir le calcul de `top` dans la navbar).
+// Réservée aux utilisateurs CONNECTÉS : un visiteur (guest) ne voit jamais cette barre.
+// Dans le flux normal de la page (pas fixe) : elle pousse le contenu vers le bas et part
+// avec le défilement. La navbar se colle en haut une fois la barre sortie de l'écran.
 //
-// Affiche UNE seule action à la fois, centrée, uniquement si l'utilisateur est connecté :
+// Affiche UNE seule action à la fois, centrée :
 //   1. « Activer les notifications » (prioritaire) : visible tant que CE COMPTE ne les a pas
 //      activées. Disparaît dès qu'elles sont activées, ou si le navigateur les bloque.
 //   2. « Installer l'application » : ensuite. Sur iPhone, l'installation est le préalable
 //      aux notifications : elle est donc proposée en premier, présentée comme telle.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Download, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { usePwa } from "./PwaProvider";
 import RingingBell from "./RingingBell";
-import { syncPushSubscription } from "@/app/lib/push";
+import { getPushCopy } from "./pwaCopy";
+import { getLastPushError, syncPushSubscription } from "@/app/lib/push";
 
 const SYNC_KEY = "ti_push_synced";
 
@@ -30,10 +31,12 @@ const buttonClass =
 export default function PwaBar({
   isLoggedIn,
   userId,
+  role,
   onHeightChange,
 }: {
   isLoggedIn: boolean;
   userId: number | string | null;
+  role?: string;
   /** Hauteur actuelle de la barre en px (0 quand elle est absente) */
   onHeightChange?: (height: number) => void;
 }) {
@@ -45,16 +48,17 @@ export default function PwaBar({
     installDismissed,
     accountId,
     accountPush,
+    activating,
     setAccount,
     promptInstall,
     dismissInstall,
     activatePush,
     refreshPush,
   } = usePwa();
-  const [loading, setLoading] = useState(false);
   const barRef = useRef<HTMLDivElement>(null);
+  const copy = getPushCopy(role);
 
-  // Rattache l'état PWA au compte actuellement connecté
+  // Rattache l'état PWA au compte actuellement connecté (rien du tout pour un visiteur)
   useEffect(() => {
     setAccount(isLoggedIn && userId != null ? String(userId) : null);
   }, [isLoggedIn, userId, setAccount]);
@@ -89,7 +93,8 @@ export default function PwaBar({
 
   // Priorité aux notifications. L'installation n'est proposée qu'ensuite
   // (notifications activées ou bloquées) ou quand elle est le préalable aux notifications (iPhone).
-  const canShow = isLoggedIn && ready && !!accountId;
+  const canShow =
+    isLoggedIn && ready && !!accountId && accountPush !== "checking";
   const showPush = canShow && accountPush === "needs-activation";
   const showInstall =
     canShow &&
@@ -119,13 +124,13 @@ export default function PwaBar({
   if (!visible) return null;
 
   const handleActivate = async () => {
-    setLoading(true);
-    const result = await activatePush();
-    setLoading(false);
-
+    const result = await activatePush(); // une seule activation à la fois, même avec la modale
     if (result === "granted") toast.success("Notifications activées !");
     else if (result === "error")
-      toast.error("Activation impossible pour le moment. Réessayez plus tard.");
+      toast.error(
+        `Activation impossible : ${getLastPushError() || "raison inconnue"}`,
+        { duration: 8000 },
+      );
   };
 
   return (
@@ -168,15 +173,15 @@ export default function PwaBar({
         {showPush && (
           <>
             <span className="hidden text-xs font-medium text-gray-700 sm:inline">
-              Soyez alerté des nouvelles opportunités
+              {copy.bar}
             </span>
             <button
               onClick={handleActivate}
-              disabled={loading}
+              disabled={activating}
               className={buttonClass}
             >
               <RingingBell size={14} />
-              {loading ? "Activation..." : "Activer les notifications"}
+              {activating ? "Activation..." : "Activer les notifications"}
             </button>
           </>
         )}

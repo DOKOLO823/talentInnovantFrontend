@@ -4,6 +4,10 @@
 // Enregistre le service worker ET centralise l'état PWA.
 // Les notifications sont gérées PAR COMPTE : chaque compte a son propre choix
 // (activé / pas encore), mémorisé sur l'appareil, sans effet sur les autres comptes.
+//
+// Une seule activation à la fois pour toute l'application (barre ET modale) :
+//   - un double clic, ou un clic sur la barre pendant que la modale s'ouvre, ne lance qu'UNE activation
+//   - dès que l'utilisateur s'engage dans l'activation, la modale n'apparaît plus jamais pour ce compte
 
 import {
   createContext,
@@ -11,12 +15,14 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 import {
   enablePush,
   getPushStatus,
+  getServerPushStatus,
   type EnableResult,
   type PushStatus,
 } from "@/app/lib/push";
@@ -25,7 +31,7 @@ import {
 const KEYS = {
   installDismissed: "ti_install_dismissed_at", // bandeau d'installation fermé (date)
   optIn: (id: string) => `ti_push_optin_${id}`, // ce compte a activé les notifications
-  modalSeen: (id: string) => `ti_push_modal_seen_${id}`, // modale déjà vue par ce compte
+  modalSeen: (id: string) => `ti_push_modal_seen_${id}`, // modale déjà vue / activation déjà tentée
 };
 const INSTALL_SNOOZE_MS = 7 * 24 * 60 * 60 * 1000; // 7 jours
 
@@ -51,12 +57,14 @@ const remove = (k: string) => {
 /**
  * unsupported      : appareil / navigateur incompatible
  * denied           : bloqué dans le navigateur
+ * checking         : vérification auprès du serveur en cours (rien n'est affiché)
  * needs-activation : ce COMPTE n'a pas (encore) activé les notifications
  * active           : ce compte a activé les notifications
  */
 export type AccountPushStatus =
   | "unsupported"
   | "denied"
+  | "checking"
   | "needs-activation"
   | "active";
 
@@ -70,6 +78,8 @@ interface PwaContextValue {
   accountId: string | null;
   accountPush: AccountPushStatus; // état pour le compte connecté
   modalSeen: boolean; // pour le compte connecté
+  activating: boolean; // une activation est en cours (barre ou modale)
+  isBusy: () => boolean; // idem, lisible sans attendre un rendu (anti-collision)
   setAccount: (id: string | null) => void;
   promptInstall: () => Promise<void>;
   dismissInstall: () => void;
@@ -95,6 +105,9 @@ export default function PwaProvider({ children }: { children: ReactNode }) {
   const [pushStatus, setPushStatus] = useState<PushStatus>("unsupported");
   const [accountId, setAccountId] = useState<string | null>(null);
   const [flagsVersion, setFlagsVersion] = useState(0); // force la relecture des drapeaux
+  const [adoptChecked, setAdoptChecked] = useState<string | null>(null); // compte déjà vérifié auprès du serveur
+  const [activating, setActivating] = useState(false);
+  const activationRef = useRef<Promise<EnableResult> | null>(null);
 
   const refreshPush = useCallback(async () => {
     setPushStatus(await getPushStatus());
@@ -152,13 +165,41 @@ export default function PwaProvider({ children }: { children: ReactNode }) {
     [accountId, flagsVersion],
   );
 
+  // Appareil déjà abonné mais ce compte n'a pas de drapeau local (ex. application installée dont
+  // le stockage est séparé de celui du navigateur) : on demande au serveur si l'abonnement
+  // de cet appareil appartient à ce compte. Si oui, on l'adopte sans rien demander à l'utilisateur.
+  const needsCheck =
+    ready &&
+    !!accountId &&
+    !optIn &&
+    pushStatus === "subscribed" &&
+    adoptChecked !== accountId;
+
   const accountPush: AccountPushStatus = useMemo(() => {
     if (pushStatus === "unsupported") return "unsupported";
     if (pushStatus === "denied") return "denied";
     if (optIn && (pushStatus === "granted" || pushStatus === "subscribed"))
       return "active";
+    if (needsCheck) return "checking";
     return "needs-activation";
-  }, [pushStatus, optIn]);
+  }, [pushStatus, optIn, needsCheck]);
+
+  useEffect(() => {
+    if (!needsCheck || !accountId) return;
+    let cancelled = false;
+    getServerPushStatus().then((status) => {
+      if (cancelled) return;
+      if (status?.subscribed) {
+        write(KEYS.optIn(accountId), "1"); // le serveur confirme : ce compte est bien activé ici
+        write(KEYS.modalSeen(accountId), "1"); // inutile de le solliciter
+        setFlagsVersion((v) => v + 1);
+      }
+      setAdoptChecked(accountId);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [needsCheck, accountId]);
 
   const setAccount = useCallback((id: string | null) => {
     setAccountId((prev) => (prev === id ? prev : id));
@@ -176,9 +217,13 @@ export default function PwaProvider({ children }: { children: ReactNode }) {
     setInstallDismissed(true);
   }, []);
 
+  const isBusy = useCallback(() => activationRef.current !== null, []);
+
   const setModalSeen = useCallback(
     (value: boolean) => {
       if (!accountId) return;
+      // Une fois l'utilisateur engagé dans l'activation, on ne « dé-marque » jamais la modale
+      if (!value && activationRef.current) return;
       if (value) write(KEYS.modalSeen(accountId), "1");
       else remove(KEYS.modalSeen(accountId));
       setFlagsVersion((v) => v + 1);
@@ -186,16 +231,35 @@ export default function PwaProvider({ children }: { children: ReactNode }) {
     [accountId],
   );
 
-  // Si l'autorisation du navigateur existe déjà (autre compte), aucune fenêtre n'apparaît :
-  // le compte est simplement activé et rattaché à l'appareil.
-  const activatePush = useCallback(async () => {
-    const result = await enablePush();
-    if (result === "granted" && accountId) {
-      write(KEYS.optIn(accountId), "1");
+  // UNE seule activation à la fois (barre ou modale). Si l'appareil a déjà l'autorisation du
+  // navigateur (autre compte), aucune fenêtre n'apparaît : le compte est simplement activé.
+  const activatePush = useCallback((): Promise<EnableResult> => {
+    if (activationRef.current) return activationRef.current; // déjà en cours : même résultat
+
+    // L'utilisateur s'engage : la modale n'a plus besoin d'apparaître pour ce compte
+    if (accountId) {
+      write(KEYS.modalSeen(accountId), "1");
       setFlagsVersion((v) => v + 1);
     }
-    await refreshPush();
-    return result;
+    setActivating(true);
+
+    const run = (async () => {
+      try {
+        const result = await enablePush();
+        if (result === "granted" && accountId) {
+          write(KEYS.optIn(accountId), "1");
+        }
+        await refreshPush();
+        setFlagsVersion((v) => v + 1);
+        return result;
+      } finally {
+        activationRef.current = null;
+        setActivating(false);
+      }
+    })();
+
+    activationRef.current = run;
+    return run;
   }, [accountId, refreshPush]);
 
   const value = useMemo<PwaContextValue>(
@@ -209,6 +273,8 @@ export default function PwaProvider({ children }: { children: ReactNode }) {
       accountId,
       accountPush,
       modalSeen,
+      activating,
+      isBusy,
       setAccount,
       promptInstall,
       dismissInstall,
@@ -226,6 +292,8 @@ export default function PwaProvider({ children }: { children: ReactNode }) {
       accountId,
       accountPush,
       modalSeen,
+      activating,
+      isBusy,
       setAccount,
       promptInstall,
       dismissInstall,

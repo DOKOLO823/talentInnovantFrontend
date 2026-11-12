@@ -3,7 +3,6 @@
 import { apiFetch } from "@/app/lib/api";
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
-// console.log("[push] clé VAPID :", VAPID_PUBLIC_KEY);
 
 // Raison de la dernière erreur d'activation (affichée dans le message d'erreur, utile pour
 // diagnostiquer sur un téléphone où la console n'est pas accessible).
@@ -197,5 +196,102 @@ export async function detachPushFromAccount(): Promise<void> {
     ]);
   } catch {
     // La déconnexion doit toujours aboutir
+  }
+}
+
+/* ------------------------- Statut serveur & diagnostic ------------------------- */
+
+export interface ServerPushStatus {
+  subscribed: boolean; // cet appareil est enregistré pour le compte connecté
+  count: number; // nombre d'appareils enregistrés pour ce compte
+  serverKey: string; // clé publique VAPID utilisée par Laravel
+}
+
+/** Demande à Laravel si l'abonnement de CET appareil appartient au compte connecté. */
+export async function getServerPushStatus(): Promise<ServerPushStatus | null> {
+  if (!isSupported()) return null;
+  try {
+    const reg = await getRegistration(4000);
+    const sub = reg ? await reg.pushManager.getSubscription() : null;
+    const res = await apiFetch("/push/status", {
+      method: "POST",
+      body: JSON.stringify({ endpoint: sub?.endpoint ?? null }),
+    });
+    if (res?.statut !== 200) return null;
+    return {
+      subscribed: !!res.subscribed,
+      count: res.count ?? 0,
+      serverKey: res.server_key ?? "",
+    };
+  } catch {
+    return null;
+  }
+}
+
+const toBase64Url = (buf: ArrayBuffer) =>
+  btoa(String.fromCharCode(...new Uint8Array(buf)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+
+export interface PushDiagnostics {
+  supported: boolean;
+  permission: string;
+  serviceWorkerReady: boolean;
+  hasSubscription: boolean;
+  endpointHost: string;
+  subscriptionKey: string; // clé VAPID avec laquelle l'abonnement a réellement été créé
+  clientKey: string; // clé VAPID intégrée au site à la compilation
+  server: ServerPushStatus | null;
+}
+
+export async function getPushDiagnostics(): Promise<PushDiagnostics> {
+  const supported = isSupported();
+  const diag: PushDiagnostics = {
+    supported,
+    permission:
+      typeof Notification !== "undefined" ? Notification.permission : "indisponible",
+    serviceWorkerReady: false,
+    hasSubscription: false,
+    endpointHost: "",
+    subscriptionKey: "",
+    clientKey: VAPID_PUBLIC_KEY,
+    server: null,
+  };
+  if (!supported) return diag;
+
+  const reg = await getRegistration(4000);
+  diag.serviceWorkerReady = !!reg;
+  const sub = reg ? await reg.pushManager.getSubscription() : null;
+  if (sub) {
+    diag.hasSubscription = true;
+    try {
+      diag.endpointHost = new URL(sub.endpoint).host;
+    } catch {}
+    const k = sub.options?.applicationServerKey;
+    if (k) diag.subscriptionKey = toBase64Url(k);
+  }
+  diag.server = await getServerPushStatus();
+  return diag;
+}
+
+export interface TestPushResult {
+  host: string;
+  success: boolean;
+  status: number | null;
+  reason: string;
+}
+
+/** Fait envoyer par Laravel une notification de test à tous les appareils du compte. */
+export async function sendTestPush(): Promise<{
+  results: TestPushResult[];
+  message?: string;
+} | null> {
+  try {
+    const res = await apiFetch("/push/test", { method: "POST" });
+    if (res?.statut !== 200) return null;
+    return { results: res.results ?? [], message: res.message };
+  } catch {
+    return null;
   }
 }
