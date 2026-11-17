@@ -97,7 +97,7 @@ export default function SocialLinks({
 }: {
   variant?: "navbar" | "drawer" | "footer";
   className?: string;
-  statut?: "guest" | "talent" | "entreprise";
+  statut?: string; // "guest", "entreprise", "participant", etc.
 }) {
   const containerGap = variant === "navbar" ? "gap-0.5 sm:gap-1.5" : "gap-3";
 
