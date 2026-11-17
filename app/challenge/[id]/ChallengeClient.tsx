@@ -959,9 +959,11 @@ export default function ChallengeClient() {
       )}
 
       {/* DÉCOUVRIR D'AUTRES CHALLENGES */}
-      <div className="mt-12 px-3 max-w-7xl mx-auto">
-        <DiscoverChallenges challengeId={challenge.id} />
-      </div>
+      {currentUser?.statut != "entreprise" && (
+        <div className="mt-12 px-3 max-w-7xl mx-auto">
+          <DiscoverChallenges challengeId={challenge.id} />
+        </div>
+      )}
 
       <AnimatePresence>
         {showShareModal && (
@@ -1590,10 +1592,11 @@ function EvaluateProjectsSection({ challenge, isJury }: any) {
     }).format(new Date(d));
 
   // Projets à afficher selon le sous-tab IA actif
-  const projetsAffiches =
-    activeEligibiliteTab === "eligibles"
-      ? projetsEligibles
-      : projetsNonEligibles;
+  // const projetsAffiches =
+  //   activeEligibiliteTab === "eligibles"
+  //     ? projetsEligibles
+  //     : projetsNonEligibles;
+  const projetsAffiches = projects.filter((p) => !p.danscorbeille);
 
   return (
     <div className="space-y-6">
@@ -1666,7 +1669,7 @@ function EvaluateProjectsSection({ challenge, isJury }: any) {
       </div>
 
       {/* ── SOUS-TABS ÉLIGIBILITÉ (uniquement dans a_evaluer) ── */}
-      {activeSubTab === "a_evaluer" && !loading && (
+      {/* {activeSubTab === "a_evaluer" && !loading && (
         <div className="flex gap-2 border-b border-gray-100 pb-0">
           <button
             onClick={() => setActiveEligibiliteTab("eligibles")}
@@ -1714,7 +1717,7 @@ function EvaluateProjectsSection({ challenge, isJury }: any) {
             </span>
           </button>
         </div>
-      )}
+      )} */}
 
       {/* Message contextuel hybride */}
       {challenge?.typeevaluation?.type?.toLowerCase() === "hybride" &&
@@ -1735,8 +1738,8 @@ function EvaluateProjectsSection({ challenge, isJury }: any) {
             <CheckCircle className="text-green-500 mx-auto mb-3" size={36} />
             <p className="font-bold text-green-700 text-sm">
               {activeEligibiliteTab === "eligibles"
-                ? "Vous avez évalué tous les projets conformes !"
-                : "Aucun projet non conforme détecté."}
+                ? "Vous avez évalué tous les projets !"
+                : "Aucun projet détecté."}
             </p>
             {activeEligibiliteTab === "eligibles" && (
               <p className="text-green-600 text-xs mt-1">

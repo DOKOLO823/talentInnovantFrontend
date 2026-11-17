@@ -5,7 +5,7 @@ import { apiFetch } from "@/app/lib/api";
 import domaines from "@/domaines.json";
 import { useRouter } from "next/navigation";
 import BackButton from "@/app/components/BackButton";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown } from "lucide-react";
 
 export default function Register() {
   const router = useRouter();
@@ -16,6 +16,36 @@ export default function Register() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [showRegions, setShowRegions] = useState(false);
+
+  // select des domaines principaux
+  const [showDomaineDropdown, setShowDomaineDropdown] = useState(false);
+
+  const [errors, setErrors] = useState<any>({});
+
+  const [form, setForm] = useState({
+    nom: "",
+    email: "",
+    password: "",
+    confirm: "",
+    telephone: "",
+    region: "",
+    domaine_principal: "",
+    domaines_secondaires: [] as string[],
+  });
+
+  // Fermer le dropdown si on clique ailleurs sur la page
+  useEffect(() => {
+    const handleClickOutside = () => setShowDomaineDropdown(false);
+    if (showDomaineDropdown) {
+      window.addEventListener("click", handleClickOutside);
+    }
+    return () => window.removeEventListener("click", handleClickOutside);
+  }, [showDomaineDropdown]);
+
+  // Récupérer l'objet complet du domaine sélectionné pour l'affichage
+  const selectedDomaineObj = domaines.find(
+    (d: any) => d.id.toString() === form.domaine_principal,
+  );
 
   const CAMEROON_GEO = {
     Adamaoua: ["Ngaoundéré", "Tignère", "Meiganga", "Banyo", "Tibati"],
@@ -42,19 +72,6 @@ export default function Register() {
   const filteredRegions = regions.filter((r) =>
     r.toLowerCase().includes(searchTerm.toLowerCase()),
   );
-
-  const [form, setForm] = useState({
-    nom: "",
-    email: "",
-    password: "",
-    confirm: "",
-    telephone: "",
-    region: "",
-    domaine_principal: "",
-    domaines_secondaires: [] as string[],
-  });
-
-  const [errors, setErrors] = useState<any>({});
 
   const handleChange = (field: string, value: any) => {
     setForm({ ...form, [field]: value });
@@ -404,27 +421,129 @@ export default function Register() {
               >
                 {/* STEP 2 */}
                 <div className="space-y-4 mt-6">
-                  {/* DOMAINE PRINCIPAL */}
-                  <div>
-                    <label className="block text-sm font-medium">
-                      Votre domaine principal
+                  {/* DOMAINE PRINCIPAL (CUSTOM DROPDOWN MODERNE) */}
+                  <div
+                    className="relative"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Votre domaine principal{" "}
+                      <span className="text-orange-700">*</span>
                     </label>
-                    <select
-                      className="w-full mt-1 p-3 border rounded-lg"
-                      value={form.domaine_principal}
-                      onChange={(e) =>
-                        handleChange("domaine_principal", e.target.value)
+
+                    {/* Bouton d'ouverture du Select */}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowDomaineDropdown(!showDomaineDropdown)
                       }
+                      className={`w-full p-3.5 text-left bg-white border rounded-xl flex items-center justify-between transition-all ${
+                        showDomaineDropdown
+                          ? "border-orange-700 ring-2 ring-orange-700/10"
+                          : "border-gray-300 hover:border-gray-400"
+                      }`}
                     >
-                      <option value="">Sélectionnez...</option>
-                      {domaines.map((d) => (
-                        <option key={d.id} value={d.id}>
-                          {d.nom}
-                        </option>
-                      ))}
-                    </select>
+                      <div className="pr-3">
+                        {selectedDomaineObj ? (
+                          <div>
+                            <p className="font-semibold text-gray-900 text-sm">
+                              {selectedDomaineObj.nom}
+                            </p>
+                            {selectedDomaineObj.description && (
+                              <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">
+                                {selectedDomaineObj.description}
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 text-sm">
+                            Sélectionnez votre domaine principal...
+                          </span>
+                        )}
+                      </div>
+                      <ChevronDown
+                        size={18}
+                        className={`text-gray-400 shrink-0 transition-transform duration-200 ${
+                          showDomaineDropdown
+                            ? "rotate-180 text-orange-700"
+                            : ""
+                        }`}
+                      />
+                    </button>
+
+                    {/* Liste des options */}
+                    <AnimatePresence>
+                      {showDomaineDropdown && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute z-30 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-xl max-h-72 overflow-y-auto divide-y divide-gray-100"
+                        >
+                          {domaines.map((d: any) => {
+                            const isSelected =
+                              d.id.toString() === form.domaine_principal;
+                            return (
+                              <div
+                                key={d.id}
+                                onClick={() => {
+                                  const newId = d.id.toString();
+                                  // Met à jour le domaine principal et le retire des secondaires si présent
+                                  setForm({
+                                    ...form,
+                                    domaine_principal: newId,
+                                    domaines_secondaires:
+                                      form.domaines_secondaires.filter(
+                                        (secId) => secId !== newId,
+                                      ),
+                                  });
+                                  if (errors.domaine_principal) {
+                                    setErrors({
+                                      ...errors,
+                                      domaine_principal: "",
+                                    });
+                                  }
+                                  setShowDomaineDropdown(false);
+                                }}
+                                className={`p-3.5 cursor-pointer transition-colors flex items-start justify-between gap-3 ${
+                                  isSelected
+                                    ? "bg-orange-50/80"
+                                    : "hover:bg-gray-50"
+                                }`}
+                              >
+                                <div className="space-y-1">
+                                  <p
+                                    className={`text-sm font-semibold ${
+                                      isSelected
+                                        ? "text-orange-700"
+                                        : "text-gray-900"
+                                    }`}
+                                  >
+                                    {d.nom}
+                                  </p>
+                                  {d.description && (
+                                    <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">
+                                      {d.description}
+                                    </p>
+                                  )}
+                                </div>
+
+                                {isSelected && (
+                                  <Check
+                                    size={18}
+                                    className="text-orange-700 shrink-0 mt-0.5"
+                                  />
+                                )}
+                              </div>
+                            );
+                          })}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
                     {errors.domaine_principal && (
-                      <span className="text-red-500 text-sm">
+                      <span className="text-red-500 text-xs mt-1 block">
                         {errors.domaine_principal}
                       </span>
                     )}

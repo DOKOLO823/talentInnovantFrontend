@@ -287,6 +287,7 @@ export default function Navbar() {
             <SocialLinks
               variant="navbar"
               className="md:border-l md:border-gray-200 md:pl-4"
+              statut={role}
             />
 
             {!isCheckingAuth &&

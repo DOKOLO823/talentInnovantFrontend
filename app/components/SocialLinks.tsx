@@ -16,6 +16,8 @@ const WHATSAPP_CHANNEL =
 const FACEBOOK = "https://www.facebook.com/profile.php?id=61584370003120";
 const LINKEDIN = "https://www.linkedin.com/company/talent-innovant/";
 const WHATSAPP_GROUP = "https://chat.whatsapp.com/KZDescNoqkgKqREqCKg34Q";
+const WHATSAPP_GROUP_ENTREPRISE =
+  "https://chat.whatsapp.com/BRS5Bl2t9ArGhgTysTYTIi";
 
 const svgProps = {
   viewBox: "0 0 24 24",
@@ -91,11 +93,60 @@ const SOCIALS = [
 export default function SocialLinks({
   variant = "navbar",
   className = "",
+  statut = "guest",
 }: {
   variant?: "navbar" | "drawer" | "footer";
   className?: string;
+  statut?: "guest" | "talent" | "entreprise";
 }) {
   const containerGap = variant === "navbar" ? "gap-0.5 sm:gap-1.5" : "gap-3";
+
+  const SOCIALS =
+    statut != "entreprise"
+      ? [
+          {
+            id: "whatsapp-channel",
+            label: "Chaîne WhatsApp",
+            href: WHATSAPP_CHANNEL,
+            Icon: WhatsAppIcon,
+            hover: "hover:text-green-600",
+            hideOnMobile: false,
+          },
+          {
+            id: "facebook",
+            label: "Facebook",
+            href: FACEBOOK,
+            Icon: FacebookIcon,
+            hover: "hover:text-blue-600",
+            hideOnMobile: false,
+          },
+          {
+            id: "linkedin",
+            label: "LinkedIn",
+            href: LINKEDIN,
+            Icon: LinkedInIcon,
+            hover: "hover:text-sky-700",
+            hideOnMobile: false,
+          },
+          {
+            id: "whatsapp-group",
+            label: "Groupe WhatsApp",
+            href: WHATSAPP_GROUP,
+            Icon: Users,
+            hover: "hover:text-green-600",
+            hideOnMobile: true, // masqué dans la navbar sur mobile
+          },
+        ]
+      : [
+          {
+            id: "whatsapp-group",
+            label: "Groupe WhatsApp",
+            href: WHATSAPP_GROUP_ENTREPRISE,
+            Icon: Users,
+            hover: "hover:text-green-600",
+            hideOnMobile: false, // masqué dans la navbar sur mobile : non, visible pour les entreprises
+          },
+        ];
 
   return (
     <div className={`flex items-center ${containerGap} ${className}`}>
