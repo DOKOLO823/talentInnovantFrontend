@@ -1,17 +1,15 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
-  Phone,
-  Send,
   UserX,
   Check,
-  X,
   Clock,
-  ExternalLink,
-  MapPin,
+  Loader2,
+  LogIn,
+  UserPlus,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/app/lib/api";
@@ -19,8 +17,8 @@ import apifile from "@/app/lib/apifile";
 import toast, { Toaster } from "react-hot-toast";
 import Link from "next/link";
 import BackButton from "../components/BackButton";
-
-import { LogIn, UserPlus } from "lucide-react"; // Assure-toi d'ajouter ces imports
+import { SkeletonSweepStyles } from "../components/TalentSkeleton";
+import { prefetchPropositions } from "../lib/propositionsCache";
 
 const LoginRequiredModal = ({ isOpen }: { isOpen: boolean }) => {
   if (!isOpen) return null;
@@ -69,15 +67,15 @@ const EmptyState = ({
   message: string;
   onRetry?: () => void;
 }) => (
-  <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-    <div className="bg-gray-100 p-6 rounded-full mb-4">
-      <UserX size={48} className="text-gray-400" />
+  <div className="flex flex-col items-center justify-center py-16 text-center px-6 bg-white border-2 border-dashed border-slate-200 rounded-3xl">
+    <div className="bg-slate-100 p-5 rounded-full mb-4">
+      <UserX size={40} className="text-slate-400" />
     </div>
-    <p className="text-gray-500 font-medium mb-4">{message}</p>
+    <p className="text-slate-500 font-medium mb-4 max-w-md">{message}</p>
     {onRetry && (
       <button
         onClick={onRetry}
-        className="px-6 py-2 bg-orange-700 text-white rounded-full text-sm font-bold hover:bg-orange-600 transition-colors flex items-center gap-2"
+        className="px-6 py-2.5 bg-orange-700 text-white rounded-full text-sm font-bold hover:bg-orange-800 transition-colors flex items-center gap-2"
       >
         <Clock size={16} /> Actualiser la liste
       </button>
@@ -87,24 +85,26 @@ const EmptyState = ({
 
 function SkeletonCard() {
   return (
-    // On ajoute grid-cols-1 md:grid-cols-2 lg:grid-cols-3
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+      <SkeletonSweepStyles />
       {[1, 2, 3, 4, 5, 6].map((i) => (
         <div
           key={i}
-          className="bg-gray-50 border rounded-3xl p-5 animate-pulse"
+          aria-hidden="true"
+          className="ti-skel-card bg-white border border-slate-200 rounded-2xl p-5"
+          style={{ ["--d" as any]: `${(i % 3) * 0.15}s` }}
         >
           <div className="flex gap-4 items-center mb-4">
-            <div className="w-14 h-14 bg-gray-200 rounded-full shrink-0" />
+            <div className="w-14 h-14 bg-slate-200 rounded-full shrink-0" />
             <div className="flex-1 space-y-2">
-              <div className="h-4 w-3/4 bg-gray-200 rounded" />
-              <div className="h-3 w-1/2 bg-gray-200 rounded" />
+              <div className="h-4 w-3/4 bg-slate-200 rounded" />
+              <div className="h-3 w-1/2 bg-slate-200 rounded" />
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2">
-            <div className="h-12 bg-gray-200 rounded-xl" />
-            <div className="h-12 bg-gray-200 rounded-xl" />
-            <div className="h-12 bg-gray-200 rounded-xl" />
+            <div className="h-14 bg-slate-200 rounded-xl" />
+            <div className="h-14 bg-slate-200 rounded-xl" />
+            <div className="h-14 bg-slate-200 rounded-xl" />
           </div>
         </div>
       ))}
@@ -123,7 +123,7 @@ const formatDateFr = (dateString: string) => {
     " à " +
     date
       .toLocaleTimeString("fr-FR", {
-        hour: "2-digit", // Correction ici : '2-digit' au lieu de '2h-digit'
+        hour: "2-digit",
         minute: "2-digit",
       })
       .replace(":", "h")
@@ -139,12 +139,18 @@ export default function ReseauPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
   const [shouldScroll, setShouldScroll] = useState(false);
+  const [isOpeningCollab, startOpeningCollab] = useTransition();
 
   const contentRef = useRef<HTMLDivElement>(null);
   const activeBtnRef = useRef<HTMLButtonElement>(null);
   const isFirstRender = useRef(true);
 
   const [isAuth, setIsAuth] = useState<boolean | null>(null); // null = chargement, false = non co
+
+  // Précharge la page « Trouver un collaborateur » dès l'arrivée ici
+  useEffect(() => {
+    router.prefetch("/collaborateurs");
+  }, [router]);
 
   useEffect(() => {
     // Vérification de la connexion
@@ -192,8 +198,6 @@ export default function ReseauPage() {
       window.scrollTo({ top: y, behavior: "smooth" });
     }
 
-    // Optionnel : on remet à false après le scroll si on veut
-    // que seul le changement de tab déclenche le scroll
     setShouldScroll(false);
   }, [subTab, shouldScroll]);
 
@@ -246,18 +250,23 @@ export default function ReseauPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white pb-20">
+    <div className="min-h-screen bg-slate-50 pb-20">
       <Toaster position="top-center" />
       <div className="max-w-6xl mx-auto">
-        <div className="ml-4">
+        <div className="ml-4 pt-2">
           <BackButton />
         </div>
 
-        <header className="px-4 flex items-center gap-4 bg-white mt-8">
-          <h1 className="text-xl font-bold text-slate-800">Mon Réseau</h1>
+        <header className="px-4 mt-6">
+          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
+            Mon réseau
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Vos collaborations et vos demandes, au même endroit.
+          </p>
         </header>
 
-        {/* NOTIFICATION PROFESSIONNELLE RESPONSIVE */}
+        {/* NOTIFICATION RESPONSIVE */}
         <AnimatePresence>
           {unreadCount > 0 && (
             <motion.div
@@ -266,10 +275,8 @@ export default function ReseauPage() {
               exit={{ opacity: 0 }}
               className="mx-4 mt-6"
             >
-              <div className="flex flex-col sm:flex-row items-center gap-4 p-5 bg-white border border-slate-100 rounded-[2rem] shadow-sm">
-                {/* Contenu : Badge + Texte */}
+              <div className="flex flex-col sm:flex-row items-center gap-4 p-4 sm:p-5 bg-orange-50 border border-orange-100 rounded-2xl">
                 <div className="flex items-start gap-4 flex-1 w-full text-left">
-                  {/* Badge circulaire professionnel */}
                   <div className="flex items-center justify-center shrink-0 w-10 h-10 border-2 border-orange-700 bg-white rounded-full">
                     <span className="text-base font-black text-orange-700">
                       {unreadCount}
@@ -281,20 +288,19 @@ export default function ReseauPage() {
                       Nouvelle{unreadCount > 1 ? "s" : ""} demande
                       {unreadCount > 1 ? "s" : ""} de collaboration
                     </p>
-                    <p className="text-[13px] text-slate-500 mt-1">
+                    <p className="text-[13px] text-slate-600 mt-1">
                       Vous avez {unreadCount} demande
                       {unreadCount > 1 ? "s" : ""} de collaboration à consulter.
                     </p>
                   </div>
                 </div>
 
-                {/* Action : S'adapte au nombre et à l'écran */}
                 <button
                   onClick={() => {
                     setSubTab("recues");
-                    setShouldScroll(true); // Autorise le scroll
+                    setShouldScroll(true);
                   }}
-                  className="w-full sm:w-auto px-8 py-3 bg-orange-700 text-white text-[13px] font-bold rounded-xl active:scale-95 transition-all shadow-lg shadow-orange-700/10 whitespace-nowrap"
+                  className="w-full sm:w-auto px-8 py-3 bg-orange-700 hover:bg-orange-800 text-white text-[13px] font-bold rounded-xl active:scale-95 transition-all shadow-sm whitespace-nowrap"
                 >
                   {unreadCount > 1 ? "Voir les demandes" : "Voir la demande"}
                 </button>
@@ -303,15 +309,15 @@ export default function ReseauPage() {
           )}
         </AnimatePresence>
 
-        <div className="flex p-2 bg-gray-100 mx-4 mt-4 rounded-2xl">
+        <div className="flex p-1.5 bg-slate-200/70 mx-4 mt-5 rounded-2xl">
           {["collaboration", "mentorat"].map((t) => (
             <button
               key={t}
               onClick={() => setActiveTab(t)}
-              className={`flex-1 py-3 rounded-xl font-bold transition-all ${
+              className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${
                 activeTab === t
                   ? "bg-white text-orange-700 shadow-sm"
-                  : "text-gray-500"
+                  : "text-slate-500 hover:text-slate-700"
               }`}
             >
               {t === "collaboration" ? "Collaboration" : "Mentorat"}
@@ -328,19 +334,35 @@ export default function ReseauPage() {
               exit={{ opacity: 0, y: -10 }}
               className="p-4"
             >
-              <p className="text-gray-600 text-sm mb-3 leading-relaxed">
+              <p className="text-slate-600 text-sm mb-4 leading-relaxed">
                 Bâtissez votre équipe : connectez-vous aux talents dont les
                 compétences complètent votre projet.
               </p>
 
-              <div
-                onClick={() => router.push("/collaborateurs")}
-                className="w-full cursor-pointer md:w-1/2 lg:w-1/3 py-4 text-sm md:text-md bg-white text-orange-700 rounded-2xl font-bold flex items-center justify-center gap-2 mb-6 border border-orange-700"
+              {/* Ouverture immédiate : page préchargée + données lancées au survol/toucher */}
+              <button
+                type="button"
+                onPointerEnter={prefetchPropositions}
+                onTouchStart={prefetchPropositions}
+                onFocus={prefetchPropositions}
+                onClick={() => {
+                  prefetchPropositions();
+                  startOpeningCollab(() => router.push("/collaborateurs"));
+                }}
+                disabled={isOpeningCollab}
+                className="w-full md:w-auto md:min-w-[340px] py-3.5 px-6 text-sm bg-orange-700 hover:bg-orange-800 text-white rounded-xl font-bold flex items-center justify-center gap-2 mb-6 shadow-sm active:scale-[0.98] transition disabled:opacity-80"
               >
-                <Search size={20} /> Trouver de nouveaux collaborateurs
-              </div>
+                {isOpeningCollab ? (
+                  <Loader2 size={20} className="animate-spin" />
+                ) : (
+                  <Search size={20} />
+                )}
+                {isOpeningCollab
+                  ? "Ouverture..."
+                  : "Trouver de nouveaux collaborateurs"}
+              </button>
 
-              <div className="flex gap-3 overflow-x-auto no-scrollbar scrollbar-hide pb-4 mb-4">
+              <div className="flex gap-2 overflow-x-auto no-scrollbar scrollbar-hide pb-4 mb-2">
                 {[
                   { id: "actives", label: "Collaborations actives" },
                   { id: "recues", label: "Demandes reçues" },
@@ -351,17 +373,16 @@ export default function ReseauPage() {
                     ref={subTab === b.id ? activeBtnRef : null}
                     onClick={() => {
                       setSubTab(b.id);
-                      setShouldScroll(true); // Autorise le scroll
+                      setShouldScroll(true);
                     }}
-                    className={`relative px-6 py-2 rounded-full whitespace-nowrap text-sm font-semibold border transition-all ${
+                    className={`relative px-5 py-2 rounded-full whitespace-nowrap text-sm font-semibold border transition-all ${
                       subTab === b.id
-                        ? "bg-orange-700 border-orange-700 text-white"
-                        : "bg-white border-gray-200 text-gray-600"
+                        ? "bg-orange-700 border-orange-700 text-white shadow-sm"
+                        : "bg-white border-slate-200 text-slate-600 hover:border-orange-200 hover:text-orange-700"
                     }`}
                   >
                     {b.label}
 
-                    {/* Le badge avec notification si count > 0 */}
                     {b.id === "recues" && unreadCount > 0 && (
                       <span className="absolute -top-1 -right-1 flex h-5 w-5">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
@@ -377,17 +398,17 @@ export default function ReseauPage() {
               <div ref={contentRef} className="scroll-mt-28">
                 {subTab === "actives" && (
                   <>
-                    <div className="mt-6 mb-3">
+                    <div className="mt-4 mb-4">
                       <div className="relative">
                         <input
                           type="text"
                           placeholder="Recherche par nom..."
-                          className="w-full p-4 pl-12 bg-gray-50 border border-gray-100 rounded-2xl outline-none"
+                          className="w-full py-3.5 pl-12 pr-4 bg-white border border-slate-200 rounded-xl outline-none text-sm focus:ring-2 focus:ring-orange-500 transition"
                           onChange={(e) => setSearchTerm(e.target.value)}
                         />
                         <Search
-                          className="absolute left-4 top-4 text-gray-400"
-                          size={20}
+                          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                          size={18}
                         />
                       </div>
                     </div>
@@ -396,7 +417,7 @@ export default function ReseauPage() {
                     ) : filteredData.length === 0 && !loading ? (
                       <EmptyState
                         message="Vous n'avez aucune collaboration active. C'est peut-être un probleme de connexion internet."
-                        onRetry={fetchData} // <--- Appel de la fonction ici
+                        onRetry={fetchData}
                       />
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -415,7 +436,7 @@ export default function ReseauPage() {
                     ) : filteredData.length === 0 && !loading ? (
                       <EmptyState
                         message="Vous n'avez reçu aucune demande de collaboration. C'est peut-être un probleme de connexion internet."
-                        onRetry={fetchData} // <--- Appel de la fonction ici
+                        onRetry={fetchData}
                       />
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -438,7 +459,7 @@ export default function ReseauPage() {
                     ) : filteredData.length === 0 && !loading ? (
                       <EmptyState
                         message="Vous n'avez envoyé aucune demande de collaboration. C'est peut-être un probleme de connexion internet."
-                        onRetry={fetchData} // <--- Appel de la fonction ici
+                        onRetry={fetchData}
                       />
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -453,14 +474,14 @@ export default function ReseauPage() {
             </motion.div>
           ) : (
             <div>
-              <p className="p-4 text-gray-600 text-sm mb-6 leading-relaxed">
+              <p className="p-4 text-slate-600 text-sm mb-2 leading-relaxed">
                 Ne restez pas seul face à vos défis : bénéficiez de
                 l'accompagnement d'experts et de conseils stratégiques pour
                 transformer vos idées en succès.
               </p>
               <motion.div
                 key="mentor"
-                className="p-12 text-center text-gray-500"
+                className="mx-4 p-12 text-center text-slate-500 bg-white border-2 border-dashed border-slate-200 rounded-3xl"
               >
                 Aucun mentor pour le moment. Restez à l'écoute !
               </motion.div>
@@ -516,11 +537,11 @@ function ReceivedRequestCard({
   };
 
   return (
-    <div className="bg-white border rounded-3xl p-5 shadow-sm">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition flex flex-col">
       <div className="flex gap-4 mb-4">
         <Link
           href={`/profil-talent/${sender?.id}`}
-          className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 border"
+          className="w-14 h-14 rounded-full overflow-hidden shrink-0 border-2 border-orange-100"
         >
           <img
             src={
@@ -534,33 +555,31 @@ function ReceivedRequestCard({
           <h4 className="font-bold text-slate-900 truncate">
             {sender?.talent?.nom} {sender?.talent?.prenom}
           </h4>
-          <p className="text-[10px] font-bold text-orange-600 uppercase">
+          <p className="text-[11px] font-semibold text-orange-700 uppercase tracking-wide truncate">
             {sender?.talent?.profession || "Talent"}
           </p>
-          {/* 1. AJOUT DE LA DATE ICI */}
-          <p className="text-[10px] text-slate-500 mt-1">
+          <p className="text-[11px] text-slate-500 mt-1">
             Envoyé le {formatDateFr(request.created_at)}
           </p>
         </div>
       </div>
 
-      <div className="bg-gray-50 p-4 rounded-2xl mb-4 border border-dashed">
+      <div className="bg-slate-50 p-4 rounded-xl mb-4 border border-slate-100 flex-1">
         <p
-          className={`text-gray-600 italic leading-relaxed ${!isExpanded ? "line-clamp-4" : ""}`}
+          className={`text-slate-600 italic text-sm leading-relaxed ${!isExpanded ? "line-clamp-4" : ""}`}
         >
           "{request.message || "Bonjour, j'aimerais collaborer avec vous."}"
         </p>
         {request.message && request.message.length > 80 && (
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="text-orange-700 text-[10px] font-bold mt-2 underline"
+            className="text-orange-700 text-[11px] font-bold mt-2 underline"
           >
             {isExpanded ? "Voir moins" : "Voir plus"}
           </button>
         )}
       </div>
 
-      {/* 2. LOGIQUE DES BOUTONS OU DU MESSAGE DE COLLAB ACTIVE */}
       {request.est_accepte ? (
         <div className="w-full py-3 rounded-xl bg-green-50 text-green-700 font-bold text-xs flex items-center justify-center gap-2 border border-green-100">
           <Check size={14} /> Vous êtes déjà collaborateurs
@@ -570,7 +589,7 @@ function ReceivedRequestCard({
           <button
             disabled={loadingAction !== null}
             onClick={() => handleAction("refuser")}
-            className="flex-1 py-3 rounded-xl border border-red-100 text-red-600 font-bold text-sm flex items-center justify-center"
+            className="flex-1 py-3 rounded-xl border border-red-100 text-red-600 hover:bg-red-50 font-bold text-sm flex items-center justify-center transition"
           >
             {loadingAction === "refuser" ? (
               <span className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></span>
@@ -581,7 +600,7 @@ function ReceivedRequestCard({
           <button
             disabled={loadingAction !== null}
             onClick={() => handleAction("accepter")}
-            className="flex-[2] py-3 rounded-xl bg-orange-700 text-white font-bold text-sm flex items-center justify-center gap-2"
+            className="flex-[2] py-3 rounded-xl bg-orange-700 hover:bg-orange-800 text-white font-bold text-sm flex items-center justify-center gap-2 transition"
           >
             {loadingAction === "accepter" ? (
               <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
@@ -604,10 +623,10 @@ function SentRequestCard({ request }: { request: any }) {
   if (!talent) return null;
 
   return (
-    <div className="bg-white border border-slate-100 p-5 rounded-[2rem] shadow-sm flex flex-col h-full">
+    <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm hover:shadow-md transition flex flex-col h-full">
       <div className="flex gap-4 items-start mb-4">
         <Link href={`/profil-talent/${talent.id}`} className="shrink-0">
-          <div className="w-16 h-16 rounded-[1.5rem] overflow-hidden border-2 border-white shadow-lg">
+          <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-orange-100">
             <img
               src={
                 talent.pp ? `${apifile}/${talent.pp}` : "/assets/images/pp2.png"
@@ -621,27 +640,26 @@ function SentRequestCard({ request }: { request: any }) {
           <h3 className="font-bold text-base text-slate-900 truncate">
             {talent.talent?.nom} {talent.talent?.prenom}
           </h3>
-          <p className="text-orange-700 text-[10px] font-black uppercase">
+          <p className="text-orange-700 text-[11px] font-semibold uppercase tracking-wide truncate">
             {talent.talent?.profession || "Talent"}
           </p>
-          <p className="text-[10px] text-slate-500 mt-1 flex items-center gap-1">
+          <p className="text-[11px] text-slate-500 mt-1 flex items-center gap-1">
             Envoyé le {formatDateFr(request.created_at)}
           </p>
         </div>
       </div>
 
       <div className="flex-1">
-        {/* Affichage du message avec "Voir plus" */}
-        <div className="bg-gray-50 p-3 rounded-xl border border-dashed border-gray-200 mb-3">
+        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-3">
           <p
-            className={`text-slate-600 text-[15px] italic leading-relaxed ${!isExpanded ? "line-clamp-4" : ""}`}
+            className={`text-slate-600 text-sm italic leading-relaxed ${!isExpanded ? "line-clamp-4" : ""}`}
           >
             "{request.message}"
           </p>
           {request.message && request.message.length > 60 && (
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="text-orange-700 text-[10px] font-bold mt-1 underline"
+              className="text-orange-700 text-[11px] font-bold mt-1 underline"
             >
               {isExpanded ? "Voir moins" : "Voir plus"}
             </button>
@@ -649,13 +667,12 @@ function SentRequestCard({ request }: { request: any }) {
         </div>
       </div>
 
-      {/* Statut Dynamique */}
       {request.est_accepte ? (
-        <div className="w-full mt-4 py-3 rounded-2xl font-bold bg-green-50 text-green-700 flex items-center justify-center gap-2 border border-green-100 text-sm">
+        <div className="w-full mt-2 py-3 rounded-xl font-bold bg-green-50 text-green-700 flex items-center justify-center gap-2 border border-green-100 text-sm">
           <Check size={16} /> Collaboration acceptée
         </div>
       ) : (
-        <div className="w-full mt-4 py-3 rounded-2xl font-bold bg-orange-50 text-orange-700 flex items-center justify-center gap-2 border border-orange-100 text-sm">
+        <div className="w-full mt-2 py-3 rounded-xl font-bold bg-orange-50 text-orange-700 flex items-center justify-center gap-2 border border-orange-100 text-sm">
           <Clock size={16} /> En attente
         </div>
       )}
@@ -668,18 +685,12 @@ function ActiveCollabCard({ talent }: { talent: any }) {
 
   // --- FONCTION DE CORRECTION DU NUMÉRO ---
   const formatWhatsAppNumber = (num: any) => {
-    // 1. Si la valeur est vide, nulle ou indéfinie, on retourne une chaîne vide
     if (num === null || num === undefined) return "";
-
-    // 2. On force la conversion en String au cas où c'est un Number
     let cleaned = String(num).replace(/\D/g, "");
-
-    // 3. Si après nettoyage il n'y a plus rien, on arrête
     if (!cleaned) return "";
 
-    // 4. Gestion de l'indicatif Cameroun (237)
+    // Gestion de l'indicatif Cameroun (237)
     if (!cleaned.startsWith("237")) {
-      // Si l'utilisateur a saisi un 0 au début par réflexe (ex: 0690...), on l'enlève
       if (cleaned.startsWith("0")) {
         cleaned = cleaned.substring(1);
       }
@@ -691,22 +702,19 @@ function ActiveCollabCard({ talent }: { talent: any }) {
 
   const formattedPhone = formatWhatsAppNumber(person.telephone);
 
-  // 1. Préparer la phrase personnalisée
   const message = `Bonjour ${person.prenom}, nous sommes collaborateurs sur TALENT INNOVANT. Je viens vers toi pour discuter d'un projet. Es-tu disponible pour échanger ?`;
-
-  // 2. Encoder la phrase pour l'URL
   const encodedMessage = encodeURIComponent(message);
-
-  // 3. Construire l'URL WhatsApp avec le numéro formaté
   const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodedMessage}`;
 
+  const tile =
+    "flex flex-col items-center gap-2 p-3 bg-slate-50 border border-slate-100 rounded-xl transition-all active:scale-95";
+
   return (
-    <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm h-full">
-      {/* ... reste du code (header de la carte) identique ... */}
-      <div className="flex gap-4 items-center mb-6">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition h-full">
+      <div className="flex gap-4 items-center mb-5">
         <Link
           href={`/profil-talent/${person.partner_id || person.id}`}
-          className="w-14 h-14 rounded-full overflow-hidden border-2 border-orange-50 shrink-0 shadow-sm"
+          className="w-14 h-14 rounded-full overflow-hidden border-2 border-orange-100 shrink-0"
         >
           <img
             src={
@@ -720,56 +728,53 @@ function ActiveCollabCard({ talent }: { talent: any }) {
           <h4 className="font-bold text-slate-900 truncate text-base">
             {person.nom} {person.prenom}
           </h4>
-          <p className="text-orange-600 text-[11px] font-bold uppercase tracking-wide">
+          <p className="text-orange-700 text-[11px] font-semibold uppercase tracking-wide line-clamp-2">
             {person.profession || "Innovateur"}
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        {/* WhatsApp avec numéro corrigé */}
+      <div className="grid grid-cols-3 gap-2.5">
         <a
           href={whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex flex-col items-center gap-2 p-3 bg-slate-50 rounded-2xl transition-all active:scale-95 hover:bg-green-50"
+          className={`${tile} hover:bg-green-50 hover:border-green-100`}
         >
           <img
             src="/assets/images/zap.png"
             alt="WhatsApp"
             className="w-8 h-8 object-contain"
           />
-          <span className="text-[9px] font-bold text-slate-700 text-center leading-tight">
+          <span className="text-[10px] font-semibold text-slate-700 text-center leading-tight">
             Discuter sur WhatsApp
           </span>
         </a>
 
-        {/* Bouton Appeler - On peut garder le format original car le téléphone gère mieux le local */}
         <a
           href={`tel:${person.telephone}`}
-          className="flex flex-col items-center gap-2 p-3 bg-slate-50 rounded-2xl transition-all active:scale-95 hover:bg-blue-50"
+          className={`${tile} hover:bg-blue-50 hover:border-blue-100`}
         >
           <img
             src="/assets/images/call.png"
             alt="Appeler"
             className="w-8 h-8 object-contain"
           />
-          <span className="text-[9px] font-bold text-slate-700 text-center leading-tight">
+          <span className="text-[10px] font-semibold text-slate-700 text-center leading-tight">
             Appeler
           </span>
         </a>
 
-        {/* Bouton SMS */}
         <a
           href={`sms:${person.telephone}?body=${encodedMessage}`}
-          className="flex flex-col items-center gap-2 p-3 bg-slate-50 rounded-2xl transition-all active:scale-95 hover:bg-orange-50"
+          className={`${tile} hover:bg-orange-50 hover:border-orange-100`}
         >
           <img
             src="/assets/images/sms.png"
             alt="SMS"
             className="w-8 h-8 object-contain"
           />
-          <span className="text-[9px] font-bold text-slate-700 text-center leading-tight">
+          <span className="text-[10px] font-semibold text-slate-700 text-center leading-tight">
             Envoyer un SMS
           </span>
         </a>

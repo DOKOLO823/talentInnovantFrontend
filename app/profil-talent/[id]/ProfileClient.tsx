@@ -15,6 +15,7 @@ import { apiFetch } from "@/app/lib/api";
 import apifile from "@/app/lib/apifile";
 import { Toaster } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
+import CollabProfileAction from "./CollabProfileAction";
 
 export default function ProfileClient() {
   const params = useParams();
@@ -57,6 +58,7 @@ export default function ProfileClient() {
 
   const isOwner = currentUser?.id == userId;
   const isEntreprise = currentUser?.statut === "entreprise";
+  const isTalent = currentUser?.statut === "talent";
 
   // Dans ta page Profil Talent (Client Component)
   useEffect(() => {
@@ -97,6 +99,7 @@ export default function ProfileClient() {
           id: res.user.id,
           email: res.user.email,
           telephone: res.user.telephone,
+          disponible: res?.user?.disponible,
           name: res.talent?.nom || "Talent",
           profession: res.talent?.profession || "Innovateur",
           bio: res.user.bio || "",
@@ -253,6 +256,19 @@ export default function ProfileClient() {
               >
                 <MessageSquare size={18} /> Contacter ce talent
               </button>
+            )}
+
+            {isTalent && !isOwner && (
+              <CollabProfileAction
+                talentId={userData.id}
+                name={userData.name}
+                avatar={userData.avatar}
+                available={
+                  userData.disponible == null
+                    ? true
+                    : !!Number(userData.disponible)
+                }
+              />
             )}
           </div>
         </div>

@@ -1,6 +1,17 @@
-import { apiFetch } from "@/app/lib/api";
-import apifile from "@/app/lib/apifile";
-import toast, { Toaster } from "react-hot-toast";
+"use client";
+
+// Emplacement : app/collaborateurs/components/TalentPropositionCard.tsx
+// Carte talent : cover, photo, nom, profession, lieu, infos clés, bouton.
+// Utilisée dans la grille de /collaborateurs (2 colonnes sur mobile) ET dans la
+// liste horizontale de l'accueil.
+
+import {
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+  type ReactNode,
+} from "react";
+import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   CheckCircle2,
@@ -8,12 +19,74 @@ import {
   Info,
   MapPin,
   MessageSquare,
-  Send,
+  UserPlus,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import apifile from "@/app/lib/apifile";
 import domaines from "@/domaines.json";
-import Link from "next/link";
+import CollaborationRequestModal from "./CollaborationRequestModal";
+
+// Limite de caractères de la bio affichée SUR LA CARTE (hauteur identique pour tous).
+// La bio complète reste lisible dans la fenêtre « Bio » (clic sur la bio).
+const BIO_PREVIEW_MAX = 90;
+const truncateBio = (text: string, max: number) =>
+  text.length > max ? `${text.slice(0, max).trimEnd()}…` : text;
+
+const domaineNom = (id: any): string | undefined =>
+  (domaines as any[]).find((d: any) => d.id == id)?.nom;
+
+// Domaines secondaires : accepte des objets {id, nom} ou de simples ids
+const secondaryNames = (raw: any): string[] => {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((d: any) =>
+      typeof d === "object" && d !== null
+        ? d.nom || d.name || domaineNom(d.id ?? d.domaine_id)
+        : domaineNom(d),
+    )
+    .filter(Boolean) as string[];
+};
+
+// Ligne défilable horizontalement : UNE seule ligne, sans barre visible, centrée tant qu'elle ne
+// déborde pas, et qui ne dépasse jamais de la carte. Défilement tactile sur mobile, glisser à la
+// souris sur ordinateur. Le padding intérieur garde les puces alignées avec le reste de la carte.
+function ScrollRow({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const drag = useRef({ active: false, startX: 0, startLeft: 0 });
+
+  const onMouseDown = (e: ReactMouseEvent<HTMLDivElement>) => {
+    const el = ref.current;
+    if (!el || el.scrollWidth <= el.clientWidth) return;
+    drag.current = {
+      active: true,
+      startX: e.clientX,
+      startLeft: el.scrollLeft,
+    };
+  };
+  const onMouseMove = (e: ReactMouseEvent<HTMLDivElement>) => {
+    const el = ref.current;
+    if (!el || !drag.current.active) return;
+    el.scrollLeft = drag.current.startLeft - (e.clientX - drag.current.startX);
+  };
+  const stopDrag = () => {
+    drag.current.active = false;
+  };
+
+  return (
+    <div
+      ref={ref}
+      onMouseDown={onMouseDown}
+      onMouseMove={onMouseMove}
+      onMouseUp={stopDrag}
+      onMouseLeave={stopDrag}
+      className="w-full min-w-0 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    >
+      <div className="mx-auto flex w-max items-center gap-1.5 px-3 md:px-4">
+        {children}
+      </div>
+    </div>
+  );
+}
 
 export function TalentPropositionCard({
   talent,
@@ -26,69 +99,80 @@ export function TalentPropositionCard({
 }) {
   const [showBioModal, setShowBioModal] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
-  const [message, setMessage] = useState("");
-  const [sending, setSending] = useState(false);
   const [isRequestSent, setIsRequestSent] = useState(false);
+  const [coverOk, setCoverOk] = useState(true);
 
-  const isEnAttente = relations?.envoyees?.includes(talent.id);
-  const isRecu = relations?.recues?.includes(talent.id);
-  const isActif = relations?.actives?.includes(talent.id);
+  // La page /collaborateurs et l'accueil n'utilisent pas les mêmes noms de clés
+  const envoyees =
+    relations?.envoyees ?? relations?.ids_demandes_envoyees ?? [];
+  const recues = relations?.recues ?? relations?.ids_demandes_recues ?? [];
+  const actives =
+    relations?.actives ?? relations?.ids_collaborations_actives ?? [];
 
-  const getDisplayProfession = () => {
-    if (talent.talent?.profession) return talent.talent.profession;
-    const domaineLabel = domaines.find(
-      (d: any) => d.id == talent.domaine_id,
-    )?.nom;
-    return domaineLabel || "Talent";
-  };
+  const isEnAttente = envoyees.includes(talent.id);
+  const isRecu = recues.includes(talent.id);
+  const isActif = actives.includes(talent.id);
 
-  const city = talent.talent?.ville;
-  const region = talent.talent?.region;
-  const hasLocation = city || region;
+  const fullName =
+    `${talent.talent?.nom ?? ""} ${talent.talent?.prenom ?? ""}`.trim() ||
+    "Talent";
+  const profession = talent.talent?.profession?.trim() || "Innovateur";
+  const location = [talent.talent?.ville, talent.talent?.region]
+    .filter(Boolean)
+    .join(", ");
+  const avatar = talent.pp
+    ? `${apifile}/${talent.pp}`
+    : "/assets/images/pp2.png";
+  const cover = talent.pc ? `${apifile}/${talent.pc}` : null;
+  const bio = talent.bio?.trim() || "";
+  const bioPreview = truncateBio(bio, BIO_PREVIEW_MAX);
 
-  const handleSendRequest = async () => {
-    if (!message.trim()) return toast.error("Le message est vide.");
-    setSending(true);
-    try {
-      const res = await apiFetch("/reseau/collaborations/envoyer", {
-        method: "POST",
-        body: JSON.stringify({ recepteur_id: talent.id, message }),
-      });
-      if (res.statut === 200) {
-        toast.success("Demande envoyée !");
-        setShowRequestModal(false);
-        setMessage("");
-        setIsRequestSent(true);
-      } else {
-        toast.error(res.message || "Erreur");
-      }
-    } catch (e) {
-      toast.error("Erreur de connexion");
-    } finally {
-      setSending(false);
-    }
-  };
+  // Compétences (sans pastilles vides)
+  const skills: string[] =
+    talent.talent?.competence
+      ?.split(",")
+      .map((s: string) => s.trim())
+      .filter(Boolean) ?? [];
+
+  // Info principale : compétences, sinon domaine principal (+ secondaires)
+  const principal = domaineNom(talent.domaine_id);
+  const secondaires = secondaryNames(
+    talent.domaines_secondaires ?? talent.domainesSecondaires,
+  ).filter((n) => n !== principal);
+  const chips: string[] =
+    skills.length > 0
+      ? skills
+      : ([principal, ...secondaires].filter(Boolean) as string[]);
+
+  const hasChips = chips.length > 0;
 
   const renderActionButton = () => {
+    const base =
+      "w-full py-2 md:py-2.5 text-xs md:text-sm rounded-xl font-semibold flex items-center justify-center gap-1.5 transition";
+
     if (isActif)
       return (
-        <div className="w-full mt-6 py-3 rounded-2xl font-bold bg-green-50 text-green-700 flex items-center justify-center gap-2 border border-green-100 text-sm">
-          <CheckCircle2 size={16} /> Déjà collaborateur
+        <div
+          className={`${base} bg-green-50 text-green-700 border border-green-100`}
+        >
+          <CheckCircle2 size={14} /> Collaborateur
         </div>
       );
     if (isEnAttente || isRequestSent)
       return (
-        <div className="w-full mt-6 py-3 rounded-2xl font-bold bg-orange-50 text-orange-700 flex items-center justify-center gap-2 border border-orange-100 text-sm">
-          <Clock size={16} /> En attente
+        <div
+          className={`${base} bg-orange-50 text-orange-700 border border-orange-100`}
+        >
+          <Clock size={14} /> En attente
         </div>
       );
     if (isRecu)
       return (
         <Link
           href="/reseau"
-          className="w-full mt-6 py-3 rounded-2xl font-bold bg-blue-50 text-blue-700 flex items-center justify-center gap-2 border border-blue-100 text-sm"
+          className={`${base} bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100`}
         >
-          <MessageSquare size={16} /> Voir la demande
+          <MessageSquare size={14} /> Voir la demande
         </Link>
       );
 
@@ -96,178 +180,131 @@ export function TalentPropositionCard({
       <button
         disabled={!talent.disponible}
         onClick={() => setShowRequestModal(true)}
-        className={`w-full mt-6 py-3 text-sm rounded-2xl font-bold transition-all flex items-center justify-center gap-2 shadow-sm ${
+        className={`${base} ${
           talent.disponible
-            ? "bg-orange-700 text-white hover:bg-orange-800"
+            ? "bg-orange-700 text-white hover:bg-orange-800 active:scale-[0.98]"
             : "bg-slate-100 text-slate-400 cursor-not-allowed"
         }`}
       >
-        {/* <MessageSquare size={16} /> */}
-        {talent.disponible ? "Demander une collaboration" : "Indisponible"}
+        {talent.disponible ? (
+          <>
+            <UserPlus size={14} /> Collaborer
+          </>
+        ) : (
+          "Indisponible"
+        )}
       </button>
     );
   };
 
-  const hasBio = !!talent.bio?.trim();
-  // Évite les pastilles vides quand la compétence est "" ou contient ", ,"
-  const skills: string[] =
-    talent.talent?.competence
-      ?.split(",")
-      .map((s: string) => s.trim())
-      .filter(Boolean) ?? [];
-
   return (
-    <div className="bg-white border border-slate-100 hover:border-orange-200 transition-colors p-5 rounded-[2rem] shadow-sm flex flex-col h-full">
-      <div className="flex gap-4 items-start mb-4">
-        <Link
-          href={`/profil-talent/${talent.id}`}
-          className="relative shrink-0"
-        >
-          <div className="w-16 h-16 rounded-[1.5rem] overflow-hidden border-2 border-white shadow-lg">
+    <div className="bg-white border border-slate-200 hover:border-orange-200 hover:shadow-md transition rounded-2xl flex flex-col h-full min-w-0">
+      {/* Cover : orange-700 quand le talent n'en a pas */}
+      <div className="relative h-16 md:h-20 rounded-t-2xl overflow-hidden bg-orange-700">
+        {cover && coverOk && (
+          <img
+            src={cover}
+            alt=""
+            className="w-full h-full object-cover"
+            onError={() => setCoverOk(false)}
+          />
+        )}
+      </div>
+
+      <div className="flex flex-col flex-1 min-w-0 px-3 md:px-4 pb-3 md:pb-4 text-center">
+        <Link href={`/profil-talent/${talent.id}`} className="block">
+          <div className="relative w-fit mx-auto -mt-8 md:-mt-10">
             <img
-              src={
-                talent.pp ? `${apifile}/${talent.pp}` : "/assets/images/pp2.png"
-              }
-              className="w-full h-full object-cover"
-              alt="Avatar"
+              src={avatar}
+              alt={fullName}
+              className="w-16 h-16 md:w-20 md:h-20 rounded-full object-cover border-4 border-white bg-white shadow-sm"
+            />
+            <span
+              title={talent.disponible ? "Disponible" : "Indisponible"}
+              className={`absolute bottom-0.5 right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${
+                talent.disponible ? "bg-green-500" : "bg-red-400"
+              }`}
             />
           </div>
-          <div
-            className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${talent.disponible ? "bg-green-500" : "bg-red-400"}`}
-          />
+
+          {/* Hauteurs FIXES (2 lignes max) : la carte ne dépend plus de la longueur des textes */}
+          <h3 className="mt-2 text-[13px] md:text-base font-bold text-slate-900 leading-snug line-clamp-2 h-[2.25rem] md:h-[2.75rem]">
+            {fullName}
+          </h3>
+          <p className="mt-0.5 text-[11px] md:text-xs text-slate-600 leading-snug line-clamp-2 h-[1.9rem] md:h-[2.1rem]">
+            {profession}
+          </p>
         </Link>
-        <div className="flex-1 min-w-0">
-          <Link href={`/profil-talent/${talent.id}`}>
-            <h3 className="font-bold text-base text-slate-900 truncate">
-              {talent.talent?.nom} {talent.talent?.prenom}
-            </h3>
-            <p className="text-orange-700 text-[10px] font-black uppercase tracking-tight line-clamp-2">
-              {getDisplayProfession()}
-            </p>
-          </Link>
-          {hasLocation && (
-            <div className="flex items-center gap-1.5 mt-1 text-slate-500">
-              <MapPin size={10} />
-              <span className="text-[10px] font-medium line-clamp-2">
-                {city}
-                {city && region ? ", " : ""}
-                {region}
+
+        {/* Emplacement toujours réservé, même sans lieu renseigné */}
+        <p className="mt-1.5 flex h-4 md:h-[1.125rem] items-center justify-center gap-1 text-[10.5px] md:text-xs text-slate-500">
+          {location && (
+            <>
+              <MapPin size={11} className="shrink-0" />
+              <span className="truncate">{location}</span>
+            </>
+          )}
+        </p>
+
+        {/* Infos clés : compétences > domaines > bio > message par défaut.
+            Hauteur FIXE ; pleine largeur de la carte (les marges négatives annulent le padding,
+            chaque élément le retrouve à l'intérieur). */}
+        <div className="-mx-3 md:-mx-4 mt-3 flex h-10 md:h-[4.5rem] flex-none flex-col gap-2 overflow-hidden">
+          {hasChips && (
+            <ScrollRow>
+              {chips.map((c, i) => (
+                <span
+                  key={i}
+                  className="shrink-0 select-none whitespace-nowrap rounded-lg border border-orange-100 bg-orange-50 px-2 py-0.5 text-[10px] md:text-[11px] font-semibold text-orange-700"
+                >
+                  {c}
+                </span>
+              ))}
+            </ScrollRow>
+          )}
+
+          {bio && (
+            <button
+              onClick={() => setShowBioModal(true)}
+              className={`${
+                hasChips ? "hidden md:block" : "block"
+              } mx-3 md:mx-4 text-slate-500 hover:text-slate-700 transition-colors`}
+            >
+              {/* line-clamp sur le <span> : sur le bouton, « md:block » l'annulait */}
+              <span className="line-clamp-2 italic text-[11px] md:text-xs leading-relaxed">
+                "{bioPreview}"
               </span>
-            </div>
+            </button>
+          )}
+
+          {!hasChips && !bio && (
+            <p className="mx-3 md:mx-4 text-[11px] md:text-xs text-slate-400">
+              {talent.disponible
+                ? "Ouvert aux collaborations"
+                : "Profil en cours de complétion"}
+            </p>
           )}
         </div>
+
+        <div className="mt-auto pt-4">{renderActionButton()}</div>
       </div>
 
-      <div className="flex-1 flex flex-col">
-        {hasBio ? (
-          <div
-            onClick={() => setShowBioModal(true)}
-            className="bg-slate-50 p-3 rounded-xl border border-slate-100 cursor-pointer hover:bg-slate-100 transition-colors mb-3"
-          >
-            <p className="text-slate-600 text-[13px] italic line-clamp-3 leading-relaxed">
-              " {talent.bio} "
-            </p>
-          </div>
-        ) : (
-          /* Pas de bio : simple message d'invitation centré */
-          <div className="flex-1 min-h-[7rem] flex items-center justify-center text-center px-4 mb-3">
-            <p className="text-slate-500 text-[13px] leading-relaxed">
-              Envoie-moi une demande de collaboration et discutons ensemble de
-              ton projet.
-            </p>
-          </div>
-        )}
-
-        {skills.length > 0 && (
-          <div className="flex w-full flex-nowrap overflow-x-auto gap-2 no-scrollbar scrollbar-hide">
-            {skills.map((s: string, i: number) => (
-              <span
-                key={i}
-                className="px-2 py-0.5 bg-white whitespace-nowrap text-slate-500 rounded-md text-[12px] font-bold border border-slate-400 flex-shrink-0"
-              >
-                {s}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {renderActionButton()}
-
-      <AnimatePresence>
-        {showRequestModal && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowRequestModal(false)}
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
-            />
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="relative bg-white rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl"
-            >
-              <button
-                onClick={() => setShowRequestModal(false)}
-                className="absolute top-5 right-5 p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"
-              >
-                <X size={24} />
-              </button>
-              <div className="p-8">
-                <div className="flex flex-col items-center text-center mb-8">
-                  <div className="w-20 h-20 rounded-[1.8rem] overflow-hidden shadow-lg mb-4 border-2 border-orange-100">
-                    <img
-                      src={
-                        talent.pp
-                          ? `${apifile}/${talent.pp}`
-                          : "/assets/images/pp2.png"
-                      }
-                      className="w-full h-full object-cover"
-                      alt="Avatar"
-                    />
-                  </div>
-                  <h2 className="text-xl font-bold text-slate-900">
-                    Nouvelle Collaboration
-                  </h2>
-                  <p className="text-slate-500 text-sm mt-1 line-clamp-2">
-                    Envoyez un message à{" "}
-                    <span className="text-orange-700">
-                      {" "}
-                      {talent.talent?.nom}{" "}
-                    </span>
-                  </p>
-                </div>
-                <textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Décrivez votre projet et ce que vous attendez de cette collaboration..."
-                  className="w-full h-40 p-5 bg-slate-50 rounded-[1.5rem] border-2 border-transparent focus:border-orange-500 outline-none text-sm resize-none"
-                />
-                <button
-                  onClick={handleSendRequest}
-                  disabled={sending || !message.trim()}
-                  className="w-full mt-6 py-4 bg-orange-700 text-white rounded-2xl font-bold flex items-center justify-center gap-3 disabled:opacity-50"
-                >
-                  {sending ? (
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <Send size={20} /> Envoyer
-                    </>
-                  )}
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Demande de collaboration (fenêtre partagée avec le profil) */}
+      <CollaborationRequestModal
+        open={showRequestModal}
+        onClose={() => setShowRequestModal(false)}
+        recipientId={talent.id}
+        name={talent.talent?.nom}
+        avatarUrl={avatar}
+        onSent={() => {
+          setIsRequestSent(true);
+          onSuccess?.(talent.id);
+        }}
+      />
 
       <AnimatePresence>
         {showBioModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[700] flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -279,11 +316,12 @@ export function TalentPropositionCard({
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
-              className="relative bg-white rounded-[2.5rem] w-full max-w-md p-8 shadow-2xl"
+              className="relative bg-white rounded-[2rem] w-full max-w-md p-7 shadow-2xl text-left"
             >
               <button
                 onClick={() => setShowBioModal(false)}
-                className="absolute top-5 right-5 p-2 bg-slate-50 rounded-full"
+                aria-label="Fermer"
+                className="absolute top-4 right-4 p-2 bg-slate-50 rounded-full"
               >
                 <X size={20} />
               </button>
@@ -291,20 +329,20 @@ export function TalentPropositionCard({
                 <Info className="text-orange-600" /> Bio de {talent.talent?.nom}
               </h3>
               <p className="text-slate-600 leading-relaxed italic text-sm">
-                "{talent.bio}"
+                "{bio}"
               </p>
-              <div className="mt-6 flex flex-wrap gap-2">
-                {talent.talent?.competence
-                  ?.split(",")
-                  .map((s: string, i: number) => (
+              {skills.length > 0 && (
+                <div className="mt-6 flex flex-wrap gap-2">
+                  {skills.map((s: string, i: number) => (
                     <span
                       key={i}
                       className="px-3 py-1 bg-orange-50 text-orange-700 rounded-lg text-[11px] font-bold"
                     >
-                      #{s.trim()}
+                      #{s}
                     </span>
                   ))}
-              </div>
+                </div>
+              )}
             </motion.div>
           </div>
         )}

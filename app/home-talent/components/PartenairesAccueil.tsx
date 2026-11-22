@@ -66,7 +66,7 @@ export default function PartenairesAccueil({ token }: PartenairesAccueilProps) {
       <div className="w-full px-5 my-8">
         <div className="h-5 w-64 bg-gray-200 animate-pulse rounded mb-1" />
         <div className="h-4 w-48 bg-gray-100 animate-pulse rounded mb-4" />
-        <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
+        <div className="flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide pb-2">
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
@@ -100,7 +100,7 @@ export default function PartenairesAccueil({ token }: PartenairesAccueilProps) {
         {talents.map((talent) => (
           <div
             key={talent.id}
-            className="shrink-0 w-[260px] md:w-[300px] lg:w-[350px]"
+            className="shrink-0 w-[156px] sm:w-[200px] md:w-[240px] lg:w-[260px]"
           >
             <TalentPropositionCard
               talent={talent}
