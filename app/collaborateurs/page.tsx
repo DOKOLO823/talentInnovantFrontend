@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   Search,
   ChevronDown,
@@ -25,10 +25,40 @@ import {
   type Propositions,
 } from "../lib/propositionsCache";
 
-// Taille d'un lot (doit être identique à $perPage côté backend)
+// Taille d'un lot de la liste initiale (doit être identique à $perPage côté backend)
 const PAGE_SIZE = 16;
 // Même endpoint que celui utilisé par propositionsCache
 const PROPOSITIONS_ENDPOINT = "/reseau/propositions";
+// Endpoint de recherche (lots de 20)
+const SEARCH_ENDPOINT = "/reseau/recherche";
+
+const EMPTY_FILTERS = {
+  domaine: "",
+  region: "",
+  ville: "",
+  searchBy: "nom",
+  query: "",
+};
+
+// Construit l'URL de recherche (seuls les critères renseignés sont envoyés)
+const buildSearchUrl = (f: typeof EMPTY_FILTERS, pageNumber: number) => {
+  const params = new URLSearchParams();
+  if (f.query.trim()) {
+    params.set("query", f.query.trim());
+    params.set("searchBy", f.searchBy);
+  }
+  if (f.domaine) params.set("domaine", f.domaine);
+  if (f.region) params.set("region", f.region);
+  if (f.ville) params.set("ville", f.ville);
+  params.set("page", String(pageNumber));
+  return `${SEARCH_ENDPOINT}?${params.toString()}`;
+};
+
+// Ajoute des talents à une liste sans doublons
+const mergeUnique = (prev: any[], incoming: any[]) => {
+  const ids = new Set(prev.map((t) => t.id));
+  return [...prev, ...incoming.filter((t) => !ids.has(t.id))];
+};
 
 const CAMEROON_GEO: any = {
   Adamaoua: ["Ngaoundéré", "Tignère", "Meiganga", "Banyo", "Tibati"],
@@ -53,13 +83,8 @@ const selectClass =
   "w-full pl-3 pr-9 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white appearance-none disabled:opacity-50 truncate transition";
 
 export default function SearchCollaborators() {
-  const [filters, setFilters] = useState({
-    domaine: "",
-    region: "",
-    ville: "",
-    searchBy: "nom",
-    query: "",
-  });
+  // Critères en cours de saisie (n'agissent qu'au clic sur "Rechercher")
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
 
   const [allTalents, setAllTalents] = useState<any[]>([]);
   const [userRelations, setUserRelations] = useState({
@@ -69,10 +94,20 @@ export default function SearchCollaborators() {
   });
   const [loading, setLoading] = useState(true);
 
-  // Pagination "Charger plus"
+  // Pagination "Charger plus" de la liste initiale
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+
+  // Mode recherche
+  const [isSearchMode, setIsSearchMode] = useState(false);
+  const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS); // critères réellement recherchés
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchTotal, setSearchTotal] = useState(0);
+  const [searchPage, setSearchPage] = useState(1);
+  const [searchHasMore, setSearchHasMore] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const searchRequestId = useRef(0);
 
   const applyData = (d: Propositions) => {
     setUserRelations({
@@ -108,28 +143,69 @@ export default function SearchCollaborators() {
     };
   }, []);
 
-  // Charger le lot suivant et l'ajouter à la suite de la liste
+  // Lance une recherche (les champs vides sont ignorés côté serveur)
+  const handleSearch = async () => {
+    if (searching) return;
+
+    const requestId = ++searchRequestId.current;
+    setSearching(true);
+
+    try {
+      const res = await apiFetch(buildSearchUrl(filters, 1), {
+        method: "GET",
+      });
+      if (requestId !== searchRequestId.current) return; // recherche annulée entre-temps
+
+      if (res?.statut === 200) {
+        setAppliedFilters(filters);
+        setSearchResults(res.data?.talents ?? []);
+        setSearchTotal(res.data?.total ?? 0);
+        setSearchPage(1);
+        setSearchHasMore(!!res.data?.a_plus);
+        setIsSearchMode(true);
+      } else {
+        toast.error("Impossible de lancer la recherche");
+      }
+    } catch (error) {
+      toast.error("Erreur réseau");
+    } finally {
+      if (requestId === searchRequestId.current) setSearching(false);
+    }
+  };
+
+  // Charger le lot suivant (recherche ou liste initiale) et l'ajouter à la suite
   const loadMore = async () => {
     if (loadingMore) return;
     setLoadingMore(true);
 
     try {
-      const nextPage = page + 1;
-      const res = await apiFetch(`${PROPOSITIONS_ENDPOINT}?page=${nextPage}`, {
-        method: "GET",
-      });
-
-      if (res?.statut === 200) {
-        const newTalents: any[] = res.data?.talents ?? [];
-
-        setAllTalents((prev) => {
-          const existingIds = new Set(prev.map((t) => t.id));
-          return [...prev, ...newTalents.filter((t) => !existingIds.has(t.id))];
+      if (isSearchMode) {
+        const nextPage = searchPage + 1;
+        const res = await apiFetch(buildSearchUrl(appliedFilters, nextPage), {
+          method: "GET",
         });
-        setPage(nextPage);
-        setHasMore(!!res.data?.a_plus);
+        if (res?.statut === 200) {
+          setSearchResults((prev) =>
+            mergeUnique(prev, res.data?.talents ?? []),
+          );
+          setSearchPage(nextPage);
+          setSearchHasMore(!!res.data?.a_plus);
+        } else {
+          toast.error("Impossible de charger la suite");
+        }
       } else {
-        toast.error("Impossible de charger la suite");
+        const nextPage = page + 1;
+        const res = await apiFetch(
+          `${PROPOSITIONS_ENDPOINT}?page=${nextPage}`,
+          { method: "GET" },
+        );
+        if (res?.statut === 200) {
+          setAllTalents((prev) => mergeUnique(prev, res.data?.talents ?? []));
+          setPage(nextPage);
+          setHasMore(!!res.data?.a_plus);
+        } else {
+          toast.error("Impossible de charger la suite");
+        }
       }
     } catch (error) {
       toast.error("Erreur réseau");
@@ -138,44 +214,29 @@ export default function SearchCollaborators() {
     }
   };
 
-  // FILTRAGE
-  const filteredTalents = useMemo(() => {
-    return allTalents.filter((t: any) => {
-      const matchDomaine = !filters.domaine || t.domaine_id == filters.domaine;
-      const matchRegion =
-        !filters.region || t.talent?.region === filters.region;
-      const matchVille = !filters.ville || t.talent?.ville === filters.ville;
+  const hasDraftCriteria = !!(
+    filters.query.trim() ||
+    filters.domaine ||
+    filters.region ||
+    filters.ville
+  );
 
-      const q = filters.query.toLowerCase().trim();
-      let matchQuery = true;
-
-      if (q) {
-        if (filters.searchBy === "nom") {
-          const fullName =
-            `${t.talent?.nom || ""} ${t.talent?.prenom || ""}`.toLowerCase();
-          const searchTerms = q.split(/\s+/);
-          matchQuery = searchTerms.every((term) => fullName.includes(term));
-        } else if (filters.searchBy === "profession") {
-          matchQuery = t.talent?.profession?.toLowerCase().includes(q);
-        } else if (filters.searchBy === "competence") {
-          matchQuery = t.talent?.competence?.toLowerCase().includes(q);
-        }
-      }
-
-      return matchDomaine && matchRegion && matchVille && matchQuery;
-    });
-  }, [allTalents, filters]);
-
+  // Affichés selon les critères réellement recherchés
   const activeFiltersLabel = useMemo(() => {
     const parts: string[] = [];
-    if (filters.domaine) {
-      const d = domaines.find((dom: any) => dom.id == filters.domaine);
+    if (appliedFilters.query.trim())
+      parts.push(`« ${appliedFilters.query.trim()} »`);
+    if (appliedFilters.domaine) {
+      const d = domaines.find((dom: any) => dom.id == appliedFilters.domaine);
       if (d) parts.push(d.nom);
     }
-    if (filters.region) parts.push(filters.region);
-    if (filters.ville) parts.push(filters.ville);
+    if (appliedFilters.region) parts.push(appliedFilters.region);
+    if (appliedFilters.ville) parts.push(appliedFilters.ville);
     return parts;
-  }, [filters]);
+  }, [appliedFilters]);
+
+  const displayedTalents = isSearchMode ? searchResults : allTalents;
+  const activeHasMore = isSearchMode ? searchHasMore : hasMore;
 
   const addSentRequest = (talentId: number) => {
     markRequestSent(talentId);
@@ -185,14 +246,18 @@ export default function SearchCollaborators() {
     }));
   };
 
-  const resetFilters = () =>
-    setFilters({
-      domaine: "",
-      region: "",
-      ville: "",
-      searchBy: "nom",
-      query: "",
-    });
+  // Retour à l'état initial : la liste de départ est restée en mémoire
+  const resetFilters = () => {
+    searchRequestId.current++; // invalide une recherche en cours
+    setFilters(EMPTY_FILTERS);
+    setAppliedFilters(EMPTY_FILTERS);
+    setIsSearchMode(false);
+    setSearchResults([]);
+    setSearchTotal(0);
+    setSearchPage(1);
+    setSearchHasMore(false);
+    setSearching(false);
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
@@ -230,6 +295,9 @@ export default function SearchCollaborators() {
                 onChange={(e) =>
                   setFilters({ ...filters, query: e.target.value })
                 }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSearch();
+                }}
               />
             </div>
 
@@ -252,8 +320,9 @@ export default function SearchCollaborators() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="relative">
+          {/* Mobile : domaine seul, région + ville sur la même ligne, bouton en dernier */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="relative col-span-2 md:col-span-1">
               <select
                 className={selectClass}
                 value={filters.domaine}
@@ -282,7 +351,7 @@ export default function SearchCollaborators() {
                   setFilters({ ...filters, region: e.target.value, ville: "" })
                 }
               >
-                <option value="">Toutes les régions</option>
+                <option value="">Région</option>
                 {Object.keys(CAMEROON_GEO).map((r) => (
                   <option key={r} value={r}>
                     {r}
@@ -304,7 +373,7 @@ export default function SearchCollaborators() {
                   setFilters({ ...filters, ville: e.target.value })
                 }
               >
-                <option value="">Toutes les villes</option>
+                <option value="">Ville</option>
                 {filters.region &&
                   CAMEROON_GEO[filters.region].map((v: string) => (
                     <option key={v} value={v}>
@@ -317,17 +386,31 @@ export default function SearchCollaborators() {
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
               />
             </div>
+
+            <button
+              type="button"
+              onClick={handleSearch}
+              disabled={searching}
+              className="col-span-2 md:col-span-1 inline-flex items-center justify-center gap-2 py-2.5 px-5 bg-orange-700 text-white rounded-xl text-sm font-bold hover:bg-orange-800 transition-all active:scale-95 shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {searching ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <Search size={18} />
+              )}
+              {searching ? "Recherche..." : "Rechercher"}
+            </button>
           </div>
         </section>
 
         {/* Résumé des résultats + filtres actifs */}
         <div className="mt-5 mb-4 flex flex-wrap items-center gap-2">
-          {/* {!loading && (
+          {isSearchMode && !searching && (
             <p className="text-sm font-semibold text-slate-700 mr-1">
-              {filteredTalents.length} talent
-              {filteredTalents.length > 1 ? "s" : ""}
+              {searchTotal} talent{searchTotal > 1 ? "s" : ""} trouvé
+              {searchTotal > 1 ? "s" : ""}
             </p>
-          )} */}
+          )}
 
           {activeFiltersLabel.map((label, idx) => (
             <span
@@ -338,7 +421,7 @@ export default function SearchCollaborators() {
             </span>
           ))}
 
-          {(activeFiltersLabel.length > 0 || filters.query) && (
+          {(isSearchMode || hasDraftCriteria) && (
             <button
               onClick={resetFilters}
               className="inline-flex items-center gap-1 px-3 py-1 rounded-full border border-slate-300 text-slate-500 hover:text-red-500 hover:border-red-300 text-xs font-semibold transition-colors"
@@ -349,13 +432,13 @@ export default function SearchCollaborators() {
         </div>
 
         <div>
-          {loading ? (
+          {loading || searching ? (
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-5">
               <TalentSkeletonCards count={8} />
             </div>
-          ) : filteredTalents.length > 0 ? (
+          ) : displayedTalents.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-5">
-              {filteredTalents.map((talent) => (
+              {displayedTalents.map((talent) => (
                 <TalentPropositionCard
                   key={talent.id}
                   talent={talent}
@@ -373,18 +456,28 @@ export default function SearchCollaborators() {
                 Aucun talent trouvé pour ces critères.
               </p>
 
-              <button
-                onClick={() => window.location.reload()}
-                className="flex items-center gap-2 px-6 py-3 bg-orange-700 text-white rounded-2xl font-bold hover:bg-orange-800 transition-all active:scale-95 shadow-lg shadow-orange-700/20"
-              >
-                <RotateCcw size={18} />
-                Actualiser la page
-              </button>
+              {isSearchMode ? (
+                <button
+                  onClick={resetFilters}
+                  className="flex items-center gap-2 px-6 py-3 bg-orange-700 text-white rounded-2xl font-bold hover:bg-orange-800 transition-all active:scale-95 shadow-lg shadow-orange-700/20"
+                >
+                  <RotateCcw size={18} />
+                  Réinitialiser la recherche
+                </button>
+              ) : (
+                <button
+                  onClick={() => window.location.reload()}
+                  className="flex items-center gap-2 px-6 py-3 bg-orange-700 text-white rounded-2xl font-bold hover:bg-orange-800 transition-all active:scale-95 shadow-lg shadow-orange-700/20"
+                >
+                  <RotateCcw size={18} />
+                  Actualiser la page
+                </button>
+              )}
             </div>
           )}
 
           {/* Bouton "Charger plus" */}
-          {!loading && hasMore && (
+          {!loading && !searching && activeHasMore && (
             <div className="flex justify-center mt-8">
               <button
                 onClick={loadMore}
