@@ -7,6 +7,7 @@ import {
   RotateCcw,
   SlidersHorizontal,
   X,
+  Loader2,
 } from "lucide-react";
 
 import domaines from "@/domaines.json";
@@ -16,12 +17,18 @@ import BackButton from "../components/BackButton";
 import BackToTop from "../components/BackToTop";
 import { TalentPropositionCard } from "./components/TalentPropositionCard";
 import { TalentSkeletonCards } from "../components/TalentSkeleton";
+import { apiFetch } from "@/app/lib/api";
 import {
   getCachedPropositions,
   loadPropositions,
   markRequestSent,
   type Propositions,
 } from "../lib/propositionsCache";
+
+// Taille d'un lot (doit être identique à $perPage côté backend)
+const PAGE_SIZE = 16;
+// Même endpoint que celui utilisé par propositionsCache
+const PROPOSITIONS_ENDPOINT = "/reseau/propositions";
 
 const CAMEROON_GEO: any = {
   Adamaoua: ["Ngaoundéré", "Tignère", "Meiganga", "Banyo", "Tibati"],
@@ -62,6 +69,11 @@ export default function SearchCollaborators() {
   });
   const [loading, setLoading] = useState(true);
 
+  // Pagination "Charger plus"
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+
   const applyData = (d: Propositions) => {
     setUserRelations({
       envoyees: d.envoyees,
@@ -69,6 +81,9 @@ export default function SearchCollaborators() {
       actives: d.actives,
     });
     setAllTalents(d.talents);
+    setPage(1);
+    // Si le premier lot est complet, il y a probablement une suite
+    setHasMore(d.talents.length >= PAGE_SIZE);
   };
 
   // Affichage immédiat depuis la mémoire, puis mise à jour en arrière-plan
@@ -92,6 +107,36 @@ export default function SearchCollaborators() {
       cancelled = true;
     };
   }, []);
+
+  // Charger le lot suivant et l'ajouter à la suite de la liste
+  const loadMore = async () => {
+    if (loadingMore) return;
+    setLoadingMore(true);
+
+    try {
+      const nextPage = page + 1;
+      const res = await apiFetch(`${PROPOSITIONS_ENDPOINT}?page=${nextPage}`, {
+        method: "GET",
+      });
+
+      if (res?.statut === 200) {
+        const newTalents: any[] = res.data?.talents ?? [];
+
+        setAllTalents((prev) => {
+          const existingIds = new Set(prev.map((t) => t.id));
+          return [...prev, ...newTalents.filter((t) => !existingIds.has(t.id))];
+        });
+        setPage(nextPage);
+        setHasMore(!!res.data?.a_plus);
+      } else {
+        toast.error("Impossible de charger la suite");
+      }
+    } catch (error) {
+      toast.error("Erreur réseau");
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   // FILTRAGE
   const filteredTalents = useMemo(() => {
@@ -334,6 +379,24 @@ export default function SearchCollaborators() {
               >
                 <RotateCcw size={18} />
                 Actualiser la page
+              </button>
+            </div>
+          )}
+
+          {/* Bouton "Charger plus" */}
+          {!loading && hasMore && (
+            <div className="flex justify-center mt-8">
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-white text-slate-700 border border-slate-300 rounded-xl text-sm font-bold hover:border-orange-500 hover:text-orange-700 transition-all active:scale-95 shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {loadingMore ? (
+                  <Loader2 size={18} className="animate-spin text-orange-700" />
+                ) : (
+                  <ChevronDown size={18} />
+                )}
+                {loadingMore ? "Chargement..." : "Charger plus"}
               </button>
             </div>
           )}
