@@ -277,12 +277,12 @@ export default function SearchCollaborators() {
 
         {/* Résumé des résultats + filtres actifs */}
         <div className="mt-5 mb-4 flex flex-wrap items-center gap-2">
-          {!loading && (
+          {/* {!loading && (
             <p className="text-sm font-semibold text-slate-700 mr-1">
               {filteredTalents.length} talent
               {filteredTalents.length > 1 ? "s" : ""}
             </p>
-          )}
+          )} */}
 
           {activeFiltersLabel.map((label, idx) => (
             <span
