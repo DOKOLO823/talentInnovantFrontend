@@ -5,10 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
-  MoreVertical,
-  Edit,
-  Trash2,
-  Flag,
   Share2,
   MessageCircle,
   Maximize2,
@@ -17,14 +13,15 @@ import {
   ChevronDown,
   ChevronUp,
   X,
-  MessageSquare,
   Facebook,
   AlertTriangle,
-  PencilLine,
   Download,
   FileText,
   File,
   Info,
+  Clock,
+  Hourglass,
+  Lock,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import apifile from "@/app/lib/apifile";
@@ -87,6 +84,111 @@ function ConfirmationModal({ isOpen, onClose, onConfirm }: any) {
   );
 }
 
+// message a afficher en cas de non affichage d'un poste pour une raison donnee(challenge prive,...etc)
+type LockReason = "prive" | "votes" | "resultats" | "inconnu";
+
+/** Carte affichée à la place d'un projet qui ne peut pas (encore) être montré */
+function LockedProjectCard({
+  project,
+  reason,
+}: {
+  project: any;
+  reason: LockReason;
+}) {
+  const challenge = project?.challenge;
+  const author = project?.author;
+
+  const dateFin = challenge?.datefin ? new Date(challenge.datefin) : null;
+  const dateFinLabel =
+    dateFin && !isNaN(dateFin.getTime())
+      ? dateFin.toLocaleDateString("fr-FR", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })
+      : null;
+
+  const contentMap = {
+    prive: {
+      icon: Lock,
+      iconBox: "bg-slate-100 text-slate-500",
+      title: "Challenge privé",
+      text: "Ce projet relève d'un challenge privé : il ne peut pas être affiché.",
+    },
+    votes: {
+      icon: Clock,
+      iconBox: "bg-orange-50 text-orange-600",
+      title: "Votes en cours",
+      text: dateFinLabel
+        ? `Ce projet sera visible après la clôture des votes, le ${dateFinLabel}.`
+        : "Ce projet sera visible après la clôture des votes.",
+    },
+    resultats: {
+      icon: Hourglass,
+      iconBox: "bg-orange-50 text-orange-600",
+      title: "Résultats à venir",
+      text: "Ce projet sera visible dès la publication des résultats du challenge.",
+    },
+    inconnu: {
+      icon: Info,
+      iconBox: "bg-slate-100 text-slate-500",
+      title: "Projet indisponible",
+      text: "Ce projet ne peut pas être affiché pour le moment.",
+    },
+  };
+
+  // On force une valeur de repli (inconnu) si reason ne correspond à aucune clé
+  const content =
+    contentMap[reason as keyof typeof contentMap] || contentMap.inconnu;
+  const Icon = content.icon;
+  // Pour un challenge privé, on ne montre ni son nom ni de lien vers lui
+  const showChallengeLink =
+    (reason === "votes" || reason === "resultats") && challenge?.id;
+
+  return (
+    <div className="relative bg-white rounded-2xl shadow border w-full max-w-xl mx-auto flex flex-col mb-6 p-1">
+      {/* Auteur du projet */}
+      <div className="flex items-center gap-3 p-4 pb-2">
+        <Image
+          src={author?.avatar || "/assets/images/pp2.png"}
+          width={36}
+          height={36}
+          alt="avatar"
+          className="rounded-full object-cover aspect-square"
+        />
+        <div className="min-w-0">
+          <p className="font-semibold text-sm line-clamp-1">{author?.name}</p>
+          <p className="text-xs text-gray-600 line-clamp-1">{author?.role}</p>
+        </div>
+      </div>
+
+      {/* Message */}
+      <div className="flex flex-1 px-4 pb-4">
+        <div className="flex w-full flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-5 py-8 text-center">
+          <span
+            className={`mb-3 flex h-12 w-12 items-center justify-center rounded-full ${content.iconBox}`}
+          >
+            <Icon size={22} />
+          </span>
+          <p className="font-bold text-gray-900">{content.title}</p>
+          <p className="mt-1 max-w-xs text-sm text-gray-500">{content.text}</p>
+
+          {showChallengeLink && (
+            <Link
+              href={`/challenge/${challenge.id}`}
+              className="mt-4 inline-flex max-w-full items-center rounded-full border border-orange-100 bg-white px-4 py-1.5 text-xs font-bold text-orange-700 transition hover:bg-orange-50"
+            >
+              <span className="truncate">
+                {challenge?.name || "Voir le challenge"}
+              </span>
+            </Link>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ================= COMPOSANT PRINCIPAL ================= */
 
 export default function ProjectCardProfile({ project, challenge }: any) {
@@ -112,6 +214,25 @@ export default function ProjectCardProfile({ project, challenge }: any) {
   const params = useParams();
   const idchallenge = project.challenge?.id;
   // console.log(project)
+
+  // Conditions d'affichage (inchangées) : challenge public ET (votes clos OU résultats publiés)
+  const challengeInfo = project?.challenge;
+  const isPublicChallenge = challengeInfo?.portee == "public";
+  const isVoteChallenge = challengeInfo?.typeevaluation == "vote";
+  const resultsReady = isVoteChallenge
+    ? new Date(challengeInfo?.datefin) < new Date()
+    : challengeInfo?.resultatdisponible == 1;
+
+  if (!(isPublicChallenge && resultsReady)) {
+    const reason: LockReason = !challengeInfo?.portee
+      ? "inconnu"
+      : !isPublicChallenge
+        ? "prive"
+        : isVoteChallenge
+          ? "votes"
+          : "resultats";
+    return <LockedProjectCard project={project} reason={reason} />;
+  }
 
   const handleNavigateToReel = () => {
     if (
@@ -296,9 +417,7 @@ export default function ProjectCardProfile({ project, challenge }: any) {
   };
 
   return (
-    <div
-      className={`relative bg-white rounded-2xl shadow border w-full max-w-xl mx-auto ${((project?.challenge?.typeevaluation == "vote" && new Date(project?.challenge?.datefin) < new Date()) || (project?.challenge?.typeevaluation != "vote" && project?.challenge?.resultatdisponible == 1)) && project?.challenge?.portee == "public" ? "flex" : "hidden"} flex-col mb-6 p-1`}
-    >
+    <div className="relative bg-white rounded-2xl shadow border w-full max-w-xl mx-auto flex flex-col mb-6 p-1">
       {/* HEADER USER & DROPDOWN */}
       <div className="flex justify-between p-4 pb-2">
         <div className="flex items-center gap-3 cursor-pointer">

@@ -54,12 +54,14 @@ export default function RootLayout({
 
         <PwaProvider>
           <AuthProvider>
-            <ConditionalLayout>
-              {children}
-              <Toaster containerStyle={{ zIndex: 999999999 }} />
-            </ConditionalLayout>
+            <ConditionalLayout>{children}</ConditionalLayout>
           </AuthProvider>
         </PwaProvider>
+        <Toaster
+          position="top-center"
+          containerStyle={{ zIndex: 2147483647 }}
+          toastOptions={{ duration: 4000 }}
+        />
       </body>
     </html>
   );

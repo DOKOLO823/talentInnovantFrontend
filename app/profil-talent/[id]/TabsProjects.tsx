@@ -13,7 +13,6 @@ export default function TabsProjects({
 }: any) {
   const [projectsData, setProjectsData] = useState(projects || []);
   const [loading, setLoading] = useState(!projects || projects?.length === 0);
-  const [activeTab, setActiveTab] = useState("entreprise"); // Filtre par défaut
 
   const fetchUserProjects = useCallback(async () => {
     try {
@@ -50,8 +49,6 @@ export default function TabsProjects({
                     post.challenge?.resultatdisponible == 1 ? 1 : 0,
                   datefin: post?.challenge?.datefin,
                   portee: post.portee?.portee || post.challenge?.portee?.portee,
-                  // On récupère le type ici pour le filtrage
-                  typechallenge: post.challenge?.typechallenge || "entreprise",
                 },
                 responses:
                   post.responses?.map((response: any) => ({
@@ -89,11 +86,6 @@ export default function TabsProjects({
     }
   }, [projects, userId, fetchUserProjects]);
 
-  // Filtrage des données selon l'onglet actif
-  const filteredProjects = projectsData.filter(
-    (p: any) => p.challenge.typechallenge === activeTab,
-  );
-
   if (loading) {
     return (
       <div className="flex justify-center items-center py-20">
@@ -104,40 +96,14 @@ export default function TabsProjects({
 
   return (
     <div className="w-full">
-      {/* Sélecteur de type de challenge */}
-      <div className="flex gap-4 mb-6 border-b border-gray-100 pb-2">
-        <button
-          onClick={() => setActiveTab("entreprise")}
-          className={`pb-2 px-2 text-sm font-bold transition-all ${
-            activeTab === "entreprise"
-              ? "text-orange-700 border-b-2 border-orange-700"
-              : "text-gray-400 hover:text-gray-600"
-          }`}
-        >
-          Challenges Entreprises
-        </button>
-        <button
-          onClick={() => setActiveTab("talent")}
-          className={`pb-2 px-2 text-sm font-bold transition-all ${
-            activeTab === "talent"
-              ? "text-orange-700 border-b-2 border-orange-700"
-              : "text-gray-400 hover:text-gray-600"
-          }`}
-        >
-          Challenges Talents
-        </button>
-      </div>
-
-      {/* Explication dynamique */}
+      {/* Les challenges sont uniquement créés par des entreprises */}
       <h2 className="text-sm md:text-md text-gray-800 mb-8 border-l-4 border-orange-700 pl-3">
-        {activeTab === "entreprise"
-          ? "Projets issus des challenges créés par des entreprises :"
-          : "Projets issus des challenges créés par les talents de la communauté :"}
+        Projets issus des challenges créés par des entreprises :
       </h2>
 
-      {filteredProjects.length > 0 ? (
+      {projectsData.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          {filteredProjects.map((project: any) => (
+          {projectsData.map((project: any) => (
             <ProjectCardProfile key={project.id} project={project} />
           ))}
         </div>
@@ -148,11 +114,7 @@ export default function TabsProjects({
           </div>
           <h3 className="text-gray-900 font-bold">Aucun projet trouvé</h3>
           <p className="text-gray-500 text-sm max-w-xs text-center mt-2">
-            Il n'y a aucun projet enregistré pour la catégorie{" "}
-            <span className="font-semibold text-orange-700">
-              {activeTab === "entreprise" ? "Entreprise" : "Talent"}
-            </span>{" "}
-            pour le moment.
+            Il n'y a aucun projet issu des challenges pour le moment.
           </p>
           <button
             onClick={() => {

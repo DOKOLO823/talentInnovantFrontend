@@ -1,12 +1,22 @@
 "use client";
 
+// Emplacement : app/components/TopChallengesList.tsx  (REMPLACE le fichier existant)
+// Seul changement : la prop facultative `compact`, pour l'afficher dans le fil de la communauté
+// (cadre arrondi, peu d'espace) avec des squelettes pendant le chargement.
+// Sans la prop, l'affichage de la page d'accueil guest est IDENTIQUE à avant.
+
 import { useState, useEffect } from "react";
 import ChallengeCard from "./ChallengeCard";
+import { ChallengeSkeletonCards } from "./ChallengeSkeleton";
 import { apiFetch } from "@/app/lib/api";
 import apifile from "@/app/lib/apifile";
 import { Loader2 } from "lucide-react";
 
-export default function TopChallengesList() {
+export default function TopChallengesList({
+  compact = false,
+}: {
+  compact?: boolean;
+}) {
   const [challenges, setChallenges] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -20,39 +30,6 @@ export default function TopChallengesList() {
 
         if (res && res.statut === 200) {
           const mappedData = res.data.map((c: any) => {
-            // --- GESTION DES RÉCOMPENSES (Format Objet ou String) ---
-            // let rewardsArray: string[] = ["Prix non défini"];
-            // if (c.recompense) {
-            //   let data = c.recompense;
-            //   // Si c'est une string (JSON), on parse
-            //   if (typeof c.recompense === "string") {
-            //     try {
-            //       data = JSON.parse(c.recompense);
-            //     } catch (e) {
-            //       data = { prix: c.recompense };
-            //     }
-            //   }
-
-            //   // Si c'est un objet, on transforme en tableau de chaînes
-            //   if (typeof data === "object" && data !== null) {
-            //     rewardsArray = Object.entries(data).map(
-            //       ([key, val]) => `${key.replace(/_/g, " ")} : ${val}`,
-            //     );
-            //   } else {
-            //     rewardsArray = [String(data)];
-            //   }
-            // }
-            // if (rewardsArray.length === 0) rewardsArray = ["Prix non défini"];
-
-            // --- FORMATTAGE DES DATES ---
-            const formatDate = (d: string) =>
-              d
-                ? new Date(d).toLocaleDateString("fr-FR", {
-                    day: "numeric",
-                    month: "long",
-                  })
-                : "---";
-
             return {
               id: c.id,
               title: c.titre,
@@ -117,6 +94,19 @@ export default function TopChallengesList() {
   }, []);
 
   if (loading) {
+    if (compact) {
+      return (
+        <section className="rounded-2xl border border-slate-200 bg-white py-5">
+          <h2 className="mb-4 border-l-4 border-orange-700 pl-3 text-base font-bold text-slate-900 ml-4">
+            Les top challenges du moment
+          </h2>
+          <div className="flex gap-3 overflow-hidden px-4 [&>*]:w-72 [&>*]:shrink-0">
+            <ChallengeSkeletonCards count={3} />
+          </div>
+        </section>
+      );
+    }
+
     return (
       <div className="flex flex-col items-center justify-center py-10 w-full">
         <Loader2 className="h-10 w-10 text-orange-600 animate-spin mb-2" />
@@ -127,13 +117,30 @@ export default function TopChallengesList() {
     );
   }
 
-  if (challenges?.length === 0) return;
+  if (challenges?.length === 0) return null;
 
   return (
     <div className="relative">
-      <section id="challenges" className="py-20 bg-white">
-        <div className="w-full mx-auto pl-2 pr-4 sm:pr-6 lg:pr-8">
-          <h2 className="md:text-2xl md:text-3xl ml-3 font-bold text-gray-900 mb-5 border-l-4 border-orange-700 pl-3">
+      <section
+        id={compact ? undefined : "challenges"}
+        className={
+          compact
+            ? "rounded-2xl border border-slate-200 bg-white py-5"
+            : "py-20 bg-white"
+        }
+      >
+        <div
+          className={
+            compact ? "w-full" : "w-full mx-auto pl-2 pr-4 sm:pr-6 lg:pr-8"
+          }
+        >
+          <h2
+            className={
+              compact
+                ? "ml-4 mb-4 border-l-4 border-orange-700 pl-3 text-base font-bold text-slate-900"
+                : "md:text-2xl md:text-3xl ml-3 font-bold text-gray-900 mb-5 border-l-4 border-orange-700 pl-3"
+            }
+          >
             Les top challenges du moment
           </h2>
           {/* Container avec défilement horizontal et snapping */}

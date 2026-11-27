@@ -10,6 +10,8 @@ import TabsAbout from "./TabsAbout";
 import TabsProjects from "./TabsProjects";
 import TabsPortfolio from "./TabsPortfolio";
 import TabsCV from "./TabsCV";
+import TabsPerformances from "./TabsPerformances";
+import TabsCommunaute from "./TabsCommunaute";
 import BackButton from "@/app/components/BackButton";
 import { apiFetch } from "@/app/lib/api";
 import apifile from "@/app/lib/apifile";
@@ -17,12 +19,23 @@ import { Toaster } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import CollabProfileAction from "./CollabProfileAction";
 
+// Onglets du profil : identifiant -> libellé affiché
+const TABS: Record<string, string> = {
+  about: "À propos",
+  performances: "Performances",
+  projets: "Projets",
+  cv: "CV",
+  portfolio: "Portfolio",
+  communaute: "Communauté",
+};
+
 export default function ProfileClient() {
   const params = useParams();
   const userId = params.id as string;
   const tabsRef = useRef<HTMLDivElement>(null);
 
   const [showPP, setShowPP] = useState(false);
+  const [showCover, setShowCover] = useState(false);
   const [activeTab, setActiveTab] = useState("about");
   const [isLoading, setIsLoading] = useState(true);
   const [userData, setUserData] = useState<any>(null);
@@ -208,8 +221,11 @@ export default function ProfileClient() {
       <Toaster />
       <BackButton m={16} />
 
-      {/* COVER */}
-      <div className="w-full h-56 md:h-100 relative">
+      {/* COVER (cliquable : s'affiche en grand) */}
+      <div
+        className="w-full h-56 md:h-100 relative cursor-pointer"
+        onClick={() => setShowCover(true)}
+      >
         <Image
           src={userData.cover}
           fill
@@ -281,12 +297,19 @@ export default function ProfileClient() {
         />
       )}
 
+      {showCover && (
+        <FullImageModal
+          src={userData.cover}
+          onClose={() => setShowCover(false)}
+        />
+      )}
+
       {/* TABS (STICKY) */}
       <div
         ref={tabsRef}
         className="px-4 md:px-8 mt-6 border-b flex gap-6 bg-white sticky top-0 z-40 pt-4 overflow-x-auto no-scrollbar max-w-5xl mx-auto"
       >
-        {["about", "projets", "cv", "portfolio"].map((tab) => (
+        {Object.keys(TABS).map((tab) => (
           <button
             key={tab}
             onClick={() => handleTabChange(tab)}
@@ -296,11 +319,7 @@ export default function ProfileClient() {
                 : "border-transparent text-gray-600"
             }`}
           >
-            {tab === "about"
-              ? "À propos"
-              : tab === "cv"
-                ? "CV"
-                : tab.charAt(0).toUpperCase() + tab.slice(1)}
+            {TABS[tab]}
           </button>
         ))}
       </div>
@@ -308,6 +327,14 @@ export default function ProfileClient() {
       {/* CONTENT TABS */}
       <div className="px-4 md:px-8 mt-6 pb-14 max-w-5xl mx-auto">
         {activeTab === "about" && <TabsAbout user={userData} />}
+        {activeTab === "performances" && (
+          <TabsPerformances
+            user={userData}
+            projects={projectsData}
+            isOwner={isOwner}
+          />
+        )}
+
         {activeTab === "projets" && (
           <TabsProjects
             projects={projectsData}
@@ -324,6 +351,13 @@ export default function ProfileClient() {
             userId={userId}
             userData={userData}
             currentUser={currentUser}
+          />
+        )}
+        {activeTab === "communaute" && (
+          <TabsCommunaute
+            userId={userId}
+            currentUser={currentUser}
+            isOwner={isOwner}
           />
         )}
       </div>
